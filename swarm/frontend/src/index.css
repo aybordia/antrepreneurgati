@@ -1,0 +1,193 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg:        #0A0A0D;
+  --primary:   #7B6CFF;
+  --amber:     #F5A623;
+  --success:   #c8f064;
+  --teal:      #6ee7b7;
+  --coral:     #FF6B6B;
+  --text:      #F0EEF8;
+  --muted:     #8B8A9B;
+  --glass:     rgba(255,255,255,0.04);
+  --glass-b:   rgba(255,255,255,0.08);
+  --display:   'Playfair Display', serif;
+  --ui:        'IBM Plex Sans', sans-serif;
+  --mono:      'IBM Plex Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body, #root { height: 100%; width: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--ui);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* Ambient background */
+.ambient {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 60%, rgba(123,108,255,0.10) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 40% at 80% 20%, rgba(110,231,183,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 60% at 60% 80%, rgba(245,166,35,0.04) 0%, transparent 60%);
+  animation: ambientDrift 18s ease-in-out infinite alternate;
+}
+@keyframes ambientDrift {
+  0%   { transform: translate(0,0) scale(1); }
+  100% { transform: translate(2%,3%) scale(1.04); }
+}
+
+/* Glass card */
+.card {
+  background: rgba(255,255,255,0.035);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Glowing orb (CSS fallback) */
+.orb {
+  border-radius: 50%;
+  position: relative;
+  transition: all 0.4s ease;
+}
+.orb::after {
+  content: '';
+  position: absolute;
+  inset: -30%;
+  border-radius: 50%;
+  background: radial-gradient(circle, currentColor 0%, transparent 70%);
+  opacity: 0.15;
+  pointer-events: none;
+  animation: orbPulse 3s ease-in-out infinite;
+}
+
+@keyframes orbPulse {
+  0%,100% { opacity: 0.1; transform: scale(1); }
+  50%      { opacity: 0.22; transform: scale(1.09); }
+}
+
+/* Button base */
+.btn {
+  display: flex; align-items: center; justify-content: center;
+  height: 52px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  font-family: var(--ui);
+  font-weight: 500;
+  font-size: 15px;
+  letter-spacing: 0.01em;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0);
+  transition: background 0.15s ease;
+  border-radius: inherit;
+}
+.btn:hover  { transform: translateY(-2px); }
+.btn:hover::after { background: rgba(255,255,255,0.04); }
+.btn:active { transform: translateY(0px); }
+
+.btn-primary {
+  background: linear-gradient(135deg, #7B6CFF 0%, #9B8DFF 100%);
+  color: white;
+  box-shadow: 0 4px 20px rgba(123,108,255,0.28);
+}
+.btn-primary:hover { box-shadow: 0 8px 32px rgba(123,108,255,0.48); }
+
+.btn-amber {
+  background: linear-gradient(135deg, #F5A623 0%, #FFB347 100%);
+  color: white;
+  box-shadow: 0 4px 20px rgba(245,166,35,0.28);
+}
+.btn-amber:hover { box-shadow: 0 8px 32px rgba(245,166,35,0.48); }
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.12);
+  color: var(--muted);
+  height: 40px;
+  font-size: 13px;
+  border-radius: 8px;
+}
+.btn-ghost:hover { border-color: rgba(255,255,255,0.28); color: var(--text); }
+
+/* Pulse dot */
+.dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  animation: dotPulse 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes dotPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.38;transform:scale(0.82)} }
+
+/* Mic pulse ring */
+@keyframes micRing {
+  0%   { box-shadow: 0 0 0 0 rgba(245,166,35,0.55); }
+  100% { box-shadow: 0 0 0 16px rgba(245,166,35,0); }
+}
+
+/* Active orb ring */
+@keyframes activeRing {
+  0%   { box-shadow: 0 0 0 0 currentColor; opacity: 0.6; }
+  100% { box-shadow: 0 0 0 20px currentColor; opacity: 0; }
+}
+
+/* Typewriter cursor */
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* Score ring fill */
+@keyframes ringFill {
+  from { stroke-dashoffset: 440; }
+}
+
+/* Waveform bars */
+@keyframes waveBar {
+  0%   { transform: scaleY(0.35); }
+  100% { transform: scaleY(1.6); }
+}
+
+/* Gradient shift for progress bar */
+@keyframes gradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Shimmer sweep */
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+*:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
