@@ -1,58 +1,90 @@
-// PROMPT VERSION: 1.0
-import { callLLMStream, parseJSON } from "../lib/llm.js";
+// PROMPT VERSION: 2.0
+import { callLLM, callLLMStream, parseJSON } from "../lib/llm.js";
 
-const SYSTEM_PROMPT = `You are the Judge Orchestrator in Swarm, a multi-agent AI interview preparation system. Your role is to manage a live practice conversation between the user and a panel of interviewer personas.
+// Build a context-rich system prompt for THIS specific session
+function buildSystemPrompt({ situation, personas }) {
+  const personaDescriptions = personas
+    .map(p => `- ${p.name} (${p.role}): ${p.style}`)
+    .join("\n");
 
-You receive:
-1. The user's latest spoken response (transcript)
-2. The full conversation history so far
-3. The session plan (questions, personas, difficulty progression)
-4. The persona definitions (names, roles, styles)
+  return `You are managing a live, realistic practice conversation for someone preparing for the following:
 
-Your job on each turn:
-1. Evaluate the quality and completeness of the user's last response
-2. Decide what happens next: does the same persona follow up, does a new persona take over, does someone push back harder, or does the session advance to the next question?
-3. Generate the exact words the next persona will say
-4. Specify which persona is speaking and which ElevenLabs voice ID to use
+SITUATION: "${situation}"
 
-Output format: Return ONLY a valid JSON object with this exact schema:
+You are playing one of these personas on each turn:
+${personaDescriptions}
+
+YOUR JOB:
+- Respond naturally as the assigned persona — speak like a real human, not a chatbot
+- React directly to what the user just said before moving to the next topic
+- Stay in character: an MIT admissions interviewer sounds nothing like a Google engineering manager or a concerned parent
+- The session plan gives you TOPICS to cover — never read them verbatim. Rephrase them in your persona's natural voice, woven into the flow of the conversation
+- If the user just greeted you, greet them warmly and introduce yourself before asking anything
+- If they said something interesting, acknowledge it genuinely before pushing forward
+- If they fumbled, gently push back in your persona's style — don't just re-ask the same question
+- Keep every turn to 2-3 sentences max — leave space for the user to speak
+
+Output format: Return ONLY valid JSON, no preamble, no explanation:
 {
   "nextPersona": "string — name matching one of the defined personas",
   "voiceId": "string — ElevenLabs voice ID for that persona",
-  "line": "string — the exact words this persona will speak. Maximum 3 sentences. Speak in first person as the persona.",
-  "intent": "string — what this turn is trying to accomplish",
-  "sessionAdvancing": true,
-  "sessionComplete": false,
-  "userPerformanceNote": "string — brief internal note on how the user performed this turn"
+  "line": "string — what this persona says. Max 3 sentences. First person. Natural, human tone.",
+  "intent": "string — what this turn accomplishes",
+  "sessionAdvancing": true or false,
+  "sessionComplete": true or false,
+  "userPerformanceNote": "string — brief note on how the user did this turn"
 }
 
-Behavioral rules:
-- If the user gave a strong, specific, confident answer: advance to the next question
-- If the user was vague, generic, or used filler phrases: have the same persona push back with a tighter version of the question
-- If the user stumbled or hesitated: bring in the Skeptic persona if one exists
-- If the user has been pushed on the same question twice: advance regardless, note the struggle in userPerformanceNote
-- sessionComplete = true only when all planned questions have been asked and follow-ups resolved
-- If the user says "end session", "stop", or "I'm done": set sessionComplete = true immediately
-- Each persona has a distinct style — stay in character at all times
-- Maximum 3 sentences per turn
-- Do not include any text outside the JSON object. No preamble, no explanation.`;
+RULES:
+- sessionAdvancing: true when moving to the next topic/question in the plan
+- sessionAdvancing: false when following up on the same topic
+- sessionComplete: true only after all planned topics are covered
+- If user says "stop", "end session", or "I'm done": sessionComplete = true
+- If the same topic has been pushed on twice already: advance regardless
+- NEVER produce a line that could apply to any generic interview — it must be specific to the situation above`;
+}
 
 export async function runJudgeOrchestrator({ transcript, sessionContext, history, currentQuestionIndex = 0 }) {
   const parsed = typeof sessionContext === "string" ? JSON.parse(sessionContext) : sessionContext;
   const { personas, sessionPlan, openingLine, situation } = parsed;
 
-  // Opening turn: skip the LLM entirely — deliver opening line + first question directly
+  // Opening turn: LLM generates a natural, situation-specific greeting
   if (!transcript && history.length === 0) {
     const firstQ = sessionPlan.questions[0];
     const assignedPersona = personas.find(p => p.name === firstQ?.assignedPersona) || personas[0];
-    const line = openingLine
+
+    // Use LLM for a situation-specific opening rather than hardcoded text
+    try {
+      const openingPrompt = `You are ${assignedPersona.name}, ${assignedPersona.role}. You are about to begin a practice session with someone preparing for: "${situation}".
+
+Write your opening line — greet them warmly, introduce yourself briefly, and ease into the first topic: "${firstQ?.text || "tell me about yourself"}". Keep it to 2-3 sentences. Sound like a real ${assignedPersona.role}, not a generic interviewer. Return ONLY a JSON object: {"line": "your opening line here"}`;
+
+      const raw = await callLLM({ systemPrompt: "You generate natural, human opening lines for practice conversations. Return only valid JSON.", userPrompt: openingPrompt, maxTokens: 150 });
+      const result = parseJSON(raw);
+      if (result?.line) {
+        return {
+          nextPersona: assignedPersona.name,
+          voiceId: assignedPersona.voiceId,
+          line: result.line,
+          intent: "Opening — situation-specific greeting",
+          sessionAdvancing: false,
+          sessionComplete: false,
+          userPerformanceNote: "Session just started",
+        };
+      }
+    } catch (err) {
+      console.error("[judgeOrchestrator] opening LLM error:", err.message);
+    }
+
+    // Fallback opening if LLM fails
+    const fallbackLine = openingLine
       ? `${openingLine} ${firstQ?.text || ""}`.trim()
       : firstQ?.text || "Welcome. Let's get started.";
     return {
       nextPersona: assignedPersona.name,
       voiceId: assignedPersona.voiceId,
-      line,
-      intent: "Opening — first question from session plan",
+      line: fallbackLine,
+      intent: "Opening — fallback",
       sessionAdvancing: false,
       sessionComplete: false,
       userPerformanceNote: "Session just started",
@@ -73,26 +105,32 @@ export async function runJudgeOrchestrator({ transcript, sessionContext, history
   }
 
   const currentQuestion = sessionPlan.questions[currentQuestionIndex];
+  const assignedPersona = personas.find(p => p.name === currentQuestion?.assignedPersona) || personas[0];
 
-  const userPrompt = `CURRENT SESSION CONTEXT:
-Situation: "${situation}"
-Current question index: ${currentQuestionIndex}
-Current question to ask: "${currentQuestion?.text || "Thank the user and close the session"}"
-Assigned persona: "${currentQuestion?.assignedPersona || personas[0].name}"
+  // Detect if user is greeting rather than answering
+  const isGreeting = /^(hi|hello|hey|good\s*(morning|afternoon|evening)|howdy|yo)\b/i.test(transcript?.trim() || "");
 
-PERSONAS:
-${JSON.stringify(personas)}
+  const userPrompt = `SITUATION: "${situation}"
 
-CONVERSATION HISTORY (most recent 10 turns):
-${history.slice(-10).map((t) => `${t.speaker}: ${t.text}`).join("\n")}
+CURRENT TOPIC TO EXPLORE (do NOT say verbatim — rephrase naturally in your persona's voice):
+"${currentQuestion?.text || "wrap up the session"}"
+Topic intent: ${currentQuestion?.intent || "closing"}
+Assigned persona for this topic: ${assignedPersona?.name} (${assignedPersona?.role})
 
-USER'S LATEST RESPONSE: "${transcript}"
+PERSONAS AVAILABLE:
+${personas.map(p => `${p.name}: ${p.role} — ${p.style}`).join("\n")}
 
-Evaluate this response and determine the next move. If strong → advance (sessionAdvancing: true). If weak/vague → push back with the same persona (sessionAdvancing: false). If pushed twice already → advance anyway.
+CONVERSATION SO FAR (last 8 turns):
+${history.slice(-8).map(t => `${t.speaker}: ${t.text}`).join("\n")}
 
-Generate your Judge Orchestrator output JSON.`;
+USER JUST SAID: "${transcript}"
+${isGreeting ? "\n⚠️ The user is greeting you — respond with a warm greeting and natural introduction first. Do not jump straight to a question." : ""}
 
-  // Helper: build a fallback that advances to the next question
+How did they do? ${isGreeting ? "N/A — greeting turn." : "Strong/specific → sessionAdvancing: true. Vague/filler → sessionAdvancing: false, push back. Pushed twice on this topic already → advance anyway."}
+
+Generate your response as the assigned persona. Make it specific to "${situation}" — a response that could ONLY make sense in this exact context.`;
+
+  // Helper: advance to next question as fallback
   function advanceFallback(reason) {
     const nextIndex = currentQuestionIndex + 1;
     const nextQ = sessionPlan.questions[nextIndex];
@@ -102,7 +140,7 @@ Generate your Judge Orchestrator output JSON.`;
       nextPersona: p.name,
       voiceId: p.voiceId,
       line: isLast
-        ? "Thank you — that covers everything I wanted to ask. Let's wrap up here."
+        ? "That's everything I wanted to cover. Thanks for your time today."
         : nextQ.text,
       intent: `Fallback advance — ${reason}`,
       sessionAdvancing: true,
@@ -113,7 +151,12 @@ Generate your Judge Orchestrator output JSON.`;
 
   let raw;
   try {
-    raw = await callLLMStream({ systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 600, onChunk: () => {} });
+    raw = await callLLMStream({
+      systemPrompt: buildSystemPrompt({ situation, personas }),
+      userPrompt,
+      maxTokens: 600,
+      onChunk: () => {},
+    });
   } catch (err) {
     console.error("[judgeOrchestrator] LLM error:", err.message);
     return advanceFallback("LLM unavailable");
@@ -126,7 +169,7 @@ Generate your Judge Orchestrator output JSON.`;
     return advanceFallback("parse error");
   }
 
-  // Enforce 3-sentence max on line
+  // Enforce 3-sentence max
   const sentences = result.line.match(/[^.!?]+[.!?]+/g) || [result.line];
   result.line = sentences.slice(0, 3).join(" ").trim();
 
