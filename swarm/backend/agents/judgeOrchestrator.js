@@ -175,6 +175,19 @@ Generate your response as the assigned persona. Make it specific to "${situation
 
   // Helper: advance to next question as fallback
   function advanceFallback(reason) {
+    // Greeting: respond warmly instead of firing the next question cold
+    if (isGreeting) {
+      const p = assignedPersona || personas[0];
+      return {
+        nextPersona: p.name,
+        voiceId: p.voiceId,
+        line: `Hi, great to meet you! I'm ${p.name}, your ${p.role} today. Let's get started — ${currentQuestion?.text || "tell me a bit about yourself."}`,
+        intent: "Greeting fallback",
+        sessionAdvancing: false,
+        sessionComplete: false,
+        userPerformanceNote: "Greeting with LLM fallback",
+      };
+    }
     const nextIndex = currentQuestionIndex + 1;
     const nextQ = sessionPlan.questions[nextIndex];
     const isLast = !nextQ;
