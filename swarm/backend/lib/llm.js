@@ -26,19 +26,23 @@ function getClient() {
   });
 }
 
-// Parse retry-after from Groq/OpenAI 429 messages — cap at 65s
+// Parse retry-after from Groq 429 messages. Returns ms to wait, or null if too long.
+// If Groq says wait > 5s we throw immediately — agent fallbacks handle it faster than waiting.
 function parseRetryMs(errMessage = "") {
   const secMatch = errMessage.match(/(\d+(?:\.\d+)?)\s*s(?:econds?)?/i);
-  if (secMatch) return Math.min(Math.ceil(parseFloat(secMatch[1])) * 1000 + 500, 65000);
+  if (secMatch) {
+    const ms = Math.ceil(parseFloat(secMatch[1])) * 1000 + 200;
+    return ms > 5000 ? null : ms;
+  }
   const minMatch = errMessage.match(/(\d+)\s*m(?:in)?.*?(\d+(?:\.\d+)?)\s*s/i);
-  if (minMatch) return Math.min((parseInt(minMatch[1]) * 60 + Math.ceil(parseFloat(minMatch[2]))) * 1000 + 500, 65000);
-  return 10000;
+  if (minMatch) return null; // minutes-long wait → fail fast
+  return null; // unknown format → fail fast
 }
 
 // Non-streaming call — returns full response text
 export async function callLLM({ systemPrompt, userPrompt, model = DEFAULT_MODEL, maxTokens = 2048 }) {
   await rateLimit();
-  const maxRetries = 4;
+  const maxRetries = 2;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const response = await getClient().chat.completions.create({
@@ -53,6 +57,10 @@ export async function callLLM({ systemPrompt, userPrompt, model = DEFAULT_MODEL,
     } catch (err) {
       if (err?.status === 429 && attempt < maxRetries) {
         const waitMs = parseRetryMs(err?.message);
+        if (waitMs === null) {
+          console.log(`[llm] 429 rate limit with long retry-after — failing fast for fallback`);
+          throw err;
+        }
         console.log(`[llm] 429 rate limit — waiting ${waitMs}ms before retry ${attempt + 1}/${maxRetries}`);
         await new Promise(r => setTimeout(r, waitMs));
       } else {
@@ -65,7 +73,7 @@ export async function callLLM({ systemPrompt, userPrompt, model = DEFAULT_MODEL,
 // Streaming call — rate-paced, pipes tokens to onChunk callback, returns full text
 export async function callLLMStream({ systemPrompt, userPrompt, model = DEFAULT_MODEL, maxTokens = 2048, onChunk }) {
   await rateLimit();
-  const maxRetries = 4;
+  const maxRetries = 2;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const stream = await getClient().chat.completions.create({
@@ -95,6 +103,10 @@ export async function callLLMStream({ systemPrompt, userPrompt, model = DEFAULT_
     } catch (err) {
       if (err?.status === 429 && attempt < maxRetries) {
         const waitMs = parseRetryMs(err?.message);
+        if (waitMs === null) {
+          console.log(`[llm] 429 rate limit with long retry-after — failing fast for fallback`);
+          throw err;
+        }
         console.log(`[llm] 429 rate limit — waiting ${waitMs}ms before retry ${attempt + 1}/${maxRetries}`);
         await new Promise(r => setTimeout(r, waitMs));
       } else {
