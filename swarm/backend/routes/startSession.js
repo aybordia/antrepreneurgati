@@ -33,6 +33,10 @@ export default async function handler(req, res) {
   const styleHint = buildInterviewStyleHint(userPrefs);
   if (styleHint) console.log(`[startSession] injecting style prefs for user=${userId} (${userPrefs.sessionCount} sessions)`);
 
+  // Keepalive: send a heartbeat every 8s so Render's proxy never kills
+  // the SSE connection during rate-limit waits between agent LLM calls
+  const keepalive = setInterval(() => writeChunk({ heartbeat: true }), 8000);
+
   try {
     // Agents run sequentially; callLLM enforces pacing globally
     const researcherOutput    = await runResearcher({ situation }, writeChunk);
@@ -46,13 +50,14 @@ export default async function handler(req, res) {
       profilerOutput,
       weakSpotOutput,
       voiceDesignerOutput,
-      styleHint,        // ← learned preferences injected here
+      styleHint,
     }, writeChunk);
 
   } catch (err) {
     console.error("startSession error:", err);
     writeChunk({ error: err.message });
   } finally {
+    clearInterval(keepalive);
     res.end();
   }
 }
