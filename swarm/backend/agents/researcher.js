@@ -1,5 +1,5 @@
 // PROMPT VERSION: 1.0
-import { callLLM, parseJSON } from "../lib/llm.js";
+import { callLLMStream, parseJSON } from "../lib/llm.js";
 import { tavilySearch, formatResults } from "../lib/tavily.js";
 
 const SYSTEM_PROMPT = `You are the Researcher agent in a multi-agent AI interview preparation system called Swarm.
@@ -31,19 +31,20 @@ Quality rules:
 - Do not include any text outside the JSON object. No preamble, no explanation, no markdown.`;
 
 export async function runResearcher({ situation }, writeChunk) {
-  // Step 1: Generate optimal search query
-  const searchQuery = await callLLM({
-    systemPrompt: "You extract the best Tavily search query from a user's situation. Return ONLY the query string, nothing else. Make it specific — include the institution/company name, role, and time context. Add 'Reddit OR forum OR firsthand' to surface personal accounts.",
-    userPrompt: situation,
-    maxTokens: 100,
-  });
+  writeChunk({ agent: "Researcher", chunk: "Searching for real interview reports and patterns…", thinking: true });
 
-  // Step 2: Run Tavily search
+  // Build search query directly from situation (saves 1 LLM call)
+  const searchQuery = situation + " Reddit OR forum OR firsthand experience";
+
+  // Run Tavily search
   let formattedResults;
   try {
+    console.log("[researcher] starting Tavily search...");
     const results = await tavilySearch({ query: searchQuery.trim(), maxResults: 6 });
     formattedResults = formatResults(results);
+    console.log("[researcher] Tavily done, got", results.length, "results");
   } catch (err) {
+    console.log("[researcher] Tavily failed/timed out:", err.message, "— using fallback");
     formattedResults = "[RESEARCH NOTE: Live search unavailable. Analysis based on training data as of 2024.]";
   }
 
@@ -62,13 +63,18 @@ Analyze these results and produce your Researcher output JSON. Focus on insights
 The user mentioned this specific gap or concern: "${extractedGap}"
 Pay particular attention to any findings that address this gap.`;
 
-  const raw = await callLLM({ systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 2048 });
+  console.log("[researcher] calling Groq LLM...");
+  let isFirst = true;
+  const raw = await callLLMStream({
+    systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 3000,
+    onChunk: (tok) => {
+      writeChunk({ agent: "Researcher", chunk: tok, streamStart: isFirst });
+      isFirst = false;
+    },
+  });
 
-  // Stream character by character for frontend orb animation
-  for (const char of raw) {
-    writeChunk({ agent: "Researcher", chunk: char, done: false });
-  }
-  writeChunk({ agent: "Researcher", chunk: "", done: true });
+  console.log("[researcher] LLM done, raw length:", raw?.length);
+  writeChunk({ agent: "Researcher", done: true });
 
   return parseJSON(raw);
 }

@@ -1,5 +1,5 @@
 // PROMPT VERSION: 1.0
-import { callLLM, parseJSON } from "../lib/llm.js";
+import { callLLMStream, parseJSON } from "../lib/llm.js";
 
 const SYSTEM_PROMPT = `You are the Voice Designer agent in a multi-agent AI system called Swarm.
 
@@ -41,19 +41,25 @@ Rules:
 - Do not include any text outside the JSON object. No preamble, no explanation.`;
 
 export async function runVoiceDesigner({ situation, profilerOutput }, writeChunk) {
+  writeChunk({ agent: "VoiceDesigner", chunk: "Designing voice profiles for each interviewer persona…", thinking: true });
+
   const userPrompt = `The user's situation: "${situation}"
 
 The Profiler has identified these three interviewer archetypes:
-${JSON.stringify(profilerOutput.interviewerPersonas, null, 2)}
+${JSON.stringify(profilerOutput.interviewerPersonas)}
 
 Design the voice specifications for each persona. The voices must feel like genuinely different people — different age, different energy, different pacing. Someone listening blindfolded should be able to tell immediately when the persona changes.`;
 
-  const raw = await callLLM({ systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 1000 });
+  let isFirst = true;
+  const raw = await callLLMStream({
+    systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 1000,
+    onChunk: (tok) => {
+      writeChunk({ agent: "VoiceDesigner", chunk: tok, streamStart: isFirst });
+      isFirst = false;
+    },
+  });
 
-  for (const char of raw) {
-    writeChunk({ agent: "VoiceDesigner", chunk: char, done: false });
-  }
-  writeChunk({ agent: "VoiceDesigner", chunk: "", done: true });
+  writeChunk({ agent: "VoiceDesigner", done: true });
 
   return parseJSON(raw);
 }

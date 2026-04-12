@@ -1,5 +1,5 @@
 // PROMPT VERSION: 1.0
-import { callLLM, parseJSON } from "../lib/llm.js";
+import { callLLMStream, parseJSON } from "../lib/llm.js";
 
 const SYSTEM_PROMPT = `You are the Judge Orchestrator in Swarm, a multi-agent AI interview preparation system. Your role is to manage a live practice conversation between the user and a panel of interviewer personas.
 
@@ -39,7 +39,25 @@ Behavioral rules:
 
 export async function runJudgeOrchestrator({ transcript, sessionContext, history, currentQuestionIndex = 0 }) {
   const parsed = typeof sessionContext === "string" ? JSON.parse(sessionContext) : sessionContext;
-  const { personas, sessionPlan, situation } = parsed;
+  const { personas, sessionPlan, openingLine, situation } = parsed;
+
+  // Opening turn: skip the LLM entirely — deliver opening line + first question directly
+  if (!transcript && history.length === 0) {
+    const firstQ = sessionPlan.questions[0];
+    const assignedPersona = personas.find(p => p.name === firstQ?.assignedPersona) || personas[0];
+    const line = openingLine
+      ? `${openingLine} ${firstQ?.text || ""}`.trim()
+      : firstQ?.text || "Welcome. Let's get started.";
+    return {
+      nextPersona: assignedPersona.name,
+      voiceId: assignedPersona.voiceId,
+      line,
+      intent: "Opening — first question from session plan",
+      sessionAdvancing: false,
+      sessionComplete: false,
+      userPerformanceNote: "Session just started",
+    };
+  }
 
   // Hard limit: force end if session has gone too long
   if (currentQuestionIndex >= (sessionPlan.questions.length + 3)) {
@@ -54,23 +72,27 @@ export async function runJudgeOrchestrator({ transcript, sessionContext, history
     };
   }
 
+  const currentQuestion = sessionPlan.questions[currentQuestionIndex];
+
   const userPrompt = `CURRENT SESSION CONTEXT:
 Situation: "${situation}"
-Session plan question order: ${JSON.stringify(sessionPlan.questions.map((q) => q.text))}
 Current question index: ${currentQuestionIndex}
+Current question to ask: "${currentQuestion?.text || "Thank the user and close the session"}"
+Assigned persona: "${currentQuestion?.assignedPersona || personas[0].name}"
 
 PERSONAS:
-${JSON.stringify(personas, null, 2)}
+${JSON.stringify(personas)}
 
 CONVERSATION HISTORY (most recent 10 turns):
 ${history.slice(-10).map((t) => `${t.speaker}: ${t.text}`).join("\n")}
 
-USER'S LATEST RESPONSE:
-"${transcript}"
+USER'S LATEST RESPONSE: "${transcript}"
 
-Evaluate this response and determine the next move. Generate your Judge Orchestrator output JSON.`;
+Evaluate this response and determine the next move. If strong → advance (sessionAdvancing: true). If weak/vague → push back with the same persona (sessionAdvancing: false). If pushed twice already → advance anyway.
 
-  const raw = await callLLM({ systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 600 });
+Generate your Judge Orchestrator output JSON.`;
+
+  const raw = await callLLMStream({ systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 600, onChunk: () => {} });
   const result = parseJSON(raw);
 
   // Enforce 3-sentence max on line

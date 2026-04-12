@@ -1,5 +1,5 @@
 // PROMPT VERSION: 1.0
-import { callLLM, parseJSON } from "../lib/llm.js";
+import { callLLMStream, parseJSON } from "../lib/llm.js";
 
 const SYSTEM_PROMPT = `You are the Profiler agent in a multi-agent AI system called Swarm.
 
@@ -38,6 +38,8 @@ Rules:
 - Do not include any text outside the JSON object. No preamble, no explanation.`;
 
 export async function runProfiler({ situation }, writeChunk) {
+  writeChunk({ agent: "Profiler", chunk: "Building psychological profile of your interviewers…", thinking: true });
+
   const extractedGap = situation.includes("—") ? situation.split("—")[1].trim() : situation;
 
   const userPrompt = `The user's situation: "${situation}"
@@ -52,12 +54,16 @@ If it's a negotiation: profile the power dynamic and what the other party cares 
 The user's stated weakness or fear: "${extractedGap}"
 This matters — the profiler should include how this type of interviewer specifically responds to candidates who exhibit this weakness.`;
 
-  const raw = await callLLM({ systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 2048 });
+  let isFirst = true;
+  const raw = await callLLMStream({
+    systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 3000,
+    onChunk: (tok) => {
+      writeChunk({ agent: "Profiler", chunk: tok, streamStart: isFirst });
+      isFirst = false;
+    },
+  });
 
-  for (const char of raw) {
-    writeChunk({ agent: "Profiler", chunk: char, done: false });
-  }
-  writeChunk({ agent: "Profiler", chunk: "", done: true });
+  writeChunk({ agent: "Profiler", done: true });
 
   return parseJSON(raw);
 }

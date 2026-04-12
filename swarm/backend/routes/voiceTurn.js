@@ -6,8 +6,12 @@ export default async function handler(req, res) {
   res.setHeader("Connection", "keep-alive");
   res.setHeader("X-Accel-Buffering", "no");
   res.flushHeaders();
+  res.socket?.setNoDelay(true);
 
-  const writeChunk = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+  const writeChunk = (data) => {
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+    if (typeof res.flush === "function") res.flush();
+  };
 
   const { transcript, sessionContext, history, currentQuestionIndex } = req.body;
 
@@ -19,16 +23,11 @@ export default async function handler(req, res) {
       currentQuestionIndex: currentQuestionIndex || 0,
     });
 
-    // Stream the persona's line character by character
-    for (const char of result.line) {
-      writeChunk({ persona: result.nextPersona, voiceId: result.voiceId, chunk: char, done: false });
-      await new Promise((r) => setTimeout(r, 15));
-    }
-
+    // Send the full line in one chunk (audio can't play until full text arrives anyway)
     writeChunk({
       persona: result.nextPersona,
       voiceId: result.voiceId,
-      chunk: "",
+      chunk: result.line,
       done: true,
       sessionComplete: result.sessionComplete,
       sessionAdvancing: result.sessionAdvancing,

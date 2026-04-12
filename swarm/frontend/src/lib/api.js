@@ -6,11 +6,12 @@ function buildHeaders(token) {
   return headers;
 }
 
-export async function streamFetch(url, body, onChunk, token) {
+export async function streamFetch(url, body, onChunk, token, signal) {
   const response = await fetch(`${BASE_URL}${url}`, {
     method: "POST",
     headers: buildHeaders(token),
     body: JSON.stringify(body),
+    signal,
   });
   if (response.status === 401) {
     localStorage.removeItem("google_id_token");
@@ -31,8 +32,10 @@ export async function streamFetch(url, body, onChunk, token) {
     buffer = lines.pop();
     for (const line of lines) {
       if (line.startsWith("data: ")) {
-        try { onChunk(JSON.parse(line.slice(6))); }
-        catch { /* ignore malformed chunks */ }
+        const raw = line.slice(6).trim();
+        if (!raw || raw === "[DONE]") continue;
+        try { onChunk(JSON.parse(raw)); }
+        catch (e) { console.error("[sse parse error]", e, "raw:", raw.slice(0, 200)); }
       }
     }
   }
@@ -44,6 +47,19 @@ export async function postJSON(url, body, token) {
     headers: buildHeaders(token),
     body: JSON.stringify(body),
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.json();
+}
+
+export async function getJSON(url, token) {
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(`${BASE_URL}${url}`, { headers });
+  if (response.status === 401) {
+    localStorage.removeItem("google_id_token");
+    window.location.reload();
+    throw new Error("Session expired");
+  }
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return response.json();
 }

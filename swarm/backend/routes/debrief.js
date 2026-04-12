@@ -1,4 +1,5 @@
 import { callLLM, parseJSON } from "../lib/llm.js";
+import { getPrefs, buildDebriefStyleHint } from "../lib/prefsStore.js";
 
 const SYSTEM_PROMPT = `You are the Debrief Analyzer in Swarm. You run after the user completes their practice session.
 
@@ -49,6 +50,10 @@ Rules:
 export default async function handler(req, res) {
   const { fullTranscript, situation, agentResearch, sessionPlan } = req.body;
 
+  // Load user debrief style preference
+  const userPrefs = req.userId ? getPrefs(req.userId) : null;
+  const debriefHint = buildDebriefStyleHint(userPrefs);
+
   try {
     const userPrompt = `ORIGINAL SITUATION:
 "${situation}"
@@ -63,7 +68,8 @@ ${JSON.stringify(sessionPlan?.questions?.map((q) => q.text) || [])}
 COMPLETE SESSION TRANSCRIPT:
 ${fullTranscript.map((t) => `[${t.speaker}]: ${t.text}`).join("\n")}
 
-Analyze this session and produce your Debrief Analyzer output JSON. Be honest. Be specific. Quote the transcript directly for best/worst moments.`;
+Analyze this session and produce your Debrief Analyzer output JSON. Be honest. Be specific. Quote the transcript directly for best/worst moments.
+${debriefHint ? `\n${debriefHint}` : ""}`;
 
     const raw = await callLLM({ systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 2000 });
     const result = parseJSON(raw);

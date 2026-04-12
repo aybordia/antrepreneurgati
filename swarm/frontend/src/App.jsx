@@ -5,9 +5,12 @@ import MissionControl from "./components/MissionControl";
 import VoiceSession from "./components/VoiceSession";
 import Debrief from "./components/Debrief";
 import AskSwarm from "./components/AskSwarm";
+import Dashboard from "./components/Dashboard";
 import SignIn from "./components/SignIn";
+import Cursor from "./components/Cursor";
 
 const SCREENS = {
+  DASHBOARD:       "DASHBOARD",
   SITUATION_INPUT: "SITUATION_INPUT",
   MISSION_CONTROL: "MISSION_CONTROL",
   VOICE_SESSION:   "VOICE_SESSION",
@@ -34,7 +37,7 @@ function decodeJwt(jwt) {
 export default function App() {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(() => localStorage.getItem("google_id_token"));
-  const [screen, setScreen] = useState(SCREENS.SITUATION_INPUT);
+  const [screen, setScreen] = useState(SCREENS.DASHBOARD);
   const [situation, setSituation] = useState("");
   const [sessionData, setSessionData] = useState(null);
   const [sessionResult, setSessionResult] = useState(null);
@@ -93,6 +96,8 @@ export default function App() {
     return token;
   }, [token]);
 
+  const handleNewSession = () => setScreen(SCREENS.SITUATION_INPUT);
+
   const handleLaunch = (sit) => {
     setSituation(sit);
     setScreen(SCREENS.MISSION_CONTROL);
@@ -121,9 +126,33 @@ export default function App() {
     setScreen(SCREENS.SITUATION_INPUT);
   };
 
+  const handleBackToDashboard = () => {
+    setScreen(SCREENS.DASHBOARD);
+  };
+
   return (
-    <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden", background: "#0C0C0F" }}>
-      {user && (
+    <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden", background: "#04040A" }}>
+      <Cursor />
+      {user && screen !== SCREENS.DASHBOARD && (
+        <button
+          onClick={handleBackToDashboard}
+          style={{
+            position: "absolute", left: 20, top: 20, zIndex: 10,
+            padding: "6px 14px", borderRadius: "8px",
+            border: "1px solid rgba(255,255,255,0.1)",
+            background: "rgba(255,255,255,0.04)",
+            color: "var(--muted)", cursor: "pointer",
+            fontFamily: "var(--mono)", fontSize: "11px",
+            letterSpacing: "0.04em", transition: "all 0.18s",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; e.currentTarget.style.color = "var(--text)"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = "var(--muted)"; }}
+        >
+          ← Home
+        </button>
+      )}
+
+      {user && screen !== SCREENS.DASHBOARD && (
         <div style={{ position: "absolute", right: 20, top: 20, zIndex: 10, display: "flex", alignItems: "center", gap: "10px" }}>
           {user.picture && (
             <img src={user.picture} alt="" width={28} height={28} referrerPolicy="no-referrer"
@@ -153,8 +182,11 @@ export default function App() {
         <SignIn googleReady={googleReady} onCredential={handleCredentialResponse} />
       ) : (
         <AnimatePresence mode="wait">
+          {screen === SCREENS.DASHBOARD && (
+            <Dashboard key="dashboard" user={user} onNewSession={handleNewSession} getIdToken={getIdToken} />
+          )}
           {screen === SCREENS.SITUATION_INPUT && (
-            <SituationInput key="input" onLaunch={handleLaunch} initialSituation={situation} />
+            <SituationInput key="input" onLaunch={handleLaunch} initialSituation={situation} onBack={handleBackToDashboard} />
           )}
           {screen === SCREENS.MISSION_CONTROL && (
             <MissionControl key="mission" situation={situation} onBeginSession={handleBeginSession} getIdToken={getIdToken} />

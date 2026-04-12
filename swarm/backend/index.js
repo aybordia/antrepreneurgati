@@ -8,6 +8,8 @@ import voiceTurn from "./routes/voiceTurn.js";
 import debrief from "./routes/debrief.js";
 import querySession from "./routes/querySession.js";
 import askSwarm from "./routes/askSwarm.js";
+import { listSessions, saveSessionRoute, getSessionRoute } from "./routes/sessions.js";
+import feedback from "./routes/feedback.js";
 import { verifyToken } from "./googleAuth.js";
 
 const app = express();
@@ -39,6 +41,10 @@ app.post("/api/voice-turn", verifyToken, voiceTurn);
 app.post("/api/debrief", verifyToken, debrief);
 app.post("/api/query-session", verifyToken, querySession);
 app.post("/api/ask-swarm", verifyToken, askSwarm);
+app.get("/api/sessions", verifyToken, listSessions);
+app.post("/api/sessions/save", verifyToken, saveSessionRoute);
+app.get("/api/sessions/:id", verifyToken, getSessionRoute);
+app.post("/api/feedback", verifyToken, feedback);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Swarm backend running on :${PORT}`));

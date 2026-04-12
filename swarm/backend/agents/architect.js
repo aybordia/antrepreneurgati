@@ -1,5 +1,5 @@
 // PROMPT VERSION: 1.0
-import { callLLM, parseJSON } from "../lib/llm.js";
+import { callLLMStream, parseJSON } from "../lib/llm.js";
 import { VOICE_IDS, resolveVoiceId } from "../lib/elevenlabs.js";
 
 const SYSTEM_PROMPT = `You are the Architect agent in a multi-agent AI system called Swarm. You run after all other agents have completed.
@@ -51,24 +51,53 @@ Rules:
 - Map the VoiceDesigner's elevenLabsVoiceTarget name to the ID above
 - Do not include any text outside the JSON object. No preamble, no explanation.`;
 
-export async function runArchitect({ situation, researcherOutput, profilerOutput, weakSpotOutput, voiceDesignerOutput }, writeChunk) {
+export async function runArchitect({ situation, researcherOutput, profilerOutput, weakSpotOutput, voiceDesignerOutput, styleHint }, writeChunk) {
+  writeChunk({ agent: "Architect", chunk: "Architecting your personalised session plan…", thinking: true });
+
+  // Compress inputs to stay within Groq 6000 TPM — only pass fields Architect actually needs
+  const compressedInputs = {
+    researcher: {
+      interviewerPatterns: researcherOutput.interviewerPatterns,
+      successPatterns: researcherOutput.successPatterns,
+      redFlags: researcherOutput.redFlags,
+      trendingTopics: researcherOutput.trendingTopics,
+      keyFindings: (researcherOutput.keyFindings || []).slice(0, 3).map(f => f.insight),
+    },
+    profiler: {
+      personaType: profilerOutput.personaType,
+      interviewerPersonas: profilerOutput.interviewerPersonas,
+      pushbackStyle: profilerOutput.pushbackStyle,
+    },
+    weakSpot: {
+      diagnosedWeakness: weakSpotOutput.diagnosedWeakness,
+      failureMechanism: weakSpotOutput.failureMechanism,
+      responseFrameworks: (weakSpotOutput.responseFrameworks || []).map(f => ({ name: f.name, template: f.template })),
+      warningSignals: weakSpotOutput.warningSignals,
+      recoveryMove: weakSpotOutput.recoveryMove,
+    },
+    voiceDesigner: {
+      voiceSpecs: (voiceDesignerOutput.voiceSpecs || []).map(v => ({
+        personaName: v.personaName,
+        elevenLabsVoiceTarget: v.voiceProfile?.elevenLabsVoiceTarget,
+      })),
+    },
+  };
+
   const userPrompt = `The user's situation: "${situation}"
 
-RESEARCHER OUTPUT:
-${JSON.stringify(researcherOutput, null, 2)}
+${JSON.stringify(compressedInputs)}
+${styleHint ? `\n${styleHint}` : ""}
 
-PROFILER OUTPUT:
-${JSON.stringify(profilerOutput, null, 2)}
+Design the optimal session plan. Make questions specific to the research. Map each elevenLabsVoiceTarget to a real voice ID from the VOICE_IDS map in the rules.`;
 
-WEAK SPOT FINDER OUTPUT:
-${JSON.stringify(weakSpotOutput, null, 2)}
-
-VOICE DESIGNER OUTPUT:
-${JSON.stringify(voiceDesignerOutput, null, 2)}
-
-Design the optimal session plan. Use the research to make questions specific. Use the profiler to make personas feel real. Use the weak spot finder to target the user's gap with precision. Map each VoiceDesigner elevenLabsVoiceTarget to a real voice ID from the VOICE_IDS map in the rules.`;
-
-  const raw = await callLLM({ systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 2000 });
+  let isFirst = true;
+  const raw = await callLLMStream({
+    systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 4096,
+    onChunk: (tok) => {
+      writeChunk({ agent: "Architect", chunk: tok, streamStart: isFirst });
+      isFirst = false;
+    },
+  });
 
   const parsed = parseJSON(raw);
 
@@ -83,10 +112,7 @@ Design the optimal session plan. Use the research to make questions specific. Us
     voiceId: Object.values(VOICE_IDS).includes(p.voiceId) ? p.voiceId : resolveVoiceId(p.voiceId),
   }));
 
-  for (const char of raw) {
-    writeChunk({ agent: "Architect", chunk: char, done: false });
-  }
-  writeChunk({ agent: "Architect", chunk: "", done: true, sessionData: parsed });
+  writeChunk({ agent: "Architect", done: true, sessionData: parsed });
 
   return parsed;
 }

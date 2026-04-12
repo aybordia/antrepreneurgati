@@ -1,5 +1,5 @@
 // PROMPT VERSION: 1.0
-import { callLLM, parseJSON } from "../lib/llm.js";
+import { callLLMStream, parseJSON } from "../lib/llm.js";
 
 const SYSTEM_PROMPT = `You are the Weak Spot Finder agent in a multi-agent AI system called Swarm.
 
@@ -34,6 +34,8 @@ Rules:
 - Do not include any text outside the JSON object. No preamble, no explanation.`;
 
 export async function runWeakSpotFinder({ situation }, writeChunk) {
+  writeChunk({ agent: "WeakSpotFinder", chunk: "Diagnosing your weak spots with surgical precision…", thinking: true });
+
   const extractedGap = situation.includes("—") ? situation.split("—")[1].trim() : situation;
 
   const userPrompt = `The user's situation: "${situation}"
@@ -43,12 +45,16 @@ Diagnose this weakness precisely and build surgical counter-strategies.
 
 Do not give general interview advice. This is about their specific gap in their specific context. The responseFramework examples must reference their actual situation — not generic placeholders.`;
 
-  const raw = await callLLM({ systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 2048 });
+  let isFirst = true;
+  const raw = await callLLMStream({
+    systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 3000,
+    onChunk: (tok) => {
+      writeChunk({ agent: "WeakSpotFinder", chunk: tok, streamStart: isFirst });
+      isFirst = false;
+    },
+  });
 
-  for (const char of raw) {
-    writeChunk({ agent: "WeakSpotFinder", chunk: char, done: false });
-  }
-  writeChunk({ agent: "WeakSpotFinder", chunk: "", done: true });
+  writeChunk({ agent: "WeakSpotFinder", done: true });
 
   return parseJSON(raw);
 }

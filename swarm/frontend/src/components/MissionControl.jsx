@@ -3,15 +3,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { streamFetch } from "../lib/api";
 
 const AGENTS = [
-  { name: "Researcher",     color: "#7B6CFF", label: "Researcher",      icon: "◎" },
-  { name: "Profiler",       color: "#6ee7b7", label: "Profiler",         icon: "◉" },
-  { name: "WeakSpotFinder", color: "#c8f064", label: "Weak Spots",       icon: "◈" },
-  { name: "VoiceDesigner",  color: "#FF6B6B", label: "Voice Designer",   icon: "◐" },
-  { name: "Architect",      color: "#F5A623", label: "Architect",        icon: "◑" },
+  { name: "Researcher",     color: "#7B6CFF", label: "Researcher",    icon: "◎" },
+  { name: "Profiler",       color: "#4DDDAA", label: "Profiler",       icon: "◉" },
+  { name: "WeakSpotFinder", color: "#c8f064", label: "Weak Spots",     icon: "◈" },
+  { name: "VoiceDesigner",  color: "#FF6B6B", label: "Voice Designer", icon: "◐" },
+  { name: "Architect",      color: "#F5A623", label: "Architect",      icon: "◑" },
 ];
 
 const PHASE = {
-  0:   "Initialising agents...",
+  0:   "Initialising swarm...",
   20:  "Researching your scenario...",
   40:  "Profiling your panel...",
   60:  "Targeting weak spots...",
@@ -29,20 +29,163 @@ const sv = {
   exit:    { opacity: 0, scale: 1.02, filter: "blur(8px)", transition: { duration: 0.4 } },
 };
 
-// SVG connector between agent orbs
-function OrbConnector({ from, to, active }) {
-  if (!from || !to || !active) return null;
-  const midX = (from.x + to.x) / 2;
-  const midY = (from.y + to.y) / 2 - 15;
+/* ── Agent orb with animated rings ── */
+function AgentOrb({ agent, state }) {
+  const isActive = state === "active";
+  const isDone = state === "done";
+
   return (
-    <path
-      d={`M ${from.x} ${from.y} Q ${midX} ${midY} ${to.x} ${to.y}`}
-      fill="none"
-      stroke="rgba(123,108,255,0.25)"
-      strokeWidth="1"
-      strokeDasharray="4 4"
-    />
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
+      <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {/* Outer pulse ring */}
+        {isActive && (
+          <motion.div
+            animate={{ scale: [1, 1.5, 1], opacity: [0.4, 0, 0.4] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            style={{
+              position: "absolute",
+              width: 70, height: 70, borderRadius: "50%",
+              border: `1px solid ${agent.color}`,
+              pointerEvents: "none",
+            }}
+          />
+        )}
+        {/* Mid ring */}
+        {(isActive || isDone) && (
+          <motion.div
+            animate={isActive ? { scale: [1, 1.2, 1], opacity: [0.6, 0.2, 0.6] } : {}}
+            transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+            style={{
+              position: "absolute",
+              width: 54, height: 54, borderRadius: "50%",
+              border: `1px solid ${agent.color}55`,
+              pointerEvents: "none",
+            }}
+          />
+        )}
+
+        {/* Core orb */}
+        <motion.div
+          animate={{
+            width: isActive ? 44 : 36,
+            height: isActive ? 44 : 36,
+            boxShadow: isDone
+              ? `0 0 20px ${agent.color}44, 0 0 40px ${agent.color}18`
+              : isActive
+              ? `0 0 30px ${agent.color}66, 0 0 60px ${agent.color}22`
+              : "none",
+          }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          style={{
+            borderRadius: "50%",
+            background:
+              state === "idle" || state === "waiting"
+                ? "rgba(255,255,255,0.04)"
+                : `radial-gradient(circle at 35% 30%, ${agent.color}ff 0%, ${agent.color}55 100%)`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: "15px",
+            border: `1px solid ${state === "idle" || state === "waiting" ? "rgba(255,255,255,0.06)" : `${agent.color}44`}`,
+            transition: "background 0.4s",
+          }}
+        >
+          <span style={{
+            color: state === "idle" || state === "waiting" ? "rgba(255,255,255,0.15)" : "white",
+            fontSize: "13px",
+          }}>
+            {agent.icon}
+          </span>
+        </motion.div>
+      </div>
+
+      <div style={{
+        fontFamily: "var(--mono)", fontSize: "9px",
+        color: isDone ? agent.color : "var(--muted)",
+        letterSpacing: "0.1em", textTransform: "uppercase", textAlign: "center",
+        transition: "color 0.4s",
+      }}>
+        {agent.label}
+      </div>
+      <div style={{
+        fontFamily: "var(--mono)", fontSize: "9px",
+        color: isDone ? "var(--success)" : isActive ? agent.color : "rgba(106,103,128,0.4)",
+        transition: "color 0.4s",
+      }}>
+        {isDone ? "✓" : isActive ? "●" : state === "waiting" ? "…" : "○"}
+      </div>
+    </div>
   );
+}
+
+/* ── Agent card ── */
+function AgentCard({ agent, output, done, waiting, cardRef }) {
+  const hasOutput = output?.length > 0;
+  const state = done ? "done" : waiting ? "waiting" : hasOutput ? "active" : "idle";
+
+  return (
+    <div style={{
+      position: "relative",
+      background: done
+        ? `rgba(${hexToRgb(agent.color)}, 0.03)`
+        : hasOutput
+        ? "rgba(255,255,255,0.025)"
+        : "rgba(255,255,255,0.018)",
+      border: `1px solid ${done ? `${agent.color}30` : hasOutput ? `${agent.color}14` : "rgba(255,255,255,0.05)"}`,
+      borderRadius: "14px",
+      padding: "14px 16px",
+      display: "flex", flexDirection: "column", gap: "9px",
+      minHeight: "94px", overflow: "hidden",
+      transition: "background 0.4s, border-color 0.4s",
+    }}>
+      {/* Top glow when active */}
+      {hasOutput && !done && (
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, height: "1px",
+          background: `linear-gradient(90deg, transparent, ${agent.color}88, transparent)`,
+        }} />
+      )}
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontFamily: "var(--mono)", fontSize: "10px", color: agent.color, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+          {agent.label}
+        </span>
+        <span style={{
+          fontFamily: "var(--mono)", fontSize: "9px",
+          color: state === "done" ? "var(--success)" : state === "active" ? agent.color : "var(--muted)",
+          display: "flex", alignItems: "center", gap: "5px",
+        }}>
+          {state === "done"
+            ? "✓ Done"
+            : state === "waiting"
+            ? "Waiting…"
+            : state === "active"
+            ? <><span className="dot" style={{ background: agent.color, width: "4px", height: "4px" }} />Active</>
+            : "Standby"}
+        </span>
+      </div>
+
+      <div
+        ref={cardRef}
+        style={{
+          fontFamily: "var(--mono)", fontSize: "10px", color: "var(--muted)",
+          lineHeight: 1.65, maxHeight: "60px", overflowY: "auto",
+          scrollbarWidth: "none", wordBreak: "break-word", flex: 1,
+        }}
+      >
+        {state === "waiting"
+          ? <span style={{ opacity: 0.35, fontStyle: "italic" }}>Awaiting peers...</span>
+          : !hasOutput
+          ? <span style={{ opacity: 0.22 }}>Standby</span>
+          : output}
+      </div>
+    </div>
+  );
+}
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `${r},${g},${b}`;
 }
 
 export default function MissionControl({ situation, onBeginSession, getIdToken }) {
@@ -51,9 +194,10 @@ export default function MissionControl({ situation, onBeginSession, getIdToken }
   const [sessionData, setSessionData] = useState(null);
   const [error, setError] = useState(null);
   const cardRefs = useRef({});
-  const orbRefs = useRef({});
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const start = async () => {
       setOutputs({});
       setDone({});
@@ -63,20 +207,32 @@ export default function MissionControl({ situation, onBeginSession, getIdToken }
       try {
         const token = await getIdToken();
         await streamFetch("/api/start-session", { situation }, chunk => {
+          if (controller.signal.aborted) return;
+          if (chunk.heartbeat) return;
           if (chunk.error) { setError(chunk.error); return; }
           if (!chunk.agent) return;
+          if (chunk.thinking) {
+            setOutputs(p => ({ ...p, [chunk.agent]: chunk.chunk }));
+            return;
+          }
+          if (chunk.streamStart) {
+            setOutputs(p => ({ ...p, [chunk.agent]: chunk.chunk }));
+            return;
+          }
           if (chunk.chunk) setOutputs(p => ({ ...p, [chunk.agent]: (p[chunk.agent] || "") + chunk.chunk }));
           if (chunk.done) {
             setDone(p => ({ ...p, [chunk.agent]: true }));
             if (chunk.sessionData) setSessionData(chunk.sessionData);
           }
-        }, token);
+        }, token, controller.signal);
       } catch (e) {
+        if (e.name === "AbortError") return;
         setError(e.message);
       }
     };
 
     start();
+    return () => controller.abort();
   }, [situation, getIdToken]);
 
   useEffect(() => {
@@ -84,7 +240,8 @@ export default function MissionControl({ situation, onBeginSession, getIdToken }
   }, [outputs]);
 
   const doneCount = Object.keys(done).length;
-  const progress = (doneCount / 5) * 100;
+  const activeCount = AGENTS.filter(a => outputs[a.name]?.length > 0 && !done[a.name]).length;
+  const progress = Math.min(((doneCount + activeCount * 0.5) / 5) * 100, 99);
   const allDone = doneCount === 5;
 
   const getState = (name) => {
@@ -95,62 +252,78 @@ export default function MissionControl({ situation, onBeginSession, getIdToken }
   };
 
   return (
-    <motion.div className="screen" variants={sv} initial="initial" animate="animate" exit="exit">
+    <motion.div className="screen" variants={sv} initial="initial" animate="animate" exit="exit"
+      style={{ background: "var(--bg)" }}
+    >
       <div className="ambient" />
+      <div className="noise" />
 
-      {/* Subtle grid */}
+      {/* Grid */}
       <div style={{
         position: "fixed", inset: 0, pointerEvents: "none",
-        backgroundImage: "linear-gradient(rgba(123,108,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(123,108,255,0.025) 1px, transparent 1px)",
-        backgroundSize: "48px 48px",
+        backgroundImage:
+          "linear-gradient(rgba(123,108,255,0.022) 1px, transparent 1px), " +
+          "linear-gradient(90deg, rgba(123,108,255,0.022) 1px, transparent 1px)",
+        backgroundSize: "52px 52px",
       }} />
 
       <div style={{
         position: "relative", zIndex: 1,
         height: "100%", display: "flex", flexDirection: "column",
         padding: "28px 28px 24px",
-        maxWidth: "980px", margin: "0 auto", width: "100%", gap: "18px",
+        maxWidth: "1000px", margin: "0 auto", width: "100%", gap: "18px",
       }}>
 
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
-            <div style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--muted)", letterSpacing: "0.18em", marginBottom: "6px" }}>
+            <div style={{ fontFamily: "var(--mono)", fontSize: "10px", color: "var(--muted)", letterSpacing: "0.2em", marginBottom: "8px" }}>
               PHASE 2 OF 4
             </div>
-            <div style={{ fontFamily: "var(--display)", fontSize: "28px", fontWeight: 400 }}>Mission Control</div>
-            <div style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--muted)", marginTop: "6px", maxWidth: "400px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <h1 style={{ fontFamily: "var(--display)", fontSize: "clamp(22px, 3.5vw, 32px)", fontWeight: 300, lineHeight: 1.2, marginBottom: "6px" }}>
+              Mission Control
+            </h1>
+            <div style={{
+              fontFamily: "var(--mono)", fontSize: "10px", color: "var(--muted)",
+              maxWidth: "420px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              letterSpacing: "0.03em",
+            }}>
               {situation}
             </div>
           </div>
+
           <motion.div
-            animate={{ opacity: allDone ? 1 : 0.8 }}
+            animate={{ opacity: 1 }}
             style={{
               display: "flex", alignItems: "center", gap: "8px",
-              background: allDone ? "rgba(200,240,100,0.08)" : "rgba(110,231,183,0.08)",
-              border: `1px solid ${allDone ? "rgba(200,240,100,0.2)" : "rgba(110,231,183,0.18)"}`,
+              background: allDone ? "rgba(200,240,100,0.07)" : "rgba(123,108,255,0.07)",
+              border: `1px solid ${allDone ? "rgba(200,240,100,0.2)" : "rgba(123,108,255,0.2)"}`,
               borderRadius: "999px", padding: "7px 16px",
-              transition: "all 0.4s",
+              transition: "all 0.5s",
             }}
           >
             <span className="dot" style={{
-              background: allDone ? "var(--success)" : "var(--teal)",
+              background: allDone ? "var(--success)" : "var(--primary)",
               animation: allDone ? "none" : undefined,
             }} />
-            <span style={{ fontFamily: "var(--mono)", fontSize: "11px", color: allDone ? "var(--success)" : "var(--teal)", letterSpacing: "0.06em" }}>
-              {allDone ? "Complete" : "Swarm Active"}
+            <span style={{
+              fontFamily: "var(--mono)", fontSize: "10px",
+              color: allDone ? "var(--success)" : "var(--primary)",
+              letterSpacing: "0.08em",
+            }}>
+              {allDone ? "COMPLETE" : "SWARM ACTIVE"}
             </span>
           </motion.div>
         </div>
 
-        {/* Error banner */}
+        {/* Error */}
         <AnimatePresence>
           {error && (
             <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               style={{
                 padding: "14px 18px", borderRadius: "12px",
-                background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)",
-                fontFamily: "var(--mono)", fontSize: "12px", color: "var(--coral)",
+                background: "rgba(255,107,107,0.07)", border: "1px solid rgba(255,107,107,0.18)",
+                fontFamily: "var(--mono)", fontSize: "11px", color: "var(--coral)",
               }}
             >
               Error: {error}
@@ -158,102 +331,86 @@ export default function MissionControl({ situation, onBeginSession, getIdToken }
           )}
         </AnimatePresence>
 
-        {/* Agent orb row */}
-        <div style={{ display: "flex", justifyContent: "center", gap: "clamp(16px,3vw,40px)", padding: "10px 0" }}>
-          {AGENTS.map((a, i) => {
-            const state = getState(a.name);
-            return (
-              <div key={a.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
-                <div style={{ position: "relative" }} ref={el => orbRefs.current[a.name] = el}>
-                  {/* Pulse ring when active */}
-                  {state === "active" && (
-                    <div style={{
-                      position: "absolute", inset: "-10px", borderRadius: "50%",
-                      border: `1px solid ${a.color}55`,
-                      animation: "orbPulse 1.8s ease-in-out infinite",
-                    }} />
-                  )}
-                  {/* Outer done ring */}
-                  {state === "done" && (
-                    <div style={{
-                      position: "absolute", inset: "-6px", borderRadius: "50%",
-                      border: `1px solid ${a.color}33`,
-                    }} />
-                  )}
-                  <motion.div
-                    animate={{
-                      width: state === "active" ? 54 : 44,
-                      height: state === "active" ? 54 : 44,
-                    }}
-                    transition={{ duration: 0.3 }}
-                    style={{
-                      borderRadius: "50%",
-                      background: state === "idle" || state === "waiting"
-                        ? "rgba(255,255,255,0.05)"
-                        : `radial-gradient(circle at 35% 30%, ${a.color}ee, ${a.color}44)`,
-                      boxShadow: state === "done"
-                        ? `0 0 18px ${a.color}33, 0 0 40px ${a.color}11`
-                        : state === "active"
-                        ? `0 0 28px ${a.color}55, 0 0 56px ${a.color}1a`
-                        : "none",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: "18px",
-                      transition: "background 0.4s, box-shadow 0.4s",
-                    }}
-                  >
-                    <span style={{ color: state === "idle" || state === "waiting" ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.92)", lineHeight: 1 }}>
-                      {a.icon}
-                    </span>
-                  </motion.div>
-                </div>
-
-                <div style={{ fontFamily: "var(--mono)", fontSize: "9px", color: state === "done" ? a.color : "var(--muted)", letterSpacing: "0.1em", textTransform: "uppercase", textAlign: "center" }}>
-                  {a.label}
-                </div>
-                <div style={{ fontFamily: "var(--mono)", fontSize: "9px", color: state === "done" ? "var(--success)" : state === "active" ? a.color : "var(--muted)", opacity: 0.85 }}>
-                  {state === "done" ? "✓" : state === "active" ? "●" : state === "waiting" ? "…" : "○"}
-                </div>
-              </div>
-            );
-          })}
+        {/* Agent orbs */}
+        <div style={{
+          display: "flex", justifyContent: "center",
+          gap: "clamp(20px, 4vw, 56px)",
+          padding: "12px 0",
+        }}>
+          {AGENTS.map((a) => (
+            <AgentOrb key={a.name} agent={a} state={getState(a.name)} />
+          ))}
         </div>
 
-        {/* Agent cards */}
-        <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "10px", minHeight: 0 }}>
+        {/* Connection line */}
+        <div style={{
+          position: "relative", height: "1px",
+          background: "rgba(255,255,255,0.04)",
+          marginTop: "-6px",
+        }}>
+          <motion.div
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            style={{
+              height: "100%",
+              background: "linear-gradient(90deg, #7B6CFF, #4DDDAA, #c8f064)",
+              boxShadow: "0 0 8px rgba(123,108,255,0.5)",
+            }}
+          />
+        </div>
+
+        {/* Agent cards — 3 top, 2 bottom */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "10px" }}>
           {AGENTS.slice(0, 3).map(a => (
-            <AgentCard key={a.name} agent={a} output={outputs[a.name]} done={done[a.name]} waiting={false} cardRef={el => cardRefs.current[a.name] = el} />
+            <AgentCard
+              key={a.name} agent={a}
+              output={outputs[a.name]} done={done[a.name]} waiting={false}
+              cardRef={el => cardRefs.current[a.name] = el}
+            />
           ))}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
           {AGENTS.slice(3).map(a => (
-            <AgentCard key={a.name} agent={a} output={outputs[a.name]} done={done[a.name]} waiting={a.name === "Architect" && doneCount < 4} cardRef={el => cardRefs.current[a.name] = el} />
+            <AgentCard
+              key={a.name} agent={a}
+              output={outputs[a.name]} done={done[a.name]}
+              waiting={a.name === "Architect" && doneCount < 4}
+              cardRef={el => cardRefs.current[a.name] = el}
+            />
           ))}
         </div>
 
-        {/* Progress bar */}
+        {/* Progress bar + launch */}
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--muted)" }}>{phaseLabel(progress)}</span>
-            <span style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--primary)" }}>{Math.round(progress)}%</span>
+            <span style={{ fontFamily: "var(--mono)", fontSize: "10px", color: "var(--muted)", letterSpacing: "0.06em" }}>
+              {phaseLabel(progress)}
+            </span>
+            <span style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--primary)", letterSpacing: "0.04em" }}>
+              {Math.round(progress)}%
+            </span>
           </div>
-          <div style={{ height: "3px", borderRadius: "2px", background: "rgba(255,255,255,0.05)", position: "relative", overflow: "hidden" }}>
+
+          <div style={{
+            height: "3px", borderRadius: "2px",
+            background: "rgba(255,255,255,0.04)",
+            position: "relative", overflow: "hidden",
+          }}>
             <motion.div
               animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
+              transition={{ duration: 0.7, ease: "easeOut" }}
               style={{
                 height: "100%", borderRadius: "2px",
-                background: "linear-gradient(90deg, #7B6CFF, #6ee7b7, #c8f064)",
+                background: "linear-gradient(90deg, #7B6CFF, #4DDDAA, #c8f064)",
                 backgroundSize: "200% 100%",
                 animation: "gradientShift 3s ease infinite",
               }}
             />
-            {/* Shimmer overlay */}
             {!allDone && (
               <div style={{
                 position: "absolute", inset: 0,
-                background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)",
+                background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)",
                 animation: "shimmer 2s ease-in-out infinite",
-                backgroundSize: "200% 100%",
               }} />
             )}
           </div>
@@ -263,7 +420,9 @@ export default function MissionControl({ situation, onBeginSession, getIdToken }
               <motion.button
                 initial={{ opacity: 0, y: 8, scale: 0.97 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+                whileHover={{ scale: 1.015 }}
+                whileTap={{ scale: 0.985 }}
                 className="btn btn-primary"
                 onClick={() => onBeginSession(sessionData)}
                 style={{ width: "100%" }}
@@ -275,50 +434,5 @@ export default function MissionControl({ situation, onBeginSession, getIdToken }
         </div>
       </div>
     </motion.div>
-  );
-}
-
-function AgentCard({ agent, output, done, waiting, cardRef }) {
-  const hasOutput = output?.length > 0;
-  const state = done ? "done" : waiting ? "waiting" : hasOutput ? "active" : "idle";
-
-  return (
-    <div className="card" style={{
-      padding: "13px 15px",
-      display: "flex", flexDirection: "column", gap: "8px",
-      borderColor: done ? `${agent.color}40` : hasOutput ? `${agent.color}18` : "rgba(255,255,255,0.06)",
-      minHeight: "90px",
-      transition: "border-color 0.4s, box-shadow 0.4s",
-      boxShadow: done ? `0 0 0 1px ${agent.color}10, inset 0 0 24px ${agent.color}05` : "none",
-    }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontFamily: "var(--mono)", fontSize: "10px", color: agent.color, letterSpacing: "0.1em", textTransform: "uppercase" }}>
-          {agent.label}
-        </span>
-        <span style={{ fontFamily: "var(--mono)", fontSize: "10px", display: "flex", alignItems: "center", gap: "4px", color: state === "done" ? "var(--success)" : state === "active" ? agent.color : "var(--muted)" }}>
-          {state === "done"
-            ? "✓ Done"
-            : state === "waiting"
-            ? "Waiting…"
-            : state === "active"
-            ? <><span className="dot" style={{ background: agent.color, width: "5px", height: "5px" }} />Active</>
-            : "Idle"}
-        </span>
-      </div>
-      <div
-        ref={cardRef}
-        style={{
-          fontFamily: "var(--mono)", fontSize: "10px", color: "var(--muted)",
-          lineHeight: 1.65, maxHeight: "64px", overflowY: "auto",
-          scrollbarWidth: "none", wordBreak: "break-word", flex: 1,
-        }}
-      >
-        {state === "waiting"
-          ? <span style={{ opacity: 0.4, fontStyle: "italic" }}>Waiting for peers to complete...</span>
-          : !hasOutput
-          ? <span style={{ opacity: 0.28 }}>Standby</span>
-          : output}
-      </div>
-    </div>
   );
 }
