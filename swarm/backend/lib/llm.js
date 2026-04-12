@@ -1,14 +1,28 @@
 // PROMPT VERSION: 1.0
-// Last updated: 2026-04-11 — switched to Groq (llama-3.3-70b-versatile)
 import OpenAI from "openai";
 import { jsonrepair } from "jsonrepair";
 
-// Groq is OpenAI-API-compatible — just swap the base URL and key
-const DEFAULT_MODEL = "llama-3.1-8b-instant";
+// Use Gemini if key is set (1M TPM free), otherwise fall back to Groq (500k TPD)
+function getProviderConfig() {
+  if (process.env.GEMINI_API_KEY) {
+    return {
+      apiKey: process.env.GEMINI_API_KEY,
+      baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+      model: "gemini-2.0-flash",
+    };
+  }
+  return {
+    apiKey: process.env.GROQ_API_KEY,
+    baseURL: "https://api.groq.com/openai/v1",
+    model: "llama-3.1-8b-instant",
+  };
+}
 
-// Groq free tier: 30 RPM — tiny gap is enough; retry handles any burst 429s
+const DEFAULT_MODEL = null; // resolved per-call from getProviderConfig()
+
+// Small gap between calls to avoid burst limits
 let lastCallTime = 0;
-const MIN_INTERVAL_MS = 1000;
+const MIN_INTERVAL_MS = 200;
 
 async function rateLimit() {
   const now = Date.now();
@@ -19,10 +33,8 @@ async function rateLimit() {
 
 // Lazy client — created on first call so dotenv has time to load
 function getClient() {
-  return new OpenAI({
-    apiKey: process.env.GROQ_API_KEY,
-    baseURL: "https://api.groq.com/openai/v1",
-  });
+  const { apiKey, baseURL } = getProviderConfig();
+  return new OpenAI({ apiKey, baseURL });
 }
 
 // Parse retry-after from Groq 429 messages. Returns ms to wait, or null if too long.
@@ -39,13 +51,14 @@ function parseRetryMs(errMessage = "") {
 }
 
 // Non-streaming call — returns full response text
-export async function callLLM({ systemPrompt, userPrompt, model = DEFAULT_MODEL, maxTokens = 2048 }) {
+export async function callLLM({ systemPrompt, userPrompt, model, maxTokens = 2048 }) {
   await rateLimit();
+  const resolvedModel = model || getProviderConfig().model;
   const maxRetries = 2;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const response = await getClient().chat.completions.create({
-        model,
+        model: resolvedModel,
         max_tokens: maxTokens,
         messages: [
           { role: "system", content: systemPrompt },
@@ -70,13 +83,14 @@ export async function callLLM({ systemPrompt, userPrompt, model = DEFAULT_MODEL,
 }
 
 // Streaming call — rate-paced, pipes tokens to onChunk callback, returns full text
-export async function callLLMStream({ systemPrompt, userPrompt, model = DEFAULT_MODEL, maxTokens = 2048, onChunk }) {
+export async function callLLMStream({ systemPrompt, userPrompt, model, maxTokens = 2048, onChunk }) {
   await rateLimit();
+  const resolvedModel = model || getProviderConfig().model;
   const maxRetries = 2;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const stream = await getClient().chat.completions.create({
-        model,
+        model: resolvedModel,
         max_tokens: maxTokens,
         stream: true,
         messages: [
