@@ -43,6 +43,7 @@ export default function App() {
   const [sessionData, setSessionData] = useState(null);
   const [sessionResult, setSessionResult] = useState(null);
   const [debriefResult, setDebriefResult] = useState(null);
+  const [timedMode, setTimedMode] = useState(false);
   const [googleReady, setGoogleReady] = useState(false);
 
   useEffect(() => {
@@ -99,9 +100,10 @@ export default function App() {
 
   const handleNewSession = () => { stopAllAudio(); setScreen(SCREENS.SITUATION_INPUT); };
 
-  const handleLaunch = (sit) => {
+  const handleLaunch = (sit, opts = {}) => {
     stopAllAudio();
     setSituation(sit);
+    setTimedMode(opts.timedMode || false);
     setScreen(SCREENS.MISSION_CONTROL);
   };
 
@@ -199,7 +201,7 @@ export default function App() {
             <MissionControl key="mission" situation={situation} onBeginSession={handleBeginSession} getIdToken={getIdToken} />
           )}
           {screen === SCREENS.VOICE_SESSION && (
-            <VoiceSession key="session" sessionData={sessionData} situation={situation} onEndSession={handleEndSession} getIdToken={getIdToken} />
+            <VoiceSession key="session" sessionData={sessionData} situation={situation} onEndSession={handleEndSession} getIdToken={getIdToken} timedMode={timedMode} />
           )}
           {screen === SCREENS.DEBRIEF && (
             <Debrief key="debrief" sessionResult={sessionResult} situation={situation} onRunAgain={handleRunAgain} onAskSwarm={handleAskSwarm} getIdToken={getIdToken} />

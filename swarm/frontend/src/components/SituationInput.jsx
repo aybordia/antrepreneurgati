@@ -18,6 +18,9 @@ const sv = {
 
 export default function SituationInput({ onLaunch, onBack, initialSituation = "" }) {
   const [situation, setSituation] = useState(initialSituation);
+  const [resumeContext, setResumeContext] = useState("");
+  const [showContext, setShowContext] = useState(false);
+  const [timedMode, setTimedMode] = useState(false);
   const [exIdx, setExIdx] = useState(0);
   const [exVisible, setExVisible] = useState(true);
   const [amplitude, setAmplitude] = useState(0);
@@ -45,6 +48,14 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
   const canLaunch = situation.trim().length >= 10;
   const isActive  = isListening || focused || canLaunch;
 
+  const handleLaunch = () => {
+    if (!canLaunch) return;
+    const finalText = resumeContext.trim()
+      ? `${situation.trim()}\n\n[Candidate background: ${resumeContext.trim()}]`
+      : situation.trim();
+    onLaunch(finalText, { timedMode });
+  };
+
   return (
     <motion.div className="screen" variants={sv} initial="initial" animate="animate" exit="exit"
       style={{ background: "var(--bg)" }}
@@ -70,9 +81,9 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
         position: "relative", zIndex: 10,
         height: "100%", display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
-        padding: "0 24px",
+        padding: "0 24px", overflowY: "auto",
       }}>
-        <div style={{ width: "100%", maxWidth: "540px", display: "flex", flexDirection: "column", gap: "28px" }}>
+        <div style={{ width: "100%", maxWidth: "540px", display: "flex", flexDirection: "column", gap: "22px", paddingTop: "20px", paddingBottom: "40px" }}>
 
           {/* Logo */}
           <motion.div
@@ -122,14 +133,13 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
             </motion.p>
           </motion.div>
 
-          {/* Textarea with animated border */}
+          {/* Main textarea */}
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.34, duration: 0.65 }}
             style={{ position: "relative" }}
           >
-            {/* Animated glow border */}
             <div style={{
               position: "absolute", inset: "-1px",
               borderRadius: "17px",
@@ -155,13 +165,11 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                 "e.g. MIT CS interview in 3 days — I always freeze on 'why MIT'..."
               }
               rows={4}
-              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && canLaunch) { e.preventDefault(); onLaunch(situation.trim()); } }}
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && canLaunch) { e.preventDefault(); handleLaunch(); } }}
               style={{
                 position: "relative", zIndex: 1,
                 width: "100%",
-                background: isListening
-                  ? "rgba(245,166,35,0.03)"
-                  : "rgba(255,255,255,0.025)",
+                background: isListening ? "rgba(245,166,35,0.03)" : "rgba(255,255,255,0.025)",
                 border: "1px solid transparent",
                 borderRadius: "16px",
                 padding: "20px 60px 20px 22px",
@@ -177,7 +185,6 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
               }}
             />
 
-            {/* Status badge */}
             <AnimatePresence>
               {(isListening || isProcessing) && (
                 <motion.div
@@ -205,7 +212,6 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
               )}
             </AnimatePresence>
 
-            {/* Mic button */}
             <button
               onClick={() => isListening ? stop() : start()}
               disabled={isProcessing}
@@ -227,6 +233,98 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
             </button>
           </motion.div>
 
+          {/* Resume context expander */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.38, duration: 0.5 }}
+          >
+            <button
+              onClick={() => setShowContext(v => !v)}
+              style={{
+                display: "flex", alignItems: "center", gap: "8px",
+                background: "none", border: "none",
+                fontFamily: "var(--mono)", fontSize: "11px",
+                color: showContext ? "var(--primary)" : "var(--muted)",
+                letterSpacing: "0.1em",
+                transition: "color 0.2s",
+                paddingLeft: "2px",
+              }}
+            >
+              <span style={{
+                width: 18, height: 18, borderRadius: "5px",
+                background: showContext ? "rgba(123,108,255,0.18)" : "rgba(255,255,255,0.05)",
+                border: `1px solid ${showContext ? "rgba(123,108,255,0.4)" : "rgba(255,255,255,0.1)"}`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "10px", flexShrink: 0,
+                transition: "all 0.2s",
+              }}>
+                {showContext ? "−" : "+"}
+              </span>
+              ADD BACKGROUND CONTEXT
+              <span style={{ opacity: 0.4, fontSize: "10px" }}>résumé, LinkedIn, role notes…</span>
+            </button>
+
+            <AnimatePresence>
+              {showContext && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  style={{ overflow: "hidden" }}
+                >
+                  <div style={{ paddingTop: "10px" }}>
+                    <div style={{
+                      position: "relative",
+                      background: "rgba(255,255,255,0.02)",
+                      border: "1px solid rgba(255,255,255,0.07)",
+                      borderRadius: "14px",
+                      overflow: "hidden",
+                    }}>
+                      {/* Top edge shine */}
+                      <div style={{
+                        position: "absolute", top: 0, left: 0, right: 0, height: "1px",
+                        background: "linear-gradient(90deg, transparent, rgba(123,108,255,0.3), transparent)",
+                      }} />
+                      <textarea
+                        value={resumeContext}
+                        onChange={e => setResumeContext(e.target.value)}
+                        placeholder={"Paste your résumé, LinkedIn summary, or any context that helps the panel tailor questions to you specifically.\n\ne.g. 3 years at Google as PM, MBA from Wharton, interviewing for Series B startup…"}
+                        rows={5}
+                        style={{
+                          width: "100%",
+                          background: "transparent",
+                          border: "none",
+                          padding: "16px 20px",
+                          fontSize: "13px",
+                          fontFamily: "var(--ui)",
+                          fontWeight: 300,
+                          color: "var(--text-2)",
+                          outline: "none",
+                          resize: "none",
+                          lineHeight: 1.7,
+                          display: "block",
+                        }}
+                      />
+                      {resumeContext.trim() && (
+                        <div style={{
+                          display: "flex", alignItems: "center", gap: "6px",
+                          padding: "8px 20px 12px",
+                          fontFamily: "var(--mono)", fontSize: "10px",
+                          color: "var(--teal)", letterSpacing: "0.08em",
+                        }}>
+                          <span className="dot" style={{ background: "var(--teal)", width: "5px", height: "5px" }} />
+                          Context will be shared with the swarm before your session
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+
           {/* Mic error */}
           <AnimatePresence>
             {micError && (
@@ -244,17 +342,57 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
             )}
           </AnimatePresence>
 
+          {/* Options row: timed mode */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            style={{ display: "flex", alignItems: "center", gap: "10px" }}
+          >
+            <button
+              onClick={() => setTimedMode(v => !v)}
+              style={{
+                display: "flex", alignItems: "center", gap: "8px",
+                padding: "7px 14px", borderRadius: "999px",
+                background: timedMode ? "rgba(245,166,35,0.1)" : "rgba(255,255,255,0.03)",
+                border: `1px solid ${timedMode ? "rgba(245,166,35,0.4)" : "rgba(255,255,255,0.08)"}`,
+                fontFamily: "var(--mono)", fontSize: "10px",
+                color: timedMode ? "var(--amber)" : "var(--muted)",
+                letterSpacing: "0.09em",
+                transition: "all 0.22s",
+              }}
+            >
+              <span style={{ fontSize: "13px" }}>⏱</span>
+              TIMED PRESSURE
+              {timedMode && (
+                <span style={{
+                  background: "rgba(245,166,35,0.2)", borderRadius: "999px",
+                  padding: "1px 7px", fontSize: "9px", letterSpacing: "0.05em",
+                }}>60s</span>
+              )}
+            </button>
+            {timedMode && (
+              <motion.span
+                initial={{ opacity: 0, x: -4 }}
+                animate={{ opacity: 1, x: 0 }}
+                style={{ fontFamily: "var(--mono)", fontSize: "10px", color: "var(--muted)", opacity: 0.5 }}
+              >
+                You'll have 60 s to answer each question
+              </motion.span>
+            )}
+          </motion.div>
+
           {/* Launch */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.42, duration: 0.6 }}
+            transition={{ delay: 0.44, duration: 0.6 }}
           >
             <motion.button
               whileHover={canLaunch ? { scale: 1.02 } : {}}
               whileTap={canLaunch ? { scale: 0.98 } : {}}
               className={`btn ${canLaunch ? "btn-primary" : ""}`}
-              onClick={() => canLaunch && onLaunch(situation.trim())}
+              onClick={handleLaunch}
               disabled={!canLaunch}
               style={{
                 opacity: canLaunch ? 1 : 0.28,
@@ -265,11 +403,19 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                 color: "white",
                 letterSpacing: "0.02em",
                 fontSize: "14px",
+                position: "relative", overflow: "hidden",
               }}
             >
+              {canLaunch && (
+                <div style={{
+                  position: "absolute", top: 0, left: 0, right: 0, height: "1px",
+                  background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)",
+                }} />
+              )}
               {canLaunch ? (
                 <span style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   Launch Swarm
+                  {timedMode && <span style={{ opacity: 0.6, fontSize: "12px" }}>· Timed mode on</span>}
                   <span style={{ opacity: 0.7, fontSize: "18px" }}>→</span>
                 </span>
               ) : "Describe your situation to begin"}

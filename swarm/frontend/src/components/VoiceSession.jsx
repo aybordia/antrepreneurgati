@@ -40,7 +40,41 @@ function WaveformVisualizer({ active, color = "#7B6CFF" }) {
   );
 }
 
-export default function VoiceSession({ sessionData, situation, onEndSession, getIdToken }) {
+const TIME_LIMIT = 60;
+
+function CountdownRing({ seconds, total = TIME_LIMIT }) {
+  const r = 18;
+  const circ = 2 * Math.PI * r;
+  const pct = seconds / total;
+  const offset = circ * (1 - pct);
+  const color = seconds > 30 ? "#4DDDAA" : seconds > 15 ? "#F5A623" : "#FF5F6D";
+  return (
+    <div style={{ position: "relative", width: 48, height: 48, flexShrink: 0 }}>
+      <svg width="48" height="48" style={{ transform: "rotate(-90deg)", position: "absolute", inset: 0 }}>
+        <circle cx="24" cy="24" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="2.5" />
+        <motion.circle
+          cx="24" cy="24" r={r} fill="none"
+          stroke={color} strokeWidth="2.5" strokeLinecap="round"
+          strokeDasharray={circ}
+          animate={{ strokeDashoffset: offset }}
+          transition={{ duration: 0.9, ease: "linear" }}
+          style={{ filter: `drop-shadow(0 0 4px ${color}88)` }}
+        />
+      </svg>
+      <div style={{
+        position: "absolute", inset: 0,
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        <span style={{
+          fontFamily: "var(--mono)", fontSize: "11px",
+          color, lineHeight: 1, fontWeight: 500,
+        }}>{seconds}</span>
+      </div>
+    </div>
+  );
+}
+
+export default function VoiceSession({ sessionData, situation, onEndSession, getIdToken, timedMode = false }) {
   const [history, setHistory] = useState([]);
   const [currentPersona, setCurrentPersona] = useState(null);
   const [displayLine, setDisplayLine] = useState("");
@@ -48,7 +82,9 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
   const [showConfirm, setShowConfirm] = useState(false);
   const [sessionComplete, setSessionComplete] = useState(false);
   const [sessionStarted, setSessionStarted] = useState(false);
+  const [countdown, setCountdown] = useState(null);
 
+  const countdownRef = useRef(null);
   const transcriptRef = useRef(null);
   const currentAudio = useRef(null);
   const historyRef = useRef([]);
@@ -143,6 +179,29 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
       transcriptRef.current.scrollTop = transcriptRef.current.scrollHeight;
     }
   }, [history]);
+
+  // Timed pressure countdown
+  useEffect(() => {
+    if (!timedMode) return;
+    if (isListening) {
+      setCountdown(TIME_LIMIT);
+      countdownRef.current = setInterval(() => {
+        setCountdown(prev => {
+          if (prev === null || prev <= 1) {
+            clearInterval(countdownRef.current);
+            stop();
+            return null;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      clearInterval(countdownRef.current);
+      setCountdown(null);
+    }
+    return () => clearInterval(countdownRef.current);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isListening, timedMode]);
 
   const handleEnd = () => {
     sessionEndedRef.current = true;
@@ -462,6 +521,9 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
               <span style={{ fontFamily: "var(--mono)", fontSize: "10px", color: "var(--amber)", letterSpacing: "0.08em" }}>
                 {isProcessing ? "TRANSCRIBING" : "LISTENING — TAP TO SEND"}
               </span>
+              {timedMode && countdown !== null && (
+                <CountdownRing seconds={countdown} />
+              )}
             </motion.button>
           )}
         </AnimatePresence>

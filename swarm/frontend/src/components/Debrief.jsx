@@ -97,6 +97,7 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
   const [isSpeaking, setIsSpeaking] = useState(false);
   const currentAudioRef = useRef(null);
 
+  const [showTranscript, setShowTranscript] = useState(false);
   const [interviewRating, setInterviewRating] = useState(0);
   const [debriefRating, setDebriefRating] = useState(0);
   const [interviewFeedback, setInterviewFeedback] = useState("");
@@ -355,6 +356,117 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
             <div style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: "14px", color: "var(--text-2)", lineHeight: 1.7 }}>
               {debrief.overallVerdict}
             </div>
+          </motion.div>
+        )}
+
+        {/* Q&A Transcript */}
+        {sessionResult?.history?.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.52, duration: 0.5 }}
+          >
+            <button
+              onClick={() => setShowTranscript(v => !v)}
+              style={{
+                width: "100%",
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "15px 20px", borderRadius: "14px",
+                background: showTranscript ? "rgba(123,108,255,0.06)" : "rgba(255,255,255,0.025)",
+                border: `1px solid ${showTranscript ? "rgba(123,108,255,0.2)" : "rgba(255,255,255,0.06)"}`,
+                transition: "all 0.22s",
+                position: "relative", overflow: "hidden",
+              }}
+            >
+              {showTranscript && (
+                <div style={{
+                  position: "absolute", top: 0, left: 0, right: 0, height: "1px",
+                  background: "linear-gradient(90deg, transparent, rgba(123,108,255,0.4), transparent)",
+                }} />
+              )}
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span style={{ fontSize: "14px", opacity: 0.6 }}>◈</span>
+                <span style={{ fontFamily: "var(--mono)", fontSize: "10px", color: showTranscript ? "var(--primary)" : "var(--muted)", letterSpacing: "0.14em" }}>
+                  FULL TRANSCRIPT
+                </span>
+                <span style={{
+                  padding: "2px 8px", borderRadius: "999px",
+                  background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)",
+                  fontFamily: "var(--mono)", fontSize: "9px", color: "var(--muted)",
+                }}>
+                  {sessionResult.history.length} turns
+                </span>
+              </div>
+              <motion.span
+                animate={{ rotate: showTranscript ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+                style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--muted)", opacity: 0.5, display: "block" }}
+              >
+                ▼
+              </motion.span>
+            </button>
+
+            <AnimatePresence>
+              {showTranscript && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                  style={{ overflow: "hidden" }}
+                >
+                  <div style={{
+                    marginTop: "8px",
+                    background: "rgba(255,255,255,0.015)",
+                    border: "1px solid rgba(255,255,255,0.05)",
+                    borderRadius: "14px",
+                    padding: "18px 20px",
+                    display: "flex", flexDirection: "column", gap: "16px",
+                    maxHeight: "380px", overflowY: "auto", scrollbarWidth: "thin",
+                    scrollbarColor: "rgba(255,255,255,0.08) transparent",
+                  }}>
+                    {sessionResult.history.map((turn, i) => {
+                      const isUser = turn.speaker === "You";
+                      const isQ = !isUser;
+                      return (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, x: isQ ? -6 : 6 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.03, duration: 0.3 }}
+                          style={{
+                            display: "flex", flexDirection: "column", gap: "5px",
+                            paddingLeft: isUser ? "14px" : "0",
+                            borderLeft: isUser ? "2px solid rgba(245,166,35,0.3)" : "none",
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                            <div style={{
+                              width: 5, height: 5, borderRadius: "50%", flexShrink: 0,
+                              background: isUser ? "var(--amber)" : "var(--teal)",
+                              boxShadow: `0 0 6px ${isUser ? "var(--amber)" : "var(--teal)"}`,
+                            }} />
+                            <span style={{
+                              fontFamily: "var(--mono)", fontSize: "9px",
+                              color: isUser ? "var(--amber)" : "var(--teal)",
+                              letterSpacing: "0.14em",
+                            }}>
+                              {turn.speaker.toUpperCase()}
+                            </span>
+                          </div>
+                          <p style={{
+                            fontFamily: "var(--ui)", fontWeight: 300,
+                            fontSize: "13px", color: isUser ? "var(--text)" : "var(--text-2)",
+                            lineHeight: 1.65, margin: 0,
+                          }}>
+                            {turn.text}
+                          </p>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
 

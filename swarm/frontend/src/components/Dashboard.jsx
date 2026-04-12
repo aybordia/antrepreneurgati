@@ -27,6 +27,178 @@ function timeAgo(ms) {
   return new Date(ms).toLocaleDateString();
 }
 
+/* ── Score trend chart ── */
+function TrendGraph({ sessions }) {
+  const scored = [...sessions]
+    .filter(s => s.clarityScore !== null && s.clarityScore !== undefined)
+    .sort((a, b) => a.createdAt - b.createdAt)
+    .slice(-8);
+
+  if (scored.length < 2) return null;
+
+  const W = 600, H = 130;
+  const PAD = { top: 14, right: 20, bottom: 30, left: 36 };
+  const innerW = W - PAD.left - PAD.right;
+  const innerH = H - PAD.top - PAD.bottom;
+
+  const scores = scored.map(s => s.clarityScore);
+  const minScore = Math.max(0, Math.min(...scores) - 10);
+  const maxScore = Math.min(100, Math.max(...scores) + 10);
+
+  const xOf = i => PAD.left + (i / (scored.length - 1)) * innerW;
+  const yOf = s  => PAD.top + innerH * (1 - (s - minScore) / (maxScore - minScore));
+
+  const pts = scored.map((s, i) => ({ x: xOf(i), y: yOf(s.clarityScore), score: s.clarityScore }));
+
+  const linePath = pts.map((pt, i) => {
+    if (i === 0) return `M${pt.x},${pt.y}`;
+    const prev = pts[i - 1];
+    const cpx = (prev.x + pt.x) / 2;
+    return `C${cpx},${prev.y} ${cpx},${pt.y} ${pt.x},${pt.y}`;
+  }).join(" ");
+
+  const areaPath = `${linePath} L${pts[pts.length - 1].x},${H - PAD.bottom} L${pts[0].x},${H - PAD.bottom} Z`;
+
+  const latest = scores[scores.length - 1];
+  const delta  = latest - scores[0];
+
+  const midY = yOf(minScore + (maxScore - minScore) * 0.5);
+  const topY = yOf(maxScore);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.12, duration: 0.55 }}
+      style={{
+        background: "rgba(255,255,255,0.022)",
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderRadius: "18px",
+        padding: "20px 20px 10px",
+        overflow: "hidden",
+        position: "relative",
+      }}
+    >
+      {/* Glow behind latest dot */}
+      <div style={{
+        position: "absolute", top: 0, right: 0,
+        width: "180px", height: "180px",
+        background: `radial-gradient(circle at 80% 40%, ${scoreColor(latest)}12 0%, transparent 60%)`,
+        pointerEvents: "none",
+      }} />
+
+      {/* Header */}
+      <div style={{
+        display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+        marginBottom: "12px", position: "relative", zIndex: 1,
+      }}>
+        <div>
+          <div style={{
+            fontFamily: "var(--mono)", fontSize: "9px",
+            color: "rgba(106,103,128,0.5)", letterSpacing: "0.18em", marginBottom: "5px",
+          }}>
+            SCORE PROGRESSION
+          </div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
+            <span style={{ fontFamily: "var(--display)", fontSize: "24px", color: scoreColor(latest), lineHeight: 1 }}>
+              {latest}
+            </span>
+            <span style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--muted)", opacity: 0.5 }}>/100</span>
+          </div>
+        </div>
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.45 }}
+          style={{
+            display: "flex", alignItems: "center", gap: "5px",
+            padding: "5px 12px", borderRadius: "999px",
+            background: delta >= 0 ? "rgba(170,255,110,0.07)" : "rgba(255,107,107,0.07)",
+            border: `1px solid ${delta >= 0 ? "rgba(170,255,110,0.22)" : "rgba(255,107,107,0.22)"}`,
+          }}
+        >
+          <span style={{
+            fontFamily: "var(--mono)", fontSize: "12px", letterSpacing: "0.04em",
+            color: delta >= 0 ? "var(--success)" : "var(--coral)",
+          }}>
+            {delta > 0 ? "↑" : delta < 0 ? "↓" : "→"} {Math.abs(delta)} pts
+          </span>
+        </motion.div>
+      </div>
+
+      {/* Chart */}
+      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}>
+        <defs>
+          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#7B6CFF" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="#7B6CFF" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#7B6CFF" />
+            <stop offset="60%" stopColor="#A08FFF" />
+            <stop offset="100%" stopColor="#00D9FF" />
+          </linearGradient>
+          <filter id="dotGlow">
+            <feGaussianBlur stdDeviation="2.5" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+
+        {/* Grid lines */}
+        {[topY, midY].map((y, gi) => (
+          <g key={gi}>
+            <line x1={PAD.left} y1={y} x2={W - PAD.right} y2={y}
+              stroke="rgba(255,255,255,0.04)" strokeWidth="1" strokeDasharray="3 6" />
+            <text x={PAD.left - 6} y={y + 3.5}
+              fill="rgba(106,103,128,0.4)" fontSize="8.5" textAnchor="end"
+              fontFamily="'JetBrains Mono', monospace">
+              {Math.round(gi === 0 ? maxScore : minScore + (maxScore - minScore) * 0.5)}
+            </text>
+          </g>
+        ))}
+
+        {/* Area fill */}
+        <path d={areaPath} fill="url(#areaGrad)" />
+
+        {/* Animated line */}
+        <motion.path
+          d={linePath}
+          fill="none" stroke="url(#lineGrad)" strokeWidth="2.5"
+          strokeLinecap="round" strokeLinejoin="round"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 1 }}
+          transition={{ duration: 1.6, ease: [0.16, 1, 0.3, 1], delay: 0.25 }}
+          style={{ filter: "drop-shadow(0 0 5px rgba(123,108,255,0.55))" }}
+        />
+
+        {/* Dots */}
+        {pts.map((pt, i) => (
+          <motion.g key={i}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.25 + (i / pts.length) * 1.3, duration: 0.35 }}
+            style={{ transformOrigin: `${pt.x}px ${pt.y}px` }}
+          >
+            <circle cx={pt.x} cy={pt.y} r="9" fill={`${scoreColor(pt.score)}14`} />
+            <circle cx={pt.x} cy={pt.y} r="5" fill="#060610" stroke={scoreColor(pt.score)} strokeWidth="1.8"
+              filter="url(#dotGlow)" />
+            <circle cx={pt.x} cy={pt.y} r="2.2" fill={scoreColor(pt.score)} />
+          </motion.g>
+        ))}
+
+        {/* Labels */}
+        {pts.map((pt, i) => (
+          <text key={i} x={pt.x} y={H - 5}
+            textAnchor="middle" fill="rgba(106,103,128,0.35)"
+            fontSize="9" fontFamily="'JetBrains Mono', monospace">
+            #{i + 1}
+          </text>
+        ))}
+      </svg>
+    </motion.div>
+  );
+}
+
 /* ── Mini score ring ── */
 function MiniRing({ score, color, size = 52 }) {
   const r = size / 2 - 5;
@@ -71,7 +243,6 @@ function SessionCard({ session, onView, index }) {
         overflow: "hidden",
       }}
     >
-      {/* Hover glow */}
       {hovered && (
         <div style={{
           position: "absolute", top: -60, left: -60,
@@ -81,7 +252,6 @@ function SessionCard({ session, onView, index }) {
         }} />
       )}
 
-      {/* Score ring */}
       {session.clarityScore !== null && (
         <div style={{ position: "relative", flexShrink: 0 }}>
           <MiniRing score={session.clarityScore} color={color} size={52} />
@@ -97,7 +267,6 @@ function SessionCard({ session, onView, index }) {
         </div>
       )}
 
-      {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
           fontFamily: "var(--ui)", fontSize: "14px", color: "var(--text)",
@@ -143,6 +312,7 @@ function PastSessionModal({ session, onClose }) {
   if (!session) return null;
   const d = session.debrief;
   const color = scoreColor(d?.clarityScore);
+  const [showTranscript, setShowTranscript] = useState(false);
 
   return (
     <motion.div
@@ -193,7 +363,6 @@ function PastSessionModal({ session, onClose }) {
           )}
         </div>
 
-        {/* Divider */}
         <div style={{ height: "1px", background: "rgba(255,255,255,0.05)" }} />
 
         {d?.clarityRationale && (
@@ -239,24 +408,50 @@ function PastSessionModal({ session, onClose }) {
           </div>
         )}
 
-        {/* Transcript */}
+        {/* Transcript toggle */}
         {session.history?.length > 0 && (
           <div>
-            <div style={{ fontFamily: "var(--mono)", fontSize: "10px", color: "var(--muted)", letterSpacing: "0.14em", marginBottom: "14px", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "20px" }}>
-              TRANSCRIPT ({session.history.length} turns)
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px", maxHeight: "220px", overflowY: "auto", scrollbarWidth: "none" }}>
-              {session.history.map((turn, i) => (
-                <div key={i} style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-                  <span style={{ fontFamily: "var(--mono)", fontSize: "10px", color: turn.speaker === "You" ? "var(--amber)" : "var(--teal)", letterSpacing: "0.08em" }}>
-                    {turn.speaker.toUpperCase()}
-                  </span>
-                  <span style={{ fontFamily: "var(--ui)", fontSize: "13px", color: "var(--muted)", lineHeight: 1.6 }}>
-                    {turn.text}
-                  </span>
-                </div>
-              ))}
-            </div>
+            <button
+              onClick={() => setShowTranscript(v => !v)}
+              style={{
+                width: "100%",
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: "12px", padding: "12px 16px",
+                fontFamily: "var(--mono)", fontSize: "10px",
+                color: "var(--muted)", letterSpacing: "0.12em",
+              }}
+            >
+              <span>TRANSCRIPT — {session.history.length} TURNS</span>
+              <span style={{ opacity: 0.5 }}>{showTranscript ? "▲" : "▼"}</span>
+            </button>
+            <AnimatePresence>
+              {showTranscript && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  style={{ overflow: "hidden" }}
+                >
+                  <div style={{
+                    display: "flex", flexDirection: "column", gap: "12px",
+                    marginTop: "10px", maxHeight: "260px", overflowY: "auto", scrollbarWidth: "none",
+                  }}>
+                    {session.history.map((turn, i) => (
+                      <div key={i} style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                        <span style={{ fontFamily: "var(--mono)", fontSize: "10px", color: turn.speaker === "You" ? "var(--amber)" : "var(--teal)", letterSpacing: "0.08em" }}>
+                          {turn.speaker.toUpperCase()}
+                        </span>
+                        <span style={{ fontFamily: "var(--ui)", fontSize: "13px", color: "var(--muted)", lineHeight: 1.6 }}>
+                          {turn.text}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
 
@@ -300,7 +495,6 @@ export default function Dashboard({ user, onNewSession, getIdToken }) {
       <div className="ambient" />
       <div className="noise" />
 
-      {/* Subtle grid */}
       <div style={{
         position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0,
         backgroundImage:
@@ -314,7 +508,7 @@ export default function Dashboard({ user, onNewSession, getIdToken }) {
         position: "relative", zIndex: 1,
         maxWidth: "700px", margin: "0 auto", width: "100%",
         padding: "56px 24px 100px",
-        display: "flex", flexDirection: "column", gap: "36px",
+        display: "flex", flexDirection: "column", gap: "24px",
       }}>
 
         {/* Header */}
@@ -371,19 +565,30 @@ export default function Dashboard({ user, onNewSession, getIdToken }) {
                 border: "1px solid rgba(255,255,255,0.06)",
                 borderRadius: "14px",
                 backdropFilter: "blur(12px)",
+                position: "relative", overflow: "hidden",
               }}>
-                <div style={{ fontFamily: "var(--display)", fontSize: "26px", color, lineHeight: 1, marginBottom: "4px" }}>{value}</div>
+                {/* 3D depth layer */}
+                <div style={{
+                  position: "absolute", inset: 0,
+                  background: "linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 60%)",
+                  borderRadius: "14px",
+                  pointerEvents: "none",
+                }} />
+                <div style={{ fontFamily: "var(--display)", fontSize: "28px", color, lineHeight: 1, marginBottom: "4px" }}>{value}</div>
                 <div style={{ fontFamily: "var(--mono)", fontSize: "9px", color: "var(--muted)", letterSpacing: "0.12em" }}>{label.toUpperCase()}</div>
               </div>
             ))}
           </motion.div>
         )}
 
+        {/* Score trend graph */}
+        {!loading && <TrendGraph sessions={sessions} />}
+
         {/* New session CTA */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15, duration: 0.55 }}
+          transition={{ delay: 0.18, duration: 0.55 }}
         >
           <motion.button
             whileHover={{ scale: 1.015 }}
@@ -399,12 +604,17 @@ export default function Dashboard({ user, onNewSession, getIdToken }) {
               position: "relative", overflow: "hidden",
             }}
           >
-            {/* Background texture */}
             <div style={{
               position: "absolute", inset: 0,
               backgroundImage: "linear-gradient(135deg, rgba(255,255,255,0.06) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.06) 75%, transparent 75%)",
               backgroundSize: "40px 40px",
               opacity: 0.3,
+            }} />
+            {/* Shine on top edge */}
+            <div style={{
+              position: "absolute", top: 0, left: 0, right: 0,
+              height: "1px",
+              background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)",
             }} />
             <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "5px" }}>
               <span style={{ fontFamily: "var(--display)", fontSize: "20px", fontWeight: 400 }}>Launch New Session</span>
@@ -418,6 +628,7 @@ export default function Dashboard({ user, onNewSession, getIdToken }) {
               background: "rgba(255,255,255,0.15)",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: "18px",
+              boxShadow: "0 0 0 1px rgba(255,255,255,0.12) inset",
             }}>→</div>
           </motion.button>
         </motion.div>
