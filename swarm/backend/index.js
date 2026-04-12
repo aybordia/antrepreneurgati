@@ -18,6 +18,7 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
   /\.vercel\.app$/,
+  "https://swarm-ai-ruddy.vercel.app",
 ];
 
 app.use(cors({
