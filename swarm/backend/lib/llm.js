@@ -68,11 +68,12 @@ function soonestSlotMs() {
       const freeAt = log[0] + 60000 + 300;
       if (freeAt < soonest) soonest = freeAt;
     } else {
-      return 0; // a provider has an open slot right now
+      return 0;
     }
   }
-  if (soonest === Infinity) return 5000;
-  return Math.min(Math.max(300, soonest - Date.now()), 65000);
+  if (soonest === Infinity) return 3000;
+  // Cap at 8s — we'd rather fail fast and use fallback than hang for a minute
+  return Math.min(Math.max(300, soonest - Date.now()), 8000);
 }
 
 // ── Retry-after parser ────────────────────────────────────────────────────────
@@ -107,7 +108,7 @@ async function _doCall(cfg, systemPrompt, userPrompt, maxTokens, stream, onChunk
 }
 
 async function _call({ systemPrompt, userPrompt, maxTokens, stream = false, onChunk = () => {}, _retries = 0 }) {
-  if (_retries > 10) throw new Error("All providers exhausted after maximum retries");
+  if (_retries > 3) throw new Error("All providers exhausted after maximum retries");
 
   const providerList = providers().filter(p => !deadProviders.has(p.baseURL));
   if (!providerList.length) throw new Error("No API keys configured (GROQ_API_KEY or GEMINI_API_KEY required)");

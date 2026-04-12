@@ -12,8 +12,8 @@ export async function tavilySearch({ query, maxResults = 6 }) {
     body: JSON.stringify({
       query,
       max_results: maxResults,
-      search_depth: "advanced",
-      include_answer: true,
+      search_depth: "basic",
+      include_answer: false,
       include_raw_content: false,
     }),
   });
