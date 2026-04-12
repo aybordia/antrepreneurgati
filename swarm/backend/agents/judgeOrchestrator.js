@@ -1,190 +1,117 @@
-// PROMPT VERSION: 2.0
+// PROMPT VERSION: 3.0 — truly conversational, reactive-first
 import { callLLM, callLLMStream, parseJSON } from "../lib/llm.js";
-
-// Build a context-rich system prompt for THIS specific session
-function buildSystemPrompt({ situation, personas }) {
-  const personaDescriptions = personas
-    .map(p => `- ${p.name} (${p.role}): ${p.style}`)
-    .join("\n");
-
-  return `You are managing a live, realistic practice conversation for someone preparing for the following:
-
-SITUATION: "${situation}"
-
-You are playing one of these personas on each turn:
-${personaDescriptions}
-
-YOUR JOB:
-- Respond naturally as the assigned persona — speak like a real human, not a chatbot
-- React directly to what the user just said before moving to the next topic
-- Stay in character: an MIT admissions interviewer sounds nothing like a Google engineering manager or a concerned parent
-- The session plan gives you TOPICS to cover — never read them verbatim. Rephrase them in your persona's natural voice, woven into the flow of the conversation
-- If the user just greeted you, greet them warmly and introduce yourself before asking anything
-- If they said something interesting, acknowledge it genuinely before pushing forward
-- If they fumbled, gently push back in your persona's style — don't just re-ask the same question
-- Keep every turn to 2-3 sentences max — leave space for the user to speak
-
-Output format: Return ONLY valid JSON, no preamble, no explanation:
-{
-  "nextPersona": "string — name matching one of the defined personas",
-  "voiceId": "string — ElevenLabs voice ID for that persona",
-  "line": "string — what this persona says. Max 3 sentences. First person. Natural, human tone.",
-  "intent": "string — what this turn accomplishes",
-  "sessionAdvancing": true or false,
-  "sessionComplete": true or false,
-  "userPerformanceNote": "string — brief note on how the user did this turn"
-}
-
-RULES:
-- sessionAdvancing: true when moving to the next topic/question in the plan
-- sessionAdvancing: false when following up on the same topic
-- sessionComplete: true only after all planned topics are covered
-- If user says "stop", "end session", or "I'm done": sessionComplete = true
-- If the same topic has been pushed on twice already: advance regardless
-- NEVER produce a line that could apply to any generic interview — it must be specific to the situation above`;
-}
-
-// When Architect falls back to generic questions, generate them on-the-fly from the situation
-async function generateDynamicQuestion({ situation, personas, currentQuestionIndex, history }) {
-  const questionNumber = currentQuestionIndex + 1;
-  const persona = personas[currentQuestionIndex % personas.length];
-  const recentTopics = history
-    .filter(t => t.speaker !== "You")
-    .slice(-4)
-    .map(t => t.text)
-    .join(" | ");
-
-  const prompt = `You are ${persona.name} (${persona.role}) conducting a "${situation}" practice session.
-
-This is question ${questionNumber} in the conversation.
-Recent topics already covered: ${recentTopics || "none yet — this is the opening"}.
-
-Generate ONE natural question that:
-- Is SPECIFIC to "${situation}" — could not apply to any other scenario
-- Builds on what's been discussed
-- Fits the ${persona.role}'s perspective and style: "${persona.style}"
-- Gets progressively harder (question ${questionNumber} of ~6)
-
-Return only JSON: {"question": "the question text", "intent": "what it tests"}`;
-
-  try {
-    const raw = await callLLM({
-      systemPrompt: "Generate a single interview question. Return only valid JSON.",
-      userPrompt: prompt,
-      maxTokens: 120,
-    });
-    const result = parseJSON(raw);
-    return result?.question || null;
-  } catch {
-    return null;
-  }
-}
 
 export async function runJudgeOrchestrator({ transcript, sessionContext, history, currentQuestionIndex = 0 }) {
   const parsed = typeof sessionContext === "string" ? JSON.parse(sessionContext) : sessionContext;
-  const { personas, sessionPlan, openingLine, situation, _isFallback } = parsed;
+  const { personas, sessionPlan, situation, _isFallback } = parsed;
 
-  // Opening turn: LLM generates a natural, situation-specific greeting
+  // ── Opening turn ────────────────────────────────────────────────────────────
   if (!transcript && history.length === 0) {
-    const firstQ = sessionPlan.questions[0];
-    const assignedPersona = personas.find(p => p.name === firstQ?.assignedPersona) || personas[0];
+    const firstTopic = sessionPlan.questions[0];
+    const p = personas.find(x => x.name === firstTopic?.assignedPersona) || personas[0];
 
-    // Use LLM for a situation-specific opening rather than hardcoded text
     try {
-      const openingPrompt = `You are ${assignedPersona.name}, ${assignedPersona.role}. You are about to begin a practice session with someone preparing for: "${situation}".
-
-Write your opening line — greet them warmly, introduce yourself briefly, and ease into the first topic: "${firstQ?.text || "tell me about yourself"}". Keep it to 2-3 sentences. Sound like a real ${assignedPersona.role}, not a generic interviewer. Return ONLY a JSON object: {"line": "your opening line here"}`;
-
-      const raw = await callLLM({ systemPrompt: "You generate natural, human opening lines for practice conversations. Return only valid JSON.", userPrompt: openingPrompt, maxTokens: 150 });
+      const raw = await callLLM({
+        systemPrompt: `You are ${p.name}, ${p.role}. Your style: ${p.style}
+You are opening a practice session for someone preparing for: "${situation}"
+Write your opening line — introduce yourself naturally and ease into the first topic below.
+2-3 sentences max. Sound like a real ${p.role}, not a generic chatbot.
+Return ONLY valid JSON: {"line": "your opening line"}`,
+        userPrompt: `First topic to ease into: "${firstTopic?.text || "tell me about yourself"}"`,
+        maxTokens: 150,
+      });
       const result = parseJSON(raw);
       if (result?.line) {
-        return {
-          nextPersona: assignedPersona.name,
-          voiceId: assignedPersona.voiceId,
-          line: result.line,
-          intent: "Opening — situation-specific greeting",
-          sessionAdvancing: false,
-          sessionComplete: false,
-          userPerformanceNote: "Session just started",
-        };
+        return { nextPersona: p.name, voiceId: p.voiceId, line: result.line, intent: "Opening", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "Session started" };
       }
     } catch (err) {
-      console.error("[judgeOrchestrator] opening LLM error:", err.message);
+      console.error("[judge] opening error:", err.message);
     }
 
-    // Fallback opening if LLM fails
-    const fallbackLine = openingLine
-      ? `${openingLine} ${firstQ?.text || ""}`.trim()
-      : firstQ?.text || "Welcome. Let's get started.";
+    // Fallback opening
     return {
-      nextPersona: assignedPersona.name,
-      voiceId: assignedPersona.voiceId,
-      line: fallbackLine,
-      intent: "Opening — fallback",
-      sessionAdvancing: false,
-      sessionComplete: false,
-      userPerformanceNote: "Session just started",
+      nextPersona: p.name, voiceId: p.voiceId,
+      line: `Hi, I'm ${p.name} — ${p.role}. ${firstTopic?.text || "Let's get started."}`,
+      intent: "Opening fallback", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "Session started",
     };
   }
 
-  // Hard limit: force end if session has gone too long
-  if (currentQuestionIndex >= (sessionPlan.questions.length + 3)) {
+  // ── Hard session limit ───────────────────────────────────────────────────────
+  if (currentQuestionIndex >= sessionPlan.questions.length + 3) {
     return {
-      nextPersona: personas[0].name,
-      voiceId: personas[0].voiceId,
-      line: "Thank you — that concludes our session today. You'll receive your debrief shortly.",
-      intent: "Force session end",
-      sessionAdvancing: false,
-      sessionComplete: true,
-      userPerformanceNote: "Session force-ended at question limit",
+      nextPersona: personas[0].name, voiceId: personas[0].voiceId,
+      line: "That covers everything I wanted to explore. Thanks for your time today.",
+      intent: "Force end", sessionAdvancing: false, sessionComplete: true,
+      userPerformanceNote: "Session force-ended",
     };
   }
 
-  // If Architect fell back to generic questions, generate a situation-specific one live
-  let currentQuestion = sessionPlan.questions[currentQuestionIndex];
-  if (_isFallback) {
-    const dynamic = await generateDynamicQuestion({ situation, personas, currentQuestionIndex, history });
-    if (dynamic) {
-      currentQuestion = { ...currentQuestion, text: dynamic, intent: "Dynamically generated for this situation" };
-    }
-  }
-  const assignedPersona = personas.find(p => p.name === currentQuestion?.assignedPersona) || personas[0];
+  // ── Build the system prompt: who IS this persona for THIS situation ──────────
+  const currentTopic = sessionPlan.questions[currentQuestionIndex];
+  const nextTopic    = sessionPlan.questions[currentQuestionIndex + 1];
+  const assignedP    = personas.find(p => p.name === currentTopic?.assignedPersona) || personas[0];
 
-  // Detect if user is greeting rather than answering
-  const isGreeting = /^(hi|hello|hey|good\s*(morning|afternoon|evening)|howdy|yo)\b/i.test(transcript?.trim() || "");
+  // Detect greeting so we don't skip social norms
+  const isGreeting = /^(hi+|hello+|hey+|good\s*(morning|afternoon|evening)|howdy)\b/i.test((transcript || "").trim());
 
-  const userPrompt = `SITUATION: "${situation}"
+  const systemPrompt = `You are ${assignedP.name}, ${assignedP.role}.
+Your style: ${assignedP.style}
+You are conducting a live practice session for: "${situation}"
 
-CURRENT TOPIC TO EXPLORE (do NOT say verbatim — rephrase naturally in your persona's voice):
-"${currentQuestion?.text || "wrap up the session"}"
-Topic intent: ${currentQuestion?.intent || "closing"}
-Assigned persona for this topic: ${assignedPersona?.name} (${assignedPersona?.role})
+HOW YOU RESPOND — follow this exactly:
+1. REACT first (1 sentence): Acknowledge something SPECIFIC from what they just said.
+   - Strong answer → "Good — you mentioned X, that's exactly the level of detail I'm looking for."
+   - Vague/generic → "You kept that pretty high-level. I want to push on that."
+   - Stumbled → "I noticed some hesitation there — let's try a different angle."
+   - Greeting → "Hey, good to meet you. I'm ${assignedP.name}. [then ease in]"
+   Never skip this step. Never react with "Great question!"
 
-PERSONAS AVAILABLE:
-${personas.map(p => `${p.name}: ${p.role} — ${p.style}`).join("\n")}
+2. THEN move forward (1-2 sentences): Based on what they said, either:
+   - Dig into something they specifically mentioned
+   - Push back on something that was vague or weak
+   - Transition naturally to a new topic
 
-CONVERSATION SO FAR (last 8 turns):
-${history.slice(-8).map(t => `${t.speaker}: ${t.text}`).join("\n")}
+3. STAY SPECIFIC TO: "${situation}"
+   Every word you say must make sense for THIS situation. Generic responses are failure.
+
+Output ONLY valid JSON (no preamble, no markdown):
+{
+  "nextPersona": "${assignedP.name}",
+  "voiceId": "${assignedP.voiceId}",
+  "line": "your full response — react + move forward. Max 3 sentences.",
+  "intent": "what this turn accomplishes",
+  "sessionAdvancing": true or false,
+  "sessionComplete": true or false,
+  "userPerformanceNote": "brief honest note on how they did"
+}
+
+sessionAdvancing: true = move to the next topic after this turn
+sessionAdvancing: false = stay on current topic (they need to go deeper or you're pushing back)
+sessionComplete: true ONLY when all planned topics are done`;
+
+  const recentHistory = history.slice(-8).map(t => `${t.speaker}: ${t.text}`).join("\n");
+
+  const userPrompt = `CONVERSATION SO FAR:
+${recentHistory}
 
 USER JUST SAID: "${transcript}"
-${isGreeting ? "\n⚠️ The user is greeting you — respond with a warm greeting and natural introduction first. Do not jump straight to a question." : ""}
+${isGreeting ? "⚠️ They are greeting you. Respond warmly and introduce yourself before anything else." : ""}
 
-How did they do? ${isGreeting ? "N/A — greeting turn." : "Strong/specific → sessionAdvancing: true. Vague/filler → sessionAdvancing: false, push back. Pushed twice on this topic already → advance anyway."}
+CURRENT TOPIC (use as loose guide, don't read verbatim): "${currentTopic?.text || "wrap up"}"
+${nextTopic ? `NEXT TOPIC (if advancing): "${nextTopic.text}"` : "This is the last topic."}
 
-Generate your response as the assigned persona. Make it specific to "${situation}" — a response that could ONLY make sense in this exact context.`;
+Topics pushed on so far for this question: ${Math.max(0, currentQuestionIndex - (sessionPlan.questions.findIndex(q => q === currentTopic) || 0))} pushbacks
+If you've pushed back on this topic twice already: advance regardless.
 
-  // Helper: advance to next question as fallback
-  function advanceFallback(reason) {
-    // Greeting: respond warmly instead of firing the next question cold
+React to what they said. Then move the conversation forward.`;
+
+  // ── Fallback builder ─────────────────────────────────────────────────────────
+  function buildFallback(reason) {
     if (isGreeting) {
-      const p = assignedPersona || personas[0];
       return {
-        nextPersona: p.name,
-        voiceId: p.voiceId,
-        line: `Hi, great to meet you! I'm ${p.name}, your ${p.role} today. Let's get started — ${currentQuestion?.text || "tell me a bit about yourself."}`,
-        intent: "Greeting fallback",
-        sessionAdvancing: false,
-        sessionComplete: false,
+        nextPersona: assignedP.name, voiceId: assignedP.voiceId,
+        line: `Hey, great to meet you — I'm ${assignedP.name}, ${assignedP.role}. ${currentTopic?.text || "Let's get into it."}`,
+        intent: "Greeting fallback", sessionAdvancing: false, sessionComplete: false,
         userPerformanceNote: "Greeting with LLM fallback",
       };
     }
@@ -193,36 +120,40 @@ Generate your response as the assigned persona. Make it specific to "${situation
     const isLast = !nextQ;
     const p = personas.find(x => x.name === (nextQ?.assignedPersona || personas[0].name)) || personas[0];
     return {
-      nextPersona: p.name,
-      voiceId: p.voiceId,
-      line: isLast
-        ? "That's everything I wanted to cover. Thanks for your time today."
-        : nextQ.text,
-      intent: `Fallback advance — ${reason}`,
-      sessionAdvancing: true,
-      sessionComplete: isLast,
+      nextPersona: p.name, voiceId: p.voiceId,
+      line: isLast ? "That's everything — thank you for your time." : nextQ.text,
+      intent: `Fallback — ${reason}`, sessionAdvancing: true, sessionComplete: isLast,
       userPerformanceNote: reason,
     };
   }
 
+  // ── LLM call ──────────────────────────────────────────────────────────────────
   let raw;
   try {
-    raw = await callLLMStream({
-      systemPrompt: buildSystemPrompt({ situation, personas }),
-      userPrompt,
-      maxTokens: 600,
-      onChunk: () => {},
-    });
+    raw = await callLLMStream({ systemPrompt, userPrompt, maxTokens: 500, onChunk: () => {} });
   } catch (err) {
-    console.error("[judgeOrchestrator] LLM error:", err.message);
-    return advanceFallback("LLM unavailable");
+    console.error("[judge] LLM error:", err.message);
+    // If fallback session, generate a dynamic question instead of raw session plan text
+    if (_isFallback) {
+      try {
+        const dynRaw = await callLLM({
+          systemPrompt: `You are ${assignedP.name}, ${assignedP.role} for: "${situation}". React briefly to what was said and ask one follow-up question specific to this situation. 2 sentences max. Return ONLY JSON: {"line": "..."}`,
+          userPrompt: `They said: "${transcript}". Current topic: "${currentTopic?.text}"`,
+          maxTokens: 100,
+        });
+        const dynResult = parseJSON(dynRaw);
+        if (dynResult?.line) {
+          return { nextPersona: assignedP.name, voiceId: assignedP.voiceId, line: dynResult.line, intent: "Dynamic fallback", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "LLM retry" };
+        }
+      } catch {}
+    }
+    return buildFallback("LLM unavailable");
   }
 
   const result = parseJSON(raw);
-
-  if (!result || !result.line) {
-    console.error("[judgeOrchestrator] bad parse result:", raw?.slice(0, 200));
-    return advanceFallback("parse error");
+  if (!result?.line) {
+    console.error("[judge] bad parse:", raw?.slice(0, 150));
+    return buildFallback("parse error");
   }
 
   // Enforce 3-sentence max

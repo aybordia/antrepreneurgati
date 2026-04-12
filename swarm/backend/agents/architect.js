@@ -90,29 +90,72 @@ ${styleHint ? `\n${styleHint}` : ""}
 
 Design the optimal session plan. Make questions specific to the research. Map each elevenLabsVoiceTarget to a real voice ID from the VOICE_IDS map in the rules.`;
 
+  // Build situation-aware fallback personas so the session feels right
+  // even when the Architect LLM call fails
+  function buildFallbackPersonas(situation) {
+    const s = situation.toLowerCase();
+    if (/mit|harvard|stanford|yale|princeton|college|university|admissions|application/i.test(s)) {
+      return [
+        { name: "Dr. Reeves",    role: "Admissions Officer",  voiceId: VOICE_IDS["Adam"],   color: "#7B6CFF", orbIndex: 0, style: "Thoughtful and intellectually probing." },
+        { name: "Maya Thornton", role: "Alumni Interviewer",  voiceId: VOICE_IDS["Rachel"], color: "#F5A623", orbIndex: 1, style: "Warm but pushes for genuine depth." },
+        { name: "Prof. Okafor",  role: "Faculty Representative", voiceId: VOICE_IDS["Arnold"], color: "#6ee7b7", orbIndex: 2, style: "Challenges assumptions, values precision." },
+      ];
+    }
+    if (/parent|mom|dad|family|home|guardian/i.test(s)) {
+      return [
+        { name: "Your Father",  role: "Parent",        voiceId: VOICE_IDS["Adam"],   color: "#7B6CFF", orbIndex: 0, style: "Direct, protective, hard to convince." },
+        { name: "Your Mother",  role: "Parent",        voiceId: VOICE_IDS["Rachel"], color: "#F5A623", orbIndex: 1, style: "Emotional, invested, wants reassurance." },
+        { name: "Aunt Sandra",  role: "Family Mediator", voiceId: VOICE_IDS["Gigi"],   color: "#6ee7b7", orbIndex: 2, style: "Balanced, asks the hard practical questions." },
+      ];
+    }
+    if (/google|amazon|meta|apple|microsoft|netflix|faang|software|engineer|swe|sde/i.test(s)) {
+      return [
+        { name: "Sarah Chen",    role: "Engineering Manager",  voiceId: VOICE_IDS["Rachel"], color: "#7B6CFF", orbIndex: 0, style: "Systems-focused, expects concrete tradeoffs." },
+        { name: "Dev Patel",     role: "Senior SWE Interviewer", voiceId: VOICE_IDS["Josh"],   color: "#F5A623", orbIndex: 1, style: "Technical and precise, probes edge cases." },
+        { name: "Marcus Webb",   role: "Tech Lead",             voiceId: VOICE_IDS["Arnold"], color: "#6ee7b7", orbIndex: 2, style: "Challenges vague answers with follow-ups." },
+      ];
+    }
+    if (/investor|vc|venture|pitch|startup|founder/i.test(s)) {
+      return [
+        { name: "Natalie Cross",  role: "General Partner",    voiceId: VOICE_IDS["Rachel"], color: "#7B6CFF", orbIndex: 0, style: "Skeptical, pattern-matches quickly." },
+        { name: "James Liu",      role: "Principal",          voiceId: VOICE_IDS["Josh"],   color: "#F5A623", orbIndex: 1, style: "Digs into numbers and defensibility." },
+        { name: "Priya Sharma",   role: "Analyst",            voiceId: VOICE_IDS["Gigi"],   color: "#6ee7b7", orbIndex: 2, style: "Asks the naive question that cuts deepest." },
+      ];
+    }
+    if (/medical|doctor|hospital|clinical|residency|fellowship|nursing/i.test(s)) {
+      return [
+        { name: "Dr. Patel",      role: "Program Director",   voiceId: VOICE_IDS["Adam"],   color: "#7B6CFF", orbIndex: 0, style: "Evaluates clinical reasoning and composure." },
+        { name: "Dr. Williams",   role: "Senior Physician",   voiceId: VOICE_IDS["Arnold"], color: "#F5A623", orbIndex: 1, style: "Scenario-based, tests under pressure." },
+        { name: "Dr. Nakamura",   role: "Department Chair",   voiceId: VOICE_IDS["Rachel"], color: "#6ee7b7", orbIndex: 2, style: "Probes empathy and ethical decision-making." },
+      ];
+    }
+    // Default: general professional interview
+    return [
+      { name: "Elena Vasquez",  role: "Senior Director",    voiceId: VOICE_IDS["Rachel"], color: "#7B6CFF", orbIndex: 0, style: "Direct, evaluates leadership potential." },
+      { name: "Omar Hassan",    role: "Panel Interviewer",  voiceId: VOICE_IDS["Arnold"], color: "#F5A623", orbIndex: 1, style: "Warm but pushes for specifics." },
+      { name: "Tina Marchetti", role: "Domain Specialist",  voiceId: VOICE_IDS["Gigi"],   color: "#6ee7b7", orbIndex: 2, style: "Asks the unexpected, tests adaptability." },
+    ];
+  }
+
+  const fallbackPersonas = buildFallbackPersonas(situation);
   const FALLBACK_SESSION = {
     agent: "Architect",
-    sessionSummary: "A practice session targeting your specific scenario.",
-    personas: [
-      { name: "Alex",   role: "Senior Interviewer", voiceId: VOICE_IDS["Arnold"] ?? Object.values(VOICE_IDS)[0], color: "#7B6CFF", orbIndex: 0, style: "Direct and probing." },
-      { name: "Jordan", role: "Panel Member",        voiceId: VOICE_IDS["Rachel"] ?? Object.values(VOICE_IDS)[1], color: "#F5A623", orbIndex: 1, style: "Warm but thorough." },
-      { name: "Morgan", role: "Domain Expert",       voiceId: VOICE_IDS["Josh"]   ?? Object.values(VOICE_IDS)[2], color: "#6ee7b7", orbIndex: 2, style: "Technical and fast-paced." },
-    ],
+    sessionSummary: `A practice session for: ${situation}`,
+    personas: fallbackPersonas,
     sessionPlan: {
       difficultyProgression: "escalating",
       totalEstimatedMinutes: 5,
       questions: [
-        { text: "Tell me about yourself and what brings you here today.", assignedPersona: "Jordan", intent: "Warm-up and context-setting.", followUpTriggers: [], curveballAfter: false, suggestedFollowUp: "What specifically drew you to this?" },
-        { text: "Walk me through the biggest challenge you've faced in this area.", assignedPersona: "Alex", intent: "Assess depth of experience.", followUpTriggers: ["vague answer"], curveballAfter: false, suggestedFollowUp: "What would you do differently now?" },
-        { text: "How do you handle situations where you lack expertise?", assignedPersona: "Alex", intent: "Target stated weakness.", followUpTriggers: ["defensive response"], curveballAfter: false, suggestedFollowUp: "Give me a specific example." },
-        { text: "What's the most important thing you want me to remember about you?", assignedPersona: "Morgan", intent: "Closing self-advocacy.", followUpTriggers: [], curveballAfter: false, suggestedFollowUp: "Why should that matter to us?" },
-        { text: "If you had to start over, what would you do differently?", assignedPersona: "Jordan", intent: "Reflection and self-awareness.", followUpTriggers: [], curveballAfter: true, suggestedFollowUp: "Be specific about the first thing you'd change." },
-        { text: "What questions do you have for us?", assignedPersona: "Alex", intent: "Reverse questioning — signals preparation.", followUpTriggers: [], curveballAfter: false, suggestedFollowUp: "" },
+        { text: `Tell me what's driving you to prepare for this — what's at stake for you?`, assignedPersona: fallbackPersonas[1].name, intent: "Warm-up — understand motivation.", followUpTriggers: [], curveballAfter: false, suggestedFollowUp: "What happens if this doesn't go well?" },
+        { text: `Walk me through the specific part of this situation you're most anxious about.`, assignedPersona: fallbackPersonas[0].name, intent: "Surface the stated weakness.", followUpTriggers: ["vague"], curveballAfter: false, suggestedFollowUp: "Can you give me a concrete example of when that happened?" },
+        { text: `What's the strongest argument against your position here?`, assignedPersona: fallbackPersonas[0].name, intent: "Test self-awareness and intellectual honesty.", followUpTriggers: [], curveballAfter: false, suggestedFollowUp: "How would you respond to that?" },
+        { text: `If I pushed back hard on what you just said, what's your response?`, assignedPersona: fallbackPersonas[2].name, intent: "Stress test conviction.", followUpTriggers: [], curveballAfter: true, suggestedFollowUp: "You're being too abstract — give me something real." },
+        { text: `What do you want us to remember about you after this conversation ends?`, assignedPersona: fallbackPersonas[1].name, intent: "Closing self-advocacy.", followUpTriggers: [], curveballAfter: false, suggestedFollowUp: "Why should that matter to us?" },
       ],
     },
-    openingLine: "Thanks for joining us today. Let's get started.",
-    closingCondition: "After all questions are completed or user signals they are done.",
-    _isFallback: true,   // signals judgeOrchestrator to generate questions dynamically
+    openingLine: `Thanks for being here. Let's get into it.`,
+    closingCondition: "After all topics are covered or user signals they are done.",
+    _isFallback: true,
   };
 
   let raw;
