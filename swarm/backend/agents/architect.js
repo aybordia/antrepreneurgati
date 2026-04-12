@@ -150,7 +150,7 @@ Design the full session. Infer the interviewer psychology, the user's weak spot,
   try {
     let isFirst = true;
     raw = await callLLMStream({
-      systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 2000,
+      systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 1200,
       onChunk: (tok) => {
         writeChunk({ agent: "Architect", chunk: tok, streamStart: isFirst });
         isFirst = false;

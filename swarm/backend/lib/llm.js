@@ -1,4 +1,4 @@
-// PROMPT VERSION: 1.3 — Groq primary (30 RPM), Gemini backup (15 RPM)
+// PROMPT VERSION: 1.4 — wait-and-retry instead of crash on exhaustion
 import OpenAI from "openai";
 import { jsonrepair } from "jsonrepair";
 
@@ -16,16 +16,17 @@ const GEMINI_CFG = {
   maxRPM:  13,  // Gemini free: 15 RPM — leave 2 buffer
 };
 
-// Use Groq as primary (30 RPM). If no Groq key, use Gemini. Groq falls back to Gemini on long 429s.
 function providers() {
   const list = [];
   if (GROQ_CFG.apiKey)   list.push(GROQ_CFG);
   if (GEMINI_CFG.apiKey) list.push(GEMINI_CFG);
-  return list; // first = primary
+  return list;
 }
 
 // ── Per-provider sliding window rate limiters ─────────────────────────────────
 const logs = new Map(); // provider baseURL → timestamp[]
+// Providers marked dead for this process lifetime (daily limit hit)
+const deadProviders = new Set();
 
 function getLog(cfg) {
   if (!logs.has(cfg.baseURL)) logs.set(cfg.baseURL, []);
@@ -33,6 +34,7 @@ function getLog(cfg) {
 }
 
 function availableBudget(cfg) {
+  if (deadProviders.has(cfg.baseURL)) return -1;
   const log = getLog(cfg);
   const now = Date.now();
   while (log.length && log[0] < now - 60000) log.shift();
@@ -52,14 +54,32 @@ async function acquireSlot(cfg) {
 }
 
 function exhaustKey(cfg) {
-  // Mark this provider as over-limit so next call uses the backup
   const log = getLog(cfg);
   while (log.length < cfg.maxRPM) log.push(Date.now());
 }
 
+// How long until the soonest slot frees up across all live providers
+function soonestSlotMs() {
+  let soonest = Infinity;
+  for (const cfg of providers()) {
+    if (deadProviders.has(cfg.baseURL)) continue;
+    const log = getLog(cfg);
+    if (log.length > 0) {
+      const freeAt = log[0] + 60000 + 300;
+      if (freeAt < soonest) soonest = freeAt;
+    } else {
+      return 0; // a provider has an open slot right now
+    }
+  }
+  if (soonest === Infinity) return 5000;
+  return Math.min(Math.max(300, soonest - Date.now()), 65000);
+}
+
 // ── Retry-after parser ────────────────────────────────────────────────────────
 function parseRetryMs(msg = "") {
-  if (/\d+\s*m(?:in)?/i.test(msg)) return null;
+  // "please try again tomorrow" or minute-scale waits → mark dead
+  if (/tomorrow|daily|24\s*h/i.test(msg)) return "dead";
+  if (/\d+\s*m(?:in)?\b/i.test(msg)) return null;
   const m = msg.match(/(\d+(?:\.\d+)?)\s*s(?:econds?)?\b/i);
   if (m) { const ms = Math.ceil(parseFloat(m[1])) * 1000 + 200; return ms > 10000 ? null : ms; }
   return 4200;
@@ -86,27 +106,33 @@ async function _doCall(cfg, systemPrompt, userPrompt, maxTokens, stream, onChunk
   return r.choices[0].message.content;
 }
 
-async function _call({ systemPrompt, userPrompt, maxTokens, stream = false, onChunk = () => {} }) {
-  const providerList = providers();
+async function _call({ systemPrompt, userPrompt, maxTokens, stream = false, onChunk = () => {}, _retries = 0 }) {
+  if (_retries > 10) throw new Error("All providers exhausted after maximum retries");
+
+  const providerList = providers().filter(p => !deadProviders.has(p.baseURL));
   if (!providerList.length) throw new Error("No API keys configured (GROQ_API_KEY or GEMINI_API_KEY required)");
 
-  // Pick the provider with most remaining budget
+  // Pick the provider with most remaining budget first
   providerList.sort((a, b) => availableBudget(b) - availableBudget(a));
 
-  for (let pi = 0; pi < providerList.length; pi++) {
-    const cfg = providerList[pi];
+  for (const cfg of providerList) {
     const maxRetries = 2;
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         return await _doCall(cfg, systemPrompt, userPrompt, maxTokens, stream, onChunk);
       } catch (err) {
         if (err?.status === 429) {
-          const waitMs = parseRetryMs(err?.message);
+          const waitMs = parseRetryMs(err?.message || "");
+          if (waitMs === "dead") {
+            // Daily limit hit — permanently skip this provider for this process
+            deadProviders.add(cfg.baseURL);
+            console.log(`[llm] ${cfg.model} daily limit hit — marking dead for this session`);
+            break;
+          }
           if (waitMs === null) {
-            // Long wait → exhaust this provider and try the next one
             exhaustKey(cfg);
             console.log(`[llm] ${cfg.model} long 429 — rotating to next provider`);
-            break; // break inner retry loop, continue to next provider
+            break;
           }
           console.log(`[llm] ${cfg.model} 429 — waiting ${waitMs}ms (attempt ${attempt + 1})`);
           await new Promise(r => setTimeout(r, waitMs));
@@ -116,7 +142,12 @@ async function _call({ systemPrompt, userPrompt, maxTokens, stream = false, onCh
       }
     }
   }
-  throw new Error("All providers exhausted");
+
+  // All providers temporarily exhausted — wait for soonest slot instead of crashing
+  const waitMs = soonestSlotMs();
+  console.log(`[llm] all providers busy — waiting ${waitMs}ms for next slot (retry ${_retries + 1}/10)`);
+  await new Promise(r => setTimeout(r, waitMs));
+  return _call({ systemPrompt, userPrompt, maxTokens, stream, onChunk, _retries: _retries + 1 });
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
