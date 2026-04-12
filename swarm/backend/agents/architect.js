@@ -99,18 +99,8 @@ Output JSON now.`;
     ];
   }
 
-  let raw;
-  try {
-    let isFirst = true;
-    raw = await callLLMStream({
-      systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 600,
-      onChunk: (tok) => {
-        writeChunk({ agent: "Architect", chunk: tok, streamStart: isFirst });
-        isFirst = false;
-      },
-    });
-  } catch (err) {
-    console.error("[architect] LLM error:", err.message);
+  const useFallback = async (reason) => {
+    console.error("[architect] using fallback:", reason);
     const questions = await buildDynamicFallback();
     const fallback = {
       agent: "Architect",
@@ -124,26 +114,25 @@ Output JSON now.`;
     };
     writeChunk({ agent: "Architect", done: true, sessionData: fallback });
     return fallback;
+  };
+
+  let raw;
+  try {
+    let isFirst = true;
+    const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 7000));
+    raw = await Promise.race([
+      callLLM({ systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 600 }),
+      timeout,
+    ]);
+    writeChunk({ agent: "Architect", chunk: "Session designed.", streamStart: true });
+  } catch (err) {
+    return await useFallback(err.message);
   }
 
   let parsed = parseJSON(raw);
 
-  // Fall back to dynamic session if parse failed or personas are missing
   if (!parsed || !parsed.personas || parsed.personas.length !== 3) {
-    console.error("[architect] bad output (personas:", parsed?.personas?.length, ") — using dynamic fallback");
-    const questions = await buildDynamicFallback();
-    const fallback = {
-      agent: "Architect",
-      sessionSummary: `Practice session for: ${situation}`,
-      personas: fallbackPersonas,
-      sessionPlan: { difficultyProgression: "escalating", totalEstimatedMinutes: 5, questions },
-      openingLine: "",
-      closingCondition: "After all topics are covered.",
-      _isFallback: true,
-      researchContext,
-    };
-    writeChunk({ agent: "Architect", done: true, sessionData: fallback });
-    return fallback;
+    return await useFallback(`bad parse, personas=${parsed?.personas?.length}`);
   }
 
   // Ensure voiceIds are resolved correctly
