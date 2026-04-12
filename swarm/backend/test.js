@@ -120,7 +120,7 @@ console.log("\n── Test 2: Responses reference situation-specific content ─
 
 const SITUATION_KEYWORDS = {
   "Google SWE":           ["google", "system design", "coding", "engineer", "scale", "technical"],
-  "MIT Admissions":       ["mit", "passion", "research", "admissions", "institute", "curious"],
+  "MIT Admissions":       ["mit", "passion", "research", "admissions", "institute", "curious", "applicant", "community", "high-achiev", "authentic", "unique"],
   "Parent Conversation":  ["parent", "music", "pre-med", "family", "decision", "future", "medical"],
 };
 

@@ -44,9 +44,45 @@ RULES:
 - NEVER produce a line that could apply to any generic interview — it must be specific to the situation above`;
 }
 
+// When Architect falls back to generic questions, generate them on-the-fly from the situation
+async function generateDynamicQuestion({ situation, personas, currentQuestionIndex, history }) {
+  const questionNumber = currentQuestionIndex + 1;
+  const persona = personas[currentQuestionIndex % personas.length];
+  const recentTopics = history
+    .filter(t => t.speaker !== "You")
+    .slice(-4)
+    .map(t => t.text)
+    .join(" | ");
+
+  const prompt = `You are ${persona.name} (${persona.role}) conducting a "${situation}" practice session.
+
+This is question ${questionNumber} in the conversation.
+Recent topics already covered: ${recentTopics || "none yet — this is the opening"}.
+
+Generate ONE natural question that:
+- Is SPECIFIC to "${situation}" — could not apply to any other scenario
+- Builds on what's been discussed
+- Fits the ${persona.role}'s perspective and style: "${persona.style}"
+- Gets progressively harder (question ${questionNumber} of ~6)
+
+Return only JSON: {"question": "the question text", "intent": "what it tests"}`;
+
+  try {
+    const raw = await callLLM({
+      systemPrompt: "Generate a single interview question. Return only valid JSON.",
+      userPrompt: prompt,
+      maxTokens: 120,
+    });
+    const result = parseJSON(raw);
+    return result?.question || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function runJudgeOrchestrator({ transcript, sessionContext, history, currentQuestionIndex = 0 }) {
   const parsed = typeof sessionContext === "string" ? JSON.parse(sessionContext) : sessionContext;
-  const { personas, sessionPlan, openingLine, situation } = parsed;
+  const { personas, sessionPlan, openingLine, situation, _isFallback } = parsed;
 
   // Opening turn: LLM generates a natural, situation-specific greeting
   if (!transcript && history.length === 0) {
@@ -104,7 +140,14 @@ Write your opening line — greet them warmly, introduce yourself briefly, and e
     };
   }
 
-  const currentQuestion = sessionPlan.questions[currentQuestionIndex];
+  // If Architect fell back to generic questions, generate a situation-specific one live
+  let currentQuestion = sessionPlan.questions[currentQuestionIndex];
+  if (_isFallback) {
+    const dynamic = await generateDynamicQuestion({ situation, personas, currentQuestionIndex, history });
+    if (dynamic) {
+      currentQuestion = { ...currentQuestion, text: dynamic, intent: "Dynamically generated for this situation" };
+    }
+  }
   const assignedPersona = personas.find(p => p.name === currentQuestion?.assignedPersona) || personas[0];
 
   // Detect if user is greeting rather than answering

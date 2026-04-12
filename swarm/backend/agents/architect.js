@@ -112,6 +112,7 @@ Design the optimal session plan. Make questions specific to the research. Map ea
     },
     openingLine: "Thanks for joining us today. Let's get started.",
     closingCondition: "After all questions are completed or user signals they are done.",
+    _isFallback: true,   // signals judgeOrchestrator to generate questions dynamically
   };
 
   let raw;
