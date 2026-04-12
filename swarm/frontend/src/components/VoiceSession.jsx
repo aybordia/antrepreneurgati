@@ -116,6 +116,7 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
         history: historyRef.current,
         currentQuestionIndex: questionIndexRef.current,
       }, chunk => {
+        if (chunk.error) { console.error("voice-turn error:", chunk.error); return; }
         if (chunk.chunk) { fullLine += chunk.chunk; setDisplayLine(fullLine); }
         if (chunk.persona) { resPersona = chunk.persona; resVoiceId = chunk.voiceId; setCurrentPersona(chunk.persona); }
         if (chunk.done) {
@@ -123,6 +124,17 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
           if (chunk.sessionComplete) { sessionCompleteRef.current = true; setSessionComplete(true); }
         }
       }, token);
+
+      if (!fullLine.trim()) {
+        // Nothing came back — don't add blank turn, just re-enable mic
+        isAISpeakingRef.current = false;
+        isBusyRef.current = false;
+        setIsAISpeaking(false);
+        if (!sessionCompleteRef.current && !sessionEndedRef.current) {
+          setTimeout(() => { if (!sessionEndedRef.current) start(); }, 400);
+        }
+        return;
+      }
 
       const aiTurn = { speaker: resPersona || "Panel", text: fullLine, timestamp: Date.now() };
       historyRef.current = [...historyRef.current, aiTurn];

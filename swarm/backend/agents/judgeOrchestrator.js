@@ -92,8 +92,35 @@ Evaluate this response and determine the next move. If strong → advance (sessi
 
 Generate your Judge Orchestrator output JSON.`;
 
-  const raw = await callLLMStream({ systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 600, onChunk: () => {} });
+  let raw;
+  try {
+    raw = await callLLMStream({ systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 600, onChunk: () => {} });
+  } catch (err) {
+    console.error("[judgeOrchestrator] LLM error:", err.message);
+    // Fall back: push back on the current question
+    const p = personas.find(p => p.name === currentQuestion?.assignedPersona) || personas[0];
+    return {
+      nextPersona: p.name, voiceId: p.voiceId,
+      line: currentQuestion?.text || "Could you elaborate on that?",
+      intent: "Fallback — LLM unavailable",
+      sessionAdvancing: false, sessionComplete: false,
+      userPerformanceNote: "LLM error this turn",
+    };
+  }
+
   const result = parseJSON(raw);
+
+  if (!result || !result.line) {
+    console.error("[judgeOrchestrator] bad parse result:", raw?.slice(0, 200));
+    const p = personas.find(p => p.name === currentQuestion?.assignedPersona) || personas[0];
+    return {
+      nextPersona: p.name, voiceId: p.voiceId,
+      line: currentQuestion?.text || "Could you tell me more about that?",
+      intent: "Fallback — parse error",
+      sessionAdvancing: false, sessionComplete: false,
+      userPerformanceNote: "Parse error this turn",
+    };
+  }
 
   // Enforce 3-sentence max on line
   const sentences = result.line.match(/[^.!?]+[.!?]+/g) || [result.line];
