@@ -172,8 +172,8 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
       setHistory([...historyRef.current]);
       await sendTurn(spokenText);
     },
-    // In timed mode, disable silence auto-stop — the countdown handles stopping
-    silenceThresholdMs: timedMode ? 70000 : 2000,
+    // In timed mode, countdown handles stopping; normal mode waits 5s of silence
+    silenceThresholdMs: timedMode ? 70000 : 5000,
   });
 
   const handleBegin = useCallback(() => {
