@@ -36,13 +36,14 @@ export function useElevenLabsSTT({ onResult, onSilence, silenceThresholdMs = 300
         body: formData,
       });
 
+      if (res.status === 401) throw new Error("ElevenLabs API key missing or invalid.");
       if (!res.ok) throw new Error(`ElevenLabs STT error: ${res.status}`);
       const data = await res.json();
       const text = data.text?.trim();
       if (text) onResultRef.current?.(text);
     } catch (e) {
       console.error("[stt] transcription failed:", e);
-      setMicError("Transcription failed. Please try again.");
+      setMicError(e.message.includes("API key") ? "ElevenLabs API key not configured — check Vercel env vars." : "Transcription failed. Please try again.");
     }
     setIsProcessing(false);
   }, []);
