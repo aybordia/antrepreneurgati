@@ -4,7 +4,8 @@ import OpenAI from "openai";
 import { jsonrepair } from "jsonrepair";
 
 // Groq is OpenAI-API-compatible — just swap the base URL and key
-const DEFAULT_MODEL = "llama-3.1-8b-instant";
+// gemma2-9b-it has 15,000 TPM on Groq free tier vs 6,000 for llama-3.1-8b-instant
+const DEFAULT_MODEL = "gemma2-9b-it";
 
 // Groq free tier: 30 RPM — tiny gap is enough; retry handles any burst 429s
 let lastCallTime = 0;

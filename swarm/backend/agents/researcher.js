@@ -40,7 +40,7 @@ export async function runResearcher({ situation }, writeChunk) {
   let formattedResults;
   try {
     console.log("[researcher] starting Tavily search...");
-    const results = await tavilySearch({ query: searchQuery.trim(), maxResults: 6 });
+    const results = await tavilySearch({ query: searchQuery.trim(), maxResults: 3 });
     formattedResults = formatResults(results);
     console.log("[researcher] Tavily done, got", results.length, "results");
   } catch (err) {

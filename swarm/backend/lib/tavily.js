@@ -28,7 +28,7 @@ export async function tavilySearch({ query, maxResults = 6 }) {
   return data.results.map((r) => ({
     title: r.title,
     url: r.url,
-    snippet: r.content.slice(0, 500),
+    snippet: r.content.slice(0, 200),
     score: r.score,
   }));
 }
