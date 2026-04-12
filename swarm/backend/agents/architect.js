@@ -2,67 +2,20 @@
 import { callLLM, callLLMStream, parseJSON } from "../lib/llm.js";
 import { VOICE_IDS, resolveVoiceId } from "../lib/elevenlabs.js";
 
-const SYSTEM_PROMPT = `You are the Session Architect. Given a situation and research, design the full practice session.
+const SYSTEM_PROMPT = `You are the Session Architect. Design a practice session. Output ONLY valid JSON, no markdown:
+{"agent":"Architect","sessionSummary":"1 sentence","psychologicalProfile":"1 sentence","diagnosedWeakness":"1 sentence","personas":[{"name":"UNIQUE name NOT Alex/Jordan/Morgan","role":"specific role","voiceId":"from VOICE_IDS","color":"#7B6CFF","orbIndex":0,"style":"1 sentence"},{"name":"...","role":"...","voiceId":"...","color":"#F5A623","orbIndex":1,"style":"..."},{"name":"...","role":"...","voiceId":"...","color":"#6ee7b7","orbIndex":2,"style":"..."}],"sessionPlan":{"difficultyProgression":"escalating","totalEstimatedMinutes":5,"questions":[{"text":"topic intent","assignedPersona":"name","intent":"string"},{"text":"...","assignedPersona":"...","intent":"..."},{"text":"...","assignedPersona":"...","intent":"..."},{"text":"...","assignedPersona":"...","intent":"..."}]},"openingLine":"","closingCondition":"After all topics covered"}
 
-You must also infer:
-- WHO the interviewers are (names, roles, personalities specific to this situation)
-- WHAT the user's weak spot is and how to probe it
-- WHICH voices fit each persona
-
-Output ONLY valid JSON:
-{
-  "agent": "Architect",
-  "sessionSummary": "string — 2 sentences specific to this user's situation",
-  "psychologicalProfile": "string — what the interviewer is really evaluating",
-  "diagnosedWeakness": "string — the user's likely weak spot based on their situation",
-  "personas": [
-    {
-      "name": "string — UNIQUE realistic name fitting this situation (NOT Alex/Jordan/Morgan)",
-      "role": "string — specific institutional role",
-      "voiceId": "string — from VOICE_IDS map",
-      "color": "string — hex",
-      "orbIndex": 0,
-      "style": "string — 1 sentence behavioral description"
-    }
-  ],
-  "sessionPlan": {
-    "difficultyProgression": "escalating",
-    "totalEstimatedMinutes": 5,
-    "questions": [
-      {
-        "text": "string — specific question for this situation",
-        "assignedPersona": "string — matches personas[].name",
-        "intent": "string",
-        "followUpTriggers": [],
-        "curveballAfter": false,
-        "suggestedFollowUp": "string"
-      }
-    ]
-  },
-  "openingLine": "",
-  "closingCondition": "After all topics covered"
-}
-
-Rules:
-- personas: exactly 3, with UNIQUE names that fit this specific situation
-- questions: 6-8, escalating difficulty
-- voiceId must come from: ${JSON.stringify(VOICE_IDS)}
-- Colors: #7B6CFF, #F5A623, #6ee7b7 in that order
-- No preamble. No markdown. JSON only.`;
+Rules: exactly 3 personas, exactly 4 questions escalating in difficulty, voiceId from: ${JSON.stringify(VOICE_IDS)}. JSON only.`;
 
 export async function runArchitect({ situation, researcherOutput, styleHint, researchContext }, writeChunk) {
   writeChunk({ agent: "Architect", chunk: "Designing your session…", thinking: true });
 
   const rc = researcherOutput || {};
+  const clip = (s, n = 80) => s && s.length > n ? s.slice(0, n) + "…" : (s || "");
   const userPrompt = `Situation: "${situation}"
-
-Research findings:
-- Interviewer patterns: ${rc.interviewerPatterns || ""}
-- Success patterns: ${rc.successPatterns || ""}
-- Key insights: ${(rc.keyFindings || []).slice(0, 3).map(f => f.insight || f).join(" | ")}
-${styleHint ? `\nUser preferences: ${styleHint}` : ""}
-
-Design the full session. Infer the interviewer psychology, the user's weak spot, and create 3 UNIQUE personas with realistic names specific to this situation. Generate specific questions from the research.`;
+Patterns: ${clip(rc.interviewerPatterns)}
+Weakness: ${clip(rc.diagnosedWeakness || (rc.keyFindings?.[0]?.insight) || "")}
+Output JSON now.`;
 
   // Build situation-aware fallback personas so the session feels right
   // even when the Architect LLM call fails
@@ -118,12 +71,12 @@ Design the full session. Infer the interviewer psychology, the user's weak spot,
   async function buildDynamicFallback() {
     try {
       const liteRaw = await callLLM({
-        systemPrompt: `You are a session designer. Given a situation, produce 6 interview/conversation topic intents. Each intent is a SHORT phrase describing what to probe — NOT a full question. Return ONLY valid JSON: {"intents": ["string", ...]}`,
-        userPrompt: `Situation: "${situation}"\nOutput 6 topic intents, escalating in difficulty. Be specific to this exact situation.`,
-        maxTokens: 300,
+        systemPrompt: `Given a situation, output 4 interview topic intents as short phrases. Return ONLY: {"intents":["...","...","...","..."]}`,
+        userPrompt: `Situation: "${situation}"`,
+        maxTokens: 120,
       });
       const liteResult = parseJSON(liteRaw);
-      if (liteResult?.intents?.length >= 5) {
+      if (liteResult?.intents?.length >= 3) {
         return liteResult.intents.map((intent, i) => ({
           text: intent,   // judgeOrchestrator uses this as theme, never reads it aloud
           assignedPersona: fallbackPersonas[i % fallbackPersonas.length].name,
@@ -150,7 +103,7 @@ Design the full session. Infer the interviewer psychology, the user's weak spot,
   try {
     let isFirst = true;
     raw = await callLLMStream({
-      systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 1200,
+      systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 600,
       onChunk: (tok) => {
         writeChunk({ agent: "Architect", chunk: tok, streamStart: isFirst });
         isFirst = false;
