@@ -51,7 +51,7 @@ Rules:
 - Map the VoiceDesigner's elevenLabsVoiceTarget name to the ID above
 - Do not include any text outside the JSON object. No preamble, no explanation.`;
 
-export async function runArchitect({ situation, researcherOutput, profilerOutput, weakSpotOutput, voiceDesignerOutput, styleHint }, writeChunk) {
+export async function runArchitect({ situation, researcherOutput, profilerOutput, weakSpotOutput, voiceDesignerOutput, styleHint, researchContext }, writeChunk) {
   writeChunk({ agent: "Architect", chunk: "Architecting your personalised session plan…", thinking: true });
 
   // Compress inputs to stay within Groq 6000 TPM — only pass fields Architect actually needs
@@ -138,25 +138,39 @@ Design the optimal session plan. Make questions specific to the research. Map ea
   }
 
   const fallbackPersonas = buildFallbackPersonas(situation);
-  const FALLBACK_SESSION = {
-    agent: "Architect",
-    sessionSummary: `A practice session for: ${situation}`,
-    personas: fallbackPersonas,
-    sessionPlan: {
-      difficultyProgression: "escalating",
-      totalEstimatedMinutes: 5,
-      questions: [
-        { text: `Tell me what's driving you to prepare for this — what's at stake for you?`, assignedPersona: fallbackPersonas[1].name, intent: "Warm-up — understand motivation.", followUpTriggers: [], curveballAfter: false, suggestedFollowUp: "What happens if this doesn't go well?" },
-        { text: `Walk me through the specific part of this situation you're most anxious about.`, assignedPersona: fallbackPersonas[0].name, intent: "Surface the stated weakness.", followUpTriggers: ["vague"], curveballAfter: false, suggestedFollowUp: "Can you give me a concrete example of when that happened?" },
-        { text: `What's the strongest argument against your position here?`, assignedPersona: fallbackPersonas[0].name, intent: "Test self-awareness and intellectual honesty.", followUpTriggers: [], curveballAfter: false, suggestedFollowUp: "How would you respond to that?" },
-        { text: `If I pushed back hard on what you just said, what's your response?`, assignedPersona: fallbackPersonas[2].name, intent: "Stress test conviction.", followUpTriggers: [], curveballAfter: true, suggestedFollowUp: "You're being too abstract — give me something real." },
-        { text: `What do you want us to remember about you after this conversation ends?`, assignedPersona: fallbackPersonas[1].name, intent: "Closing self-advocacy.", followUpTriggers: [], curveballAfter: false, suggestedFollowUp: "Why should that matter to us?" },
-      ],
-    },
-    openingLine: `Thanks for being here. Let's get into it.`,
-    closingCondition: "After all topics are covered or user signals they are done.",
-    _isFallback: true,
-  };
+
+  // Build a fallback session using a lite LLM call so questions are always situation-specific.
+  // The "text" field here is a THEME INTENT for judgeOrchestrator, never spoken verbatim.
+  async function buildDynamicFallback() {
+    try {
+      const liteRaw = await callLLM({
+        systemPrompt: `You are a session designer. Given a situation, produce 6 interview/conversation topic intents. Each intent is a SHORT phrase describing what to probe — NOT a full question. Return ONLY valid JSON: {"intents": ["string", ...]}`,
+        userPrompt: `Situation: "${situation}"\nOutput 6 topic intents, escalating in difficulty. Be specific to this exact situation.`,
+        maxTokens: 300,
+      });
+      const liteResult = parseJSON(liteRaw);
+      if (liteResult?.intents?.length >= 5) {
+        return liteResult.intents.map((intent, i) => ({
+          text: intent,   // judgeOrchestrator uses this as theme, never reads it aloud
+          assignedPersona: fallbackPersonas[i % fallbackPersonas.length].name,
+          intent,
+          followUpTriggers: [],
+          curveballAfter: i === 3,
+          suggestedFollowUp: "",
+        }));
+      }
+    } catch (e) {
+      console.error("[architect] lite question gen failed:", e.message);
+    }
+    // Absolute last resort: abstract themes with no question mark — cannot be read as a script
+    return [
+      { text: "motivation and what is at stake",          assignedPersona: fallbackPersonas[1].name, intent: "Warm-up",        followUpTriggers: [], curveballAfter: false, suggestedFollowUp: "" },
+      { text: "the specific challenge or weak point",     assignedPersona: fallbackPersonas[0].name, intent: "Probe weakness", followUpTriggers: [], curveballAfter: false, suggestedFollowUp: "" },
+      { text: "counter-arguments and self-awareness",     assignedPersona: fallbackPersonas[0].name, intent: "Steel-man",      followUpTriggers: [], curveballAfter: false, suggestedFollowUp: "" },
+      { text: "handling pushback or unexpected pressure", assignedPersona: fallbackPersonas[2].name, intent: "Curveball",      followUpTriggers: [], curveballAfter: true,  suggestedFollowUp: "" },
+      { text: "concrete plan and next steps",             assignedPersona: fallbackPersonas[1].name, intent: "Closing",        followUpTriggers: [], curveballAfter: false, suggestedFollowUp: "" },
+    ];
+  }
 
   let raw;
   try {
@@ -170,17 +184,39 @@ Design the optimal session plan. Make questions specific to the research. Map ea
     });
   } catch (err) {
     console.error("[architect] LLM error:", err.message);
-    writeChunk({ agent: "Architect", done: true, sessionData: FALLBACK_SESSION });
-    return FALLBACK_SESSION;
+    const questions = await buildDynamicFallback();
+    const fallback = {
+      agent: "Architect",
+      sessionSummary: `Practice session for: ${situation}`,
+      personas: fallbackPersonas,
+      sessionPlan: { difficultyProgression: "escalating", totalEstimatedMinutes: 5, questions },
+      openingLine: "",
+      closingCondition: "After all topics are covered.",
+      _isFallback: true,
+      researchContext,
+    };
+    writeChunk({ agent: "Architect", done: true, sessionData: fallback });
+    return fallback;
   }
 
   let parsed = parseJSON(raw);
 
-  // Fall back to default session if parse failed or personas are missing
+  // Fall back to dynamic session if parse failed or personas are missing
   if (!parsed || !parsed.personas || parsed.personas.length !== 3) {
-    console.error("[architect] bad output (personas:", parsed?.personas?.length, ") — using fallback session");
-    writeChunk({ agent: "Architect", done: true, sessionData: FALLBACK_SESSION });
-    return FALLBACK_SESSION;
+    console.error("[architect] bad output (personas:", parsed?.personas?.length, ") — using dynamic fallback");
+    const questions = await buildDynamicFallback();
+    const fallback = {
+      agent: "Architect",
+      sessionSummary: `Practice session for: ${situation}`,
+      personas: fallbackPersonas,
+      sessionPlan: { difficultyProgression: "escalating", totalEstimatedMinutes: 5, questions },
+      openingLine: "",
+      closingCondition: "After all topics are covered.",
+      _isFallback: true,
+      researchContext,
+    };
+    writeChunk({ agent: "Architect", done: true, sessionData: fallback });
+    return fallback;
   }
 
   // Ensure voiceIds are resolved correctly
@@ -188,6 +224,9 @@ Design the optimal session plan. Make questions specific to the research. Map ea
     ...p,
     voiceId: Object.values(VOICE_IDS).includes(p.voiceId) ? p.voiceId : resolveVoiceId(p.voiceId),
   }));
+
+  // Attach research context so judgeOrchestrator can use it during live turns
+  parsed.researchContext = researchContext;
 
   writeChunk({ agent: "Architect", done: true, sessionData: parsed });
 

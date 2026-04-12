@@ -42,8 +42,8 @@ function parseRetryMs(errMessage = "") {
   // Explicit minutes → fail fast, use fallback
   if (/\d+\s*m(?:in)?/i.test(errMessage)) return null;
 
-  // Explicit seconds
-  const secMatch = errMessage.match(/(\d+(?:\.\d+)?)\s*s(?:econds?)?/i);
+  // Explicit seconds — require word boundary so "429 status" doesn't match as "429 seconds"
+  const secMatch = errMessage.match(/(\d+(?:\.\d+)?)\s*s(?:econds?)?\b/i);
   if (secMatch) {
     const ms = Math.ceil(parseFloat(secMatch[1])) * 1000 + 200;
     return ms > 10000 ? null : ms;

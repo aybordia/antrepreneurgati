@@ -3,7 +3,19 @@ import { callLLM, callLLMStream, parseJSON } from "../lib/llm.js";
 
 export async function runJudgeOrchestrator({ transcript, sessionContext, history, currentQuestionIndex = 0 }) {
   const parsed = typeof sessionContext === "string" ? JSON.parse(sessionContext) : sessionContext;
-  const { personas, sessionPlan, situation, _isFallback } = parsed;
+  const { personas, sessionPlan, situation, _isFallback, researchContext } = parsed;
+
+  // Build a research block from Tavily/agent findings to ground every response
+  const rc = researchContext || {};
+  const researchBlock = [
+    rc.interviewerPatterns  && `INTERVIEWER PATTERNS (from research): ${rc.interviewerPatterns}`,
+    rc.successPatterns      && `WHAT WORKS FOR CANDIDATES: ${rc.successPatterns}`,
+    rc.psychologicalProfile && `INTERVIEWER PSYCHOLOGY: ${rc.psychologicalProfile}`,
+    rc.pushbackStyle        && `HOW THEY PUSH BACK: ${rc.pushbackStyle}`,
+    rc.diagnosedWeakness    && `USER'S DIAGNOSED WEAKNESS: ${rc.diagnosedWeakness}`,
+    rc.warningSignals?.length && `WARNING SIGNALS TO WATCH FOR: ${rc.warningSignals.join("; ")}`,
+    rc.keyFindings?.length  && `KEY RESEARCH FINDINGS: ${rc.keyFindings.join(" | ")}`,
+  ].filter(Boolean).join("\n");
 
   // ── Opening turn ────────────────────────────────────────────────────────────
   if (!transcript && history.length === 0) {
@@ -13,12 +25,16 @@ export async function runJudgeOrchestrator({ transcript, sessionContext, history
     try {
       const raw = await callLLM({
         systemPrompt: `You are ${p.name}, ${p.role}. Your style: ${p.style}
-You are opening a practice session for someone preparing for: "${situation}"
-Write your opening line — introduce yourself naturally and ease into the first topic below.
-2-3 sentences max. Sound like a real ${p.role}, not a generic chatbot.
-Return ONLY valid JSON: {"line": "your opening line"}`,
-        userPrompt: `First topic to ease into: "${firstTopic?.text || "tell me about yourself"}"`,
-        maxTokens: 150,
+You are opening a live practice session for someone preparing for: "${situation}"
+${researchBlock ? `Research context — use this to sound knowledgeable:\n${researchBlock}\n` : ""}
+Introduce yourself in one natural sentence. Then ask ONE specific, incisive opening question that fits THIS exact situation.
+Rules:
+- Never ask "what's at stake for you" or "what's driving you" — those are generic filler.
+- Your question must reference something concrete about: "${situation}"
+- Sound like a real ${p.role} who has done this many times, not a chatbot reading from a list.
+Return ONLY valid JSON: {"line": "your full opening"}`,
+        userPrompt: `Situation: "${situation}"`,
+        maxTokens: 160,
       });
       const result = parseJSON(raw);
       if (result?.line) {
@@ -28,10 +44,10 @@ Return ONLY valid JSON: {"line": "your opening line"}`,
       console.error("[judge] opening error:", err.message);
     }
 
-    // Fallback opening
+    // Fallback opening — never read firstTopic text verbatim
     return {
       nextPersona: p.name, voiceId: p.voiceId,
-      line: `Hi, I'm ${p.name} — ${p.role}. ${firstTopic?.text || "Let's get started."}`,
+      line: `Hi, I'm ${p.name} — ${p.role}. I've looked over the situation. Let's get into it.`,
       intent: "Opening fallback", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "Session started",
     };
   }
@@ -51,28 +67,27 @@ Return ONLY valid JSON: {"line": "your opening line"}`,
   const nextTopic    = sessionPlan.questions[currentQuestionIndex + 1];
   const assignedP    = personas.find(p => p.name === currentTopic?.assignedPersona) || personas[0];
 
-  // Detect greeting so we don't skip social norms
-  const isGreeting = /^(hi+|hello+|hey+|good\s*(morning|afternoon|evening)|howdy)\b/i.test((transcript || "").trim());
+  // Detect greeting — only fire if the message is JUST a greeting (≤4 words),
+  // not if the user's answer happens to start with "Hi" followed by real content.
+  const trimmedTranscript = (transcript || "").trim();
+  const isGreeting =
+    trimmedTranscript.split(/\s+/).filter(Boolean).length <= 4 &&
+    /^(hi+|hello+|hey+|good\s*(morning|afternoon|evening)|howdy)\b/i.test(trimmedTranscript);
 
   const systemPrompt = `You are ${assignedP.name}, ${assignedP.role}.
 Your style: ${assignedP.style}
 You are conducting a live practice session for: "${situation}"
-
-HOW YOU RESPOND — follow this exactly:
-1. REACT first (1 sentence): Acknowledge something SPECIFIC from what they just said.
-   - Strong answer → "Good — you mentioned X, that's exactly the level of detail I'm looking for."
-   - Vague/generic → "You kept that pretty high-level. I want to push on that."
-   - Stumbled → "I noticed some hesitation there — let's try a different angle."
-   - Greeting → "Hey, good to meet you. I'm ${assignedP.name}. [then ease in]"
-   Never skip this step. Never react with "Great question!"
-
-2. THEN move forward (1-2 sentences): Based on what they said, either:
-   - Dig into something they specifically mentioned
-   - Push back on something that was vague or weak
-   - Transition naturally to a new topic
-
-3. STAY SPECIFIC TO: "${situation}"
-   Every word you say must make sense for THIS situation. Generic responses are failure.
+${researchBlock ? `\nRESEARCH CONTEXT — use this to sound like you actually know this domain:\n${researchBlock}\n` : ""}
+HOW YOU RESPOND — non-negotiable rules:
+1. NEVER output a pre-written question verbatim. The session plan is a theme guide, not a script.
+2. ALWAYS start by reacting to a SPECIFIC word, phrase, or idea from what the user just said.
+   - Quote or paraphrase something they said: "You mentioned X — let's go deeper on that."
+   - If vague: "You said [their vague phrase] — what does that actually mean in practice?"
+   - If stumbled: "You trailed off when you got to X — that's exactly where I want to push."
+   - If just a greeting: Introduce yourself warmly, then ask one easy opening question.
+   Never react generically. Never say "Great answer!" or re-ask the same question.
+3. THEN advance (1-2 sentences max): dig in, push back, or naturally transition.
+4. EVERY word must be specific to: "${situation}". Generic = failure.
 
 Output ONLY valid JSON (no preamble, no markdown):
 {
@@ -91,41 +106,30 @@ sessionComplete: true ONLY when all planned topics are done`;
 
   const recentHistory = history.slice(-8).map(t => `${t.speaker}: ${t.text}`).join("\n");
 
+  // For fallback sessions, only show the intent — never the question text (which is a theme, not a script)
+  const topicGuide = _isFallback
+    ? `CURRENT INTENT: ${currentTopic?.intent || "continue the conversation"}`
+    : `TOPIC THEME (direction only — do NOT quote this): "${currentTopic?.text || "wrap up"}"`;
+  const nextTopicGuide = _isFallback
+    ? (nextTopic ? `NEXT INTENT (if advancing): ${nextTopic.intent}` : "Last topic — wrap up naturally.")
+    : (nextTopic ? `NEXT TOPIC THEME (if advancing): "${nextTopic.text}"` : "This is the last topic — wrap up naturally.");
+
   const userPrompt = `CONVERSATION SO FAR:
 ${recentHistory}
 
 USER JUST SAID: "${transcript}"
-${isGreeting ? "⚠️ They are greeting you. Respond warmly and introduce yourself before anything else." : ""}
+${isGreeting ? "⚠️ Pure greeting — introduce yourself warmly, then ask one easy opening question." : ""}
 
-CURRENT TOPIC (use as loose guide, don't read verbatim): "${currentTopic?.text || "wrap up"}"
-${nextTopic ? `NEXT TOPIC (if advancing): "${nextTopic.text}"` : "This is the last topic."}
+CRITICAL: Do NOT repeat or paraphrase the topic/intent text below. React DIRECTLY to what the user just said.
+- Quote or reference something specific they mentioned, then dig into it or push back.
+- Use the topic/intent only to know what direction to steer toward, not what to say.
 
-Topics pushed on so far for this question: ${Math.max(0, currentQuestionIndex - (sessionPlan.questions.findIndex(q => q === currentTopic) || 0))} pushbacks
+${topicGuide}
+${nextTopicGuide}
+
 If you've pushed back on this topic twice already: advance regardless.
 
-React to what they said. Then move the conversation forward.`;
-
-  // ── Fallback builder ─────────────────────────────────────────────────────────
-  function buildFallback(reason) {
-    if (isGreeting) {
-      return {
-        nextPersona: assignedP.name, voiceId: assignedP.voiceId,
-        line: `Hey, great to meet you — I'm ${assignedP.name}, ${assignedP.role}. ${currentTopic?.text || "Let's get into it."}`,
-        intent: "Greeting fallback", sessionAdvancing: false, sessionComplete: false,
-        userPerformanceNote: "Greeting with LLM fallback",
-      };
-    }
-    const nextIndex = currentQuestionIndex + 1;
-    const nextQ = sessionPlan.questions[nextIndex];
-    const isLast = !nextQ;
-    const p = personas.find(x => x.name === (nextQ?.assignedPersona || personas[0].name)) || personas[0];
-    return {
-      nextPersona: p.name, voiceId: p.voiceId,
-      line: isLast ? "That's everything — thank you for your time." : nextQ.text,
-      intent: `Fallback — ${reason}`, sessionAdvancing: true, sessionComplete: isLast,
-      userPerformanceNote: reason,
-    };
-  }
+React to their actual words. Every sentence must be specific to this situation and this conversation.`;
 
   // ── LLM call ──────────────────────────────────────────────────────────────────
   let raw;
@@ -133,21 +137,31 @@ React to what they said. Then move the conversation forward.`;
     raw = await callLLMStream({ systemPrompt, userPrompt, maxTokens: 500, onChunk: () => {} });
   } catch (err) {
     console.error("[judge] LLM error:", err.message);
-    // If fallback session, generate a dynamic question instead of raw session plan text
-    if (_isFallback) {
-      try {
-        const dynRaw = await callLLM({
-          systemPrompt: `You are ${assignedP.name}, ${assignedP.role} for: "${situation}". React briefly to what was said and ask one follow-up question specific to this situation. 2 sentences max. Return ONLY JSON: {"line": "..."}`,
-          userPrompt: `They said: "${transcript}". Current topic: "${currentTopic?.text}"`,
-          maxTokens: 100,
-        });
-        const dynResult = parseJSON(dynRaw);
-        if (dynResult?.line) {
-          return { nextPersona: assignedP.name, voiceId: assignedP.voiceId, line: dynResult.line, intent: "Dynamic fallback", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "LLM retry" };
-        }
-      } catch {}
-    }
-    return buildFallback("LLM unavailable");
+    // Recovery: small targeted call — react to what the user said + steer toward current intent
+    try {
+      const recoverRaw = await callLLM({
+        systemPrompt: `You are ${assignedP.name}, ${assignedP.role}. You are conducting a practice session about: "${situation}".
+${isGreeting ? `They are greeting you. Introduce yourself warmly (1 sentence), then ease into the conversation with a soft opening question relevant to: "${situation}".` : "React to what the user just said and ask ONE specific follow-up. Reference something specific from their words."}
+2 sentences max. Return ONLY JSON: {"line": "..."}`,
+        userPrompt: `They said: "${transcript}".\nConversation so far:\n${recentHistory}\nTopic direction: ${currentTopic?.intent || currentTopic?.text || "continue"}`,
+        maxTokens: 120,
+      });
+      const recoverResult = parseJSON(recoverRaw);
+      if (recoverResult?.line) {
+        return { nextPersona: assignedP.name, voiceId: assignedP.voiceId, line: recoverResult.line, intent: "Recovery", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "LLM recovery" };
+      }
+    } catch {}
+    // True last resort: echo something the user said so the response is always contextual
+    const userWords = (transcript || "").trim().split(/\s+/).slice(0, 6).join(" ");
+    const isLast = currentQuestionIndex >= sessionPlan.questions.length - 1;
+    return {
+      nextPersona: assignedP.name, voiceId: assignedP.voiceId,
+      line: isLast
+        ? "That covers what I wanted to explore. Thank you for your time."
+        : (userWords ? `You mentioned "${userWords}" — say more about that.` : "Tell me more about that."),
+      intent: "Last resort fallback", sessionAdvancing: false, sessionComplete: isLast,
+      userPerformanceNote: "LLM unavailable",
+    };
   }
 
   const result = parseJSON(raw);

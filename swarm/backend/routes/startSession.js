@@ -44,6 +44,22 @@ export default async function handler(req, res) {
     const weakSpotOutput      = await runWeakSpotFinder({ situation }, writeChunk);
     const voiceDesignerOutput = await runVoiceDesigner({ situation, profilerOutput }, writeChunk);
 
+    // Distil the most useful research for the live session judge
+    const researchContext = {
+      interviewerPatterns: researcherOutput.interviewerPatterns  || "",
+      successPatterns:     researcherOutput.successPatterns      || "",
+      redFlags:            researcherOutput.redFlags             || [],
+      keyFindings:         (researcherOutput.keyFindings || []).slice(0, 4).map(f => f.insight || f),
+      rawSummary:          researcherOutput.rawSummary           || "",
+      psychologicalProfile: profilerOutput.psychologicalProfile  || "",
+      pushbackStyle:        profilerOutput.pushbackStyle         || "",
+      personaType:          profilerOutput.personaType           || "",
+      diagnosedWeakness:    weakSpotOutput.diagnosedWeakness     || "",
+      failureMechanism:     weakSpotOutput.failureMechanism      || "",
+      recoveryMove:         weakSpotOutput.recoveryMove          || "",
+      warningSignals:       weakSpotOutput.warningSignals        || [],
+    };
+
     await runArchitect({
       situation,
       researcherOutput,
@@ -51,6 +67,7 @@ export default async function handler(req, res) {
       weakSpotOutput,
       voiceDesignerOutput,
       styleHint,
+      researchContext,
     }, writeChunk);
 
   } catch (err) {
