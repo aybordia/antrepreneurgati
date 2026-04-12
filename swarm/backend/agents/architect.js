@@ -99,14 +99,20 @@ Output JSON now.`;
     ];
   }
 
-  const useFallback = async (reason) => {
-    console.error("[architect] using fallback:", reason);
-    const questions = await buildDynamicFallback();
+  const staticQuestions = [
+    { text: "motivation and opening context",            assignedPersona: fallbackPersonas[0].name, intent: "Warm-up" },
+    { text: "the specific challenge or weak point",      assignedPersona: fallbackPersonas[1].name, intent: "Probe" },
+    { text: "handling pushback or unexpected pressure",  assignedPersona: fallbackPersonas[2].name, intent: "Curveball" },
+    { text: "concrete plan and next steps",              assignedPersona: fallbackPersonas[0].name, intent: "Closing" },
+  ];
+
+  const useFallback = (reason) => {
+    console.error("[architect] using instant fallback:", reason);
     const fallback = {
       agent: "Architect",
       sessionSummary: `Practice session for: ${situation}`,
       personas: fallbackPersonas,
-      sessionPlan: { difficultyProgression: "escalating", totalEstimatedMinutes: 5, questions },
+      sessionPlan: { difficultyProgression: "escalating", totalEstimatedMinutes: 5, questions: staticQuestions },
       openingLine: "",
       closingCondition: "After all topics are covered.",
       _isFallback: true,
@@ -126,13 +132,13 @@ Output JSON now.`;
     ]);
     writeChunk({ agent: "Architect", chunk: "Session designed.", streamStart: true });
   } catch (err) {
-    return await useFallback(err.message);
+    return useFallback(err.message);
   }
 
   let parsed = parseJSON(raw);
 
   if (!parsed || !parsed.personas || parsed.personas.length !== 3) {
-    return await useFallback(`bad parse, personas=${parsed?.personas?.length}`);
+    return useFallback(`bad parse, personas=${parsed?.personas?.length}`);
   }
 
   // Ensure voiceIds are resolved correctly
