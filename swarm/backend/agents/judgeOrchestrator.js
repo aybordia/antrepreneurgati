@@ -1,171 +1,119 @@
-// PROMPT VERSION: 4.0 — fully generative, zero scripted questions
-import { callLLM, callLLMStream, parseJSON } from "../lib/llm.js";
+// PROMPT VERSION: 4.1 — fully generative, fast (callLLM, 200 tokens, tight prompts)
+import { callLLM, parseJSON } from "../lib/llm.js";
+
+// Truncate research fields so they stay compact in the prompt
+const clip = (s, n = 120) => s && s.length > n ? s.slice(0, n) + "…" : (s || "");
 
 export async function runJudgeOrchestrator({ transcript, sessionContext, history, currentQuestionIndex = 0 }) {
   const parsed = typeof sessionContext === "string" ? JSON.parse(sessionContext) : sessionContext;
   const { personas, sessionPlan, situation, researchContext } = parsed;
 
-  // Build research block from agent outputs — this is the model's entire knowledge source
   const rc = researchContext || {};
-  const researchBlock = [
-    rc.interviewerPatterns  && `HOW THESE INTERVIEWERS BEHAVE: ${rc.interviewerPatterns}`,
-    rc.successPatterns      && `WHAT WORKS FOR CANDIDATES: ${rc.successPatterns}`,
-    rc.psychologicalProfile && `WHAT THE INTERVIEWER IS REALLY EVALUATING: ${rc.psychologicalProfile}`,
-    rc.pushbackStyle        && `HOW THEY CHALLENGE CANDIDATES: ${rc.pushbackStyle}`,
-    rc.diagnosedWeakness    && `USER'S WEAK SPOT TO PROBE: ${rc.diagnosedWeakness}`,
-    rc.warningSignals?.length && `SIGNS USER IS STRUGGLING: ${rc.warningSignals.join("; ")}`,
-    rc.keyFindings?.length  && `KEY RESEARCH INSIGHTS: ${rc.keyFindings.join(" | ")}`,
+
+  // Compact research block — only the 4 most actionable fields, clipped tight
+  const researchLines = [
+    rc.interviewerPatterns  && `INTERVIEWER STYLE: ${clip(rc.interviewerPatterns)}`,
+    rc.psychologicalProfile && `WHAT THEY EVALUATE: ${clip(rc.psychologicalProfile)}`,
+    rc.diagnosedWeakness    && `USER'S WEAK SPOT: ${clip(rc.diagnosedWeakness)}`,
+    rc.keyFindings?.length  && `KEY INSIGHTS: ${rc.keyFindings.slice(0, 2).map(f => clip(f, 60)).join(" | ")}`,
   ].filter(Boolean).join("\n");
 
-  const turnCount = history.filter(t => t.speaker !== "heartbeat").length;
-  const totalTurns = (sessionPlan?.totalEstimatedMinutes || 5) * 2; // ~2 exchanges per minute
+  const turnCount = history.filter(t => t.speaker && t.text).length;
+  const totalTurns = (sessionPlan?.totalEstimatedMinutes || 5) * 2;
 
   // ── Opening turn ─────────────────────────────────────────────────────────────
   if (!transcript && history.length === 0) {
     const p = personas[0];
     try {
       const raw = await callLLM({
-        systemPrompt: `You are ${p.name}, ${p.role}. Style: ${p.style}
-You are opening a live practice session for someone preparing for: "${situation}"
-${researchBlock ? `\nResearch context:\n${researchBlock}\n` : ""}
-Write your opening: introduce yourself in one sentence, then ask ONE sharp, specific question about this exact situation.
-Do NOT ask generic questions like "what's at stake" or "what are you nervous about."
-Draw from the research — ask something that shows you know this domain cold.
-Return ONLY valid JSON: {"line": "your full opening"}`,
-        userPrompt: `Situation: "${situation}"`,
-        maxTokens: 160,
+        systemPrompt: `You are ${p.name}, ${p.role}. ${p.style}
+Situation: "${situation}"
+${researchLines ? `Research:\n${researchLines}\n` : ""}
+Introduce yourself briefly, then open with ONE sharp, specific question drawn from the research.
+Never ask "what's at stake" or "what makes you nervous". Be concrete and domain-specific.
+Return ONLY JSON: {"line": "..."}`,
+        userPrompt: situation,
+        maxTokens: 180,
       });
       const result = parseJSON(raw);
-      if (result?.line) {
-        return { nextPersona: p.name, voiceId: p.voiceId, line: result.line, intent: "Opening", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "Session started" };
-      }
+      if (result?.line) return { nextPersona: p.name, voiceId: p.voiceId, line: result.line, intent: "Opening", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "Session started" };
     } catch (err) {
       console.error("[judge] opening error:", err.message);
     }
-    return {
-      nextPersona: p.name, voiceId: p.voiceId,
-      line: `Hi, I'm ${p.name} — ${p.role}. I've reviewed everything. Let's get into it.`,
-      intent: "Opening fallback", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "Session started",
-    };
+    return { nextPersona: p.name, voiceId: p.voiceId, line: `Hi, I'm ${p.name} — ${p.role}. Let's get into it.`, intent: "Opening fallback", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "Session started" };
   }
 
-  // ── Hard turn limit ───────────────────────────────────────────────────────────
+  // ── Session end ───────────────────────────────────────────────────────────────
   if (turnCount >= totalTurns + 4) {
-    return {
-      nextPersona: personas[0].name, voiceId: personas[0].voiceId,
-      line: "That covers everything I wanted to explore. Thanks for your time.",
-      intent: "Session end", sessionAdvancing: false, sessionComplete: true,
-      userPerformanceNote: "Session completed",
-    };
+    return { nextPersona: personas[0].name, voiceId: personas[0].voiceId, line: "That covers everything I wanted to explore. Thanks for your time.", intent: "End", sessionAdvancing: false, sessionComplete: true, userPerformanceNote: "Session completed" };
   }
 
-  // ── Pick the active persona (rotate through the panel) ───────────────────────
-  const personaIndex = Math.min(
-    Math.floor((turnCount / Math.max(totalTurns, 1)) * personas.length),
-    personas.length - 1
-  );
-  const activePerson = personas[personaIndex];
+  // ── Pick active persona — rotate naturally across session arc ─────────────────
+  const personaIndex = Math.min(Math.floor((turnCount / Math.max(totalTurns, 1)) * personas.length), personas.length - 1);
+  const p = personas[personaIndex];
 
-  // ── Detect pure greeting (≤4 words, starts with greeting word) ───────────────
+  // ── Detect pure greeting ──────────────────────────────────────────────────────
   const trimmed = (transcript || "").trim();
   const isGreeting = trimmed.split(/\s+/).filter(Boolean).length <= 4 &&
     /^(hi+|hello+|hey+|good\s*(morning|afternoon|evening)|howdy)\b/i.test(trimmed);
 
-  // ── Build fully generative system prompt ─────────────────────────────────────
-  const difficultyHint = turnCount < 2
-    ? "This is early in the session — start warm, build rapport."
-    : turnCount >= totalTurns - 1
-    ? "This is the final stretch — close with something that leaves them thinking."
-    : currentQuestionIndex > 1
-    ? "Mid-session — escalate. Push back on vague answers, dig into specifics."
-    : "Building momentum — introduce a harder angle.";
+  // ── Stage hint ────────────────────────────────────────────────────────────────
+  const stage = turnCount < 2
+    ? "EARLY — warm intro, one opening question"
+    : turnCount >= totalTurns - 2
+    ? "CLOSING — synthesize, leave them thinking"
+    : "MID — escalate, push back on vague answers, dig into specifics";
 
-  const systemPrompt = `You are ${activePerson.name}, ${activePerson.role}.
-Style: ${activePerson.style}
-You are running a live practice session for: "${situation}"
+  // ── Recent history (last 6 turns only) ───────────────────────────────────────
+  const recentHistory = history.slice(-6).map(t => `${t.speaker}: ${t.text}`).join("\n");
 
-EVERYTHING YOU KNOW (generated by research agents — use this, not scripts):
-${researchBlock || `This is a practice session for: "${situation}"`}
+  // ── Single tight prompt — everything the model needs, nothing it doesn't ──────
+  const systemPrompt = `You are ${p.name}, ${p.role}. ${p.style}
+Situation: "${situation}"
+Research (use this — don't ignore it):
+${researchLines || `Practice session for: "${situation}"`}
 
-SESSION STATE: Turn ${turnCount + 1} of ~${totalTurns}. ${difficultyHint}
+SESSION: Turn ${turnCount + 1}/${totalTurns}. Stage: ${stage}
 
-HOW TO RESPOND — strict rules:
-1. React to the user's last message FIRST. Quote or reference something specific they said.
-   - If strong: "You said X — that's the right instinct. Now push it further: ..."
-   - If vague: "You mentioned X but stayed surface-level. What does that actually mean in practice?"
-   - If stumbled: "You trailed off on X — that's exactly where I want to push."
-   - If greeting: "Hey — I'm ${activePerson.name}. [then one sharp opening question based on the research]"
-2. Generate your next move entirely from the conversation and research above. NO scripts.
-3. Vary your approach — don't repeat angles already covered in the conversation.
-4. Max 3 sentences. Every word must be specific to: "${situation}"
+RULES — no exceptions:
+1. React to what the user JUST said — quote or reference their exact words.
+2. Then either dig deeper, push back on something weak, or introduce a new research-grounded angle.
+3. Never repeat a question already asked. Never ask generic filler ("what's at stake", "how does that make you feel").
+4. Max 2 sentences. Specific to this situation only.
+${isGreeting ? "5. They greeted you — introduce yourself briefly then ask your first question." : ""}
 
-Return ONLY valid JSON:
-{
-  "nextPersona": "${activePerson.name}",
-  "voiceId": "${activePerson.voiceId}",
-  "line": "your response — react + advance",
-  "intent": "what this turn tests",
-  "sessionAdvancing": true or false,
-  "sessionComplete": true or false,
-  "userPerformanceNote": "honest 1-line note on how they did"
-}
-sessionComplete: true only when all major angles have been thoroughly covered (typically after turn ${totalTurns})`;
+Return ONLY JSON (no markdown): {"nextPersona":"${p.name}","voiceId":"${p.voiceId}","line":"...","intent":"...","sessionAdvancing":false,"sessionComplete":false,"userPerformanceNote":"..."}`;
 
-  const recentHistory = history.slice(-10).map(t => `${t.speaker}: ${t.text}`).join("\n");
+  const userPrompt = `Conversation:\n${recentHistory}\n\nUser just said: "${transcript}"`;
 
-  const userPrompt = `CONVERSATION SO FAR:
-${recentHistory}
-
-USER JUST SAID: "${transcript}"
-${isGreeting ? "⚠️ This is a pure greeting — introduce yourself warmly, then ask one research-grounded opening question." : ""}
-
-Generate your next response. React to what they said. Use the research. Do not repeat questions already asked.`;
-
-  // ── LLM call ─────────────────────────────────────────────────────────────────
-  let raw;
   try {
-    raw = await callLLMStream({ systemPrompt, userPrompt, maxTokens: 500, onChunk: () => {} });
+    const raw = await callLLM({ systemPrompt, userPrompt, maxTokens: 200 });
+    const result = parseJSON(raw);
+    if (result?.line) {
+      const sentences = result.line.match(/[^.!?]+[.!?]+/g) || [result.line];
+      result.line = sentences.slice(0, 2).join(" ").trim();
+      return result;
+    }
+    console.error("[judge] bad parse:", raw?.slice(0, 100));
   } catch (err) {
     console.error("[judge] LLM error:", err.message);
-    // Recovery: minimal call that still reacts to what they said
+    // Recovery: minimal call
     try {
       const recoverRaw = await callLLM({
-        systemPrompt: `You are ${activePerson.name}, ${activePerson.role} in a practice session about: "${situation}".
-${isGreeting ? "They are greeting you — introduce yourself warmly and ask one opening question about the situation." : "React to what they said and ask one specific follow-up. Reference something from their words."}
-2 sentences max. Return ONLY JSON: {"line": "..."}`,
-        userPrompt: `They said: "${transcript}"\nConversation:\n${recentHistory}`,
-        maxTokens: 120,
+        systemPrompt: `You are ${p.name}, ${p.role}. Session: "${situation}". React to what was said and ask one specific follow-up. 1-2 sentences. Return ONLY JSON: {"line":"..."}`,
+        userPrompt: `They said: "${transcript}". Recent: ${recentHistory.slice(-200)}`,
+        maxTokens: 100,
       });
-      const recoverResult = parseJSON(recoverRaw);
-      if (recoverResult?.line) {
-        return { nextPersona: activePerson.name, voiceId: activePerson.voiceId, line: recoverResult.line, intent: "Recovery", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "LLM recovery" };
-      }
+      const r = parseJSON(recoverRaw);
+      if (r?.line) return { nextPersona: p.name, voiceId: p.voiceId, line: r.line, intent: "Recovery", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "Recovery" };
     } catch {}
-    // True last resort — echo their words back
-    const userWords = trimmed.split(/\s+/).slice(0, 6).join(" ");
-    return {
-      nextPersona: activePerson.name, voiceId: activePerson.voiceId,
-      line: userWords ? `You mentioned "${userWords}" — say more about that.` : "Tell me more.",
-      intent: "Last resort", sessionAdvancing: false, sessionComplete: false,
-      userPerformanceNote: "LLM unavailable",
-    };
   }
 
-  const result = parseJSON(raw);
-  if (!result?.line) {
-    console.error("[judge] bad parse:", raw?.slice(0, 150));
-    const userWords = trimmed.split(/\s+/).slice(0, 6).join(" ");
-    return {
-      nextPersona: activePerson.name, voiceId: activePerson.voiceId,
-      line: userWords ? `You mentioned "${userWords}" — say more.` : "Tell me more.",
-      intent: "Parse error fallback", sessionAdvancing: false, sessionComplete: false,
-      userPerformanceNote: "Parse error",
-    };
-  }
-
-  // Enforce 3-sentence max
-  const sentences = result.line.match(/[^.!?]+[.!?]+/g) || [result.line];
-  result.line = sentences.slice(0, 3).join(" ").trim();
-
-  return result;
+  // Last resort — echo their words
+  const words = trimmed.split(/\s+/).slice(0, 5).join(" ");
+  return {
+    nextPersona: p.name, voiceId: p.voiceId,
+    line: words ? `You mentioned "${words}" — say more about that.` : "Tell me more.",
+    intent: "Last resort", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "LLM unavailable",
+  };
 }

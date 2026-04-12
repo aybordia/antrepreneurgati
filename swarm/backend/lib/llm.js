@@ -1,8 +1,7 @@
-// PROMPT VERSION: 1.0
+// PROMPT VERSION: 1.1
 import OpenAI from "openai";
 import { jsonrepair } from "jsonrepair";
 
-// Use Gemini if key is set (1M TPM free), otherwise fall back to Groq (500k TPD)
 function getProviderConfig() {
   if (process.env.GEMINI_API_KEY) {
     return {
@@ -18,23 +17,30 @@ function getProviderConfig() {
   };
 }
 
-const DEFAULT_MODEL = null; // resolved per-call from getProviderConfig()
-
-// Gemini free tier: 15 RPM = 1 call per 4s minimum
-let lastCallTime = 0;
-const MIN_INTERVAL_MS = 4200;
+// Sliding-window rate limiter — fires immediately unless we're near the limit.
+// Gemini: 15 RPM. Groq: generous, no per-minute limit enforced here.
+// We track the last 14 request timestamps; only wait if the 14th was < 60s ago.
+const requestLog = [];
+const MAX_BURST = 14; // one below Gemini's 15 RPM hard limit
 
 async function rateLimit() {
-  const now = Date.now();
-  const wait = MIN_INTERVAL_MS - (now - lastCallTime);
-  if (wait > 0) await new Promise(r => setTimeout(r, wait));
-  lastCallTime = Date.now();
-}
+  if (!process.env.GEMINI_API_KEY) return; // Groq has no RPM limit we need to enforce
 
-// Lazy client — created on first call so dotenv has time to load
-function getClient() {
-  const { apiKey, baseURL } = getProviderConfig();
-  return new OpenAI({ apiKey, baseURL });
+  const now = Date.now();
+  // Evict timestamps older than 60 seconds
+  while (requestLog.length > 0 && requestLog[0] < now - 60000) requestLog.shift();
+
+  if (requestLog.length < MAX_BURST) {
+    requestLog.push(now);
+    return; // under budget — fire immediately
+  }
+
+  // At limit: wait until the oldest request is 60s old
+  const waitMs = requestLog[0] + 60000 - now + 150;
+  console.log(`[llm] rate limit — waiting ${waitMs}ms (${requestLog.length} req in last 60s)`);
+  await new Promise(r => setTimeout(r, waitMs));
+  requestLog.shift();
+  requestLog.push(Date.now());
 }
 
 // Parse retry-after from 429 messages. Returns ms to wait, or null to fail fast.
@@ -49,11 +55,16 @@ function parseRetryMs(errMessage = "") {
     return ms > 10000 ? null : ms;
   }
 
-  // No body / unknown format (Gemini RPM hit) → wait 4s and retry
+  // No body / unknown format (Gemini RPM burst hit) → wait 4s and retry
   return 4200;
 }
 
-// Non-streaming call — returns full response text
+function getClient() {
+  const { apiKey, baseURL } = getProviderConfig();
+  return new OpenAI({ apiKey, baseURL });
+}
+
+// Non-streaming call — faster for short outputs (judge responses, fallbacks)
 export async function callLLM({ systemPrompt, userPrompt, model, maxTokens = 2048 }) {
   await rateLimit();
   const resolvedModel = model || getProviderConfig().model;
@@ -85,7 +96,7 @@ export async function callLLM({ systemPrompt, userPrompt, model, maxTokens = 204
   }
 }
 
-// Streaming call — rate-paced, pipes tokens to onChunk callback, returns full text
+// Streaming call — use for long agent outputs that need to stream to SSE
 export async function callLLMStream({ systemPrompt, userPrompt, model, maxTokens = 2048, onChunk }) {
   await rateLimit();
   const resolvedModel = model || getProviderConfig().model;
@@ -132,26 +143,16 @@ export async function callLLMStream({ systemPrompt, userPrompt, model, maxTokens
   }
 }
 
-// Helper: safely parse JSON from LLM output.
-// Handles markdown fences, preamble text, and truncated JSON.
-// Returns null instead of throwing so callers can supply fallbacks.
+// Safely parse JSON from LLM output. Handles markdown fences, preamble, truncated JSON.
 export function parseJSON(raw) {
   if (!raw) return null;
-
-  // Strip markdown fences
   let cleaned = raw.replace(/```json\n?|\n?```/g, "").trim();
-
-  // Try direct parse first
   try { return JSON.parse(cleaned); } catch {}
-
-  // Extract the first {...} block in case there's preamble text (common with gemma models)
   const match = cleaned.match(/\{[\s\S]*\}/);
   if (match) {
     try { return JSON.parse(match[0]); } catch {}
     try { return JSON.parse(jsonrepair(match[0])); } catch {}
   }
-
-  // Last resort: try to repair the full cleaned string
   try { return JSON.parse(jsonrepair(cleaned)); } catch (e) {
     console.error("[parseJSON] all repair attempts failed:", e.message, "— raw length:", raw.length);
     return null;
