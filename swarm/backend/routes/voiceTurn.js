@@ -23,21 +23,30 @@ export default async function handler(req, res) {
       currentQuestionIndex: currentQuestionIndex || 0,
     });
 
-    // Send the full line in one chunk (audio can't play until full text arrives anyway)
     writeChunk({
       persona: result.nextPersona,
       voiceId: result.voiceId,
       chunk: result.line,
       done: true,
-      sessionComplete: result.sessionComplete,
-      sessionAdvancing: result.sessionAdvancing,
-      userPerformanceNote: result.userPerformanceNote,
-      intent: result.intent,
+      sessionComplete: result.sessionComplete || false,
+      sessionAdvancing: result.sessionAdvancing || false,
+      userPerformanceNote: result.userPerformanceNote || "",
+      intent: result.intent || "",
     });
 
   } catch (err) {
     console.error("voiceTurn error:", err);
-    writeChunk({ error: err.message });
+    // Send a graceful fallback line instead of leaving session in undefined state
+    writeChunk({
+      persona: "Panel",
+      voiceId: null,
+      chunk: "That's interesting — can you tell me more?",
+      done: true,
+      sessionComplete: false,
+      sessionAdvancing: false,
+      userPerformanceNote: "",
+      intent: "Error recovery",
+    });
   } finally {
     res.end();
   }

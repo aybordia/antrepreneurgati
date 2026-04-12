@@ -227,7 +227,9 @@ export default function MissionControl({ situation, onBeginSession, getIdToken }
         }, token, controller.signal);
       } catch (e) {
         if (e.name === "AbortError") return;
-        setError(e.message);
+        setError(e.message || "Connection failed. Please try again.");
+      } finally {
+        controller.abort(); // always clean up signal on exit
       }
     };
 

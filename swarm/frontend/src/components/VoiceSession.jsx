@@ -99,7 +99,7 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
   const activePersona = personas.find(p => p.name === currentPersona) || personas[0];
 
   const sendTurn = useCallback(async (spokenText) => {
-    if (isBusyRef.current) return;
+    if (isBusyRef.current || sessionCompleteRef.current || sessionEndedRef.current) return;
     isBusyRef.current = true;
     isAISpeakingRef.current = true;
     setIsAISpeaking(true);
@@ -126,12 +126,12 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
       }, token);
 
       if (!fullLine.trim()) {
-        // Nothing came back — don't add blank turn, just re-enable mic
+        // Nothing came back — re-enable mic only once
         isAISpeakingRef.current = false;
         isBusyRef.current = false;
         setIsAISpeaking(false);
-        if (!sessionCompleteRef.current && !sessionEndedRef.current) {
-          setTimeout(() => { if (!sessionEndedRef.current) start(); }, 400);
+        if (!sessionCompleteRef.current && !sessionEndedRef.current && !isListening) {
+          setTimeout(() => { if (!sessionEndedRef.current && !sessionCompleteRef.current) start(); }, 400);
         }
         return;
       }
@@ -158,15 +158,15 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
     isBusyRef.current = false;
     setIsAISpeaking(false);
 
-    if (!sessionCompleteRef.current && !sessionEndedRef.current) {
-      setTimeout(() => { if (!sessionEndedRef.current) start(); }, 400);
+    if (!sessionCompleteRef.current && !sessionEndedRef.current && !isListening) {
+      setTimeout(() => { if (!sessionEndedRef.current && !sessionCompleteRef.current) start(); }, 400);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionData, getIdToken]);
 
   const { start, stop, isListening, isProcessing, micError } = useElevenLabsSTT({
     onResult: async (spokenText) => {
-      if (isAISpeakingRef.current || isBusyRef.current || !spokenText?.trim()) return;
+      if (isAISpeakingRef.current || isBusyRef.current || sessionCompleteRef.current || sessionEndedRef.current || !spokenText?.trim()) return;
       const userTurn = { speaker: "You", text: spokenText, timestamp: Date.now() };
       historyRef.current = [...historyRef.current, userTurn];
       setHistory([...historyRef.current]);

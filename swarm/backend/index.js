@@ -47,5 +47,11 @@ app.post("/api/sessions/save", verifyToken, saveSessionRoute);
 app.get("/api/sessions/:id", verifyToken, getSessionRoute);
 app.post("/api/feedback", verifyToken, feedback);
 
+// Global error handler — prevents raw Express error pages in production
+app.use((err, req, res, next) => {
+  console.error("[global error]", err.message);
+  res.status(err.status || 500).json({ error: err.message || "Internal server error" });
+});
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Swarm backend running on :${PORT}`));

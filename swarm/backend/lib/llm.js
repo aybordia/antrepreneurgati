@@ -72,8 +72,8 @@ function soonestSlotMs() {
     }
   }
   if (soonest === Infinity) return 3000;
-  // Cap at 8s — we'd rather fail fast and use fallback than hang for a minute
-  return Math.min(Math.max(300, soonest - Date.now()), 8000);
+  // Min 500ms to avoid busy-loop; cap at 8s to fail fast and use fallback
+  return Math.min(Math.max(500, soonest - Date.now()), 8000);
 }
 
 // ── Retry-after parser ────────────────────────────────────────────────────────

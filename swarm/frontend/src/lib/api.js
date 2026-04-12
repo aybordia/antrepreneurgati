@@ -18,7 +18,11 @@ export async function streamFetch(url, body, onChunk, token, signal) {
     window.location.reload();
     throw new Error("Session expired — please sign in again");
   }
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  if (!response.ok) {
+    let msg = `HTTP ${response.status}`;
+    try { const j = await response.json(); if (j?.error) msg = j.error; } catch {}
+    throw new Error(msg);
+  }
 
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
@@ -26,7 +30,20 @@ export async function streamFetch(url, body, onChunk, token, signal) {
 
   while (true) {
     const { done, value } = await reader.read();
-    if (done) break;
+    if (done) {
+      // Drain any remaining buffered data before closing
+      if (buffer.trim()) {
+        const lines = buffer.split("\n\n");
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const raw = line.slice(6).trim();
+            if (!raw || raw === "[DONE]") continue;
+            try { onChunk(JSON.parse(raw)); } catch {}
+          }
+        }
+      }
+      break;
+    }
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split("\n\n");
     buffer = lines.pop();
@@ -47,7 +64,11 @@ export async function postJSON(url, body, token) {
     headers: buildHeaders(token),
     body: JSON.stringify(body),
   });
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  if (!response.ok) {
+    let msg = `HTTP ${response.status}`;
+    try { const j = await response.json(); if (j?.error) msg = j.error; } catch {}
+    throw new Error(msg);
+  }
   return response.json();
 }
 
@@ -60,6 +81,10 @@ export async function getJSON(url, token) {
     window.location.reload();
     throw new Error("Session expired");
   }
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  if (!response.ok) {
+    let msg = `HTTP ${response.status}`;
+    try { const j = await response.json(); if (j?.error) msg = j.error; } catch {}
+    throw new Error(msg);
+  }
   return response.json();
 }

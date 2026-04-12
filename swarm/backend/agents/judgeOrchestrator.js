@@ -1,22 +1,39 @@
-// PROMPT VERSION: 4.3 — minimal output tokens for lowest latency
+// PROMPT VERSION: 4.4 — guarded parsing, persona bounds, fast tokens
 import { callLLM, parseJSON } from "../lib/llm.js";
 
 const clip = (s, n = 80) => s && s.length > n ? s.slice(0, n) + "…" : (s || "");
 
 export async function runJudgeOrchestrator({ transcript, sessionContext, history, currentQuestionIndex = 0 }) {
-  const parsed = typeof sessionContext === "string" ? JSON.parse(sessionContext) : sessionContext;
-  const { personas, sessionPlan, situation, researchContext } = parsed;
+  // Guard: safe parse regardless of whether sessionContext is string or object
+  let parsed;
+  try {
+    parsed = typeof sessionContext === "string" ? JSON.parse(sessionContext) : sessionContext;
+  } catch (e) {
+    console.error("[judge] bad sessionContext:", e.message);
+    return { nextPersona: "Interviewer", voiceId: null, line: "Let's continue. Tell me more about your situation.", intent: "Recovery", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "" };
+  }
+
+  const { personas = [], sessionPlan, situation = "", researchContext } = parsed;
   const rc = researchContext || {};
 
-  // Compact research — 2 fields max, tightly clipped
+  // Guard: ensure personas array is valid
+  if (!personas.length) {
+    return { nextPersona: "Interviewer", voiceId: null, line: "Walk me through your situation in your own words.", intent: "Recovery", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "" };
+  }
+
   const researchLines = [
-    rc.interviewerPatterns  && `STYLE: ${clip(rc.interviewerPatterns, 80)}`,
-    rc.diagnosedWeakness    && `PROBE: ${clip(rc.diagnosedWeakness, 80)}`,
+    rc.interviewerPatterns && `STYLE: ${clip(rc.interviewerPatterns, 80)}`,
+    rc.diagnosedWeakness   && `PROBE: ${clip(rc.diagnosedWeakness, 80)}`,
   ].filter(Boolean).join(" | ");
 
   const turnCount = history.filter(t => t.speaker && t.text).length;
   const totalTurns = (sessionPlan?.totalEstimatedMinutes || 5) * 2;
-  const personaIndex = Math.min(Math.floor((turnCount / Math.max(totalTurns, 1)) * personas.length), personas.length - 1);
+
+  // Safe persona index — always in bounds
+  const personaIndex = Math.min(
+    Math.floor((turnCount / Math.max(totalTurns, 1)) * personas.length),
+    personas.length - 1
+  );
   const p = personas[personaIndex];
 
   // ── Opening turn ────────────────────────────────────────────────────────────
@@ -33,7 +50,7 @@ Introduce yourself in 1 sentence, then ask ONE sharp specific question. Return O
     } catch (err) {
       console.error("[judge] opening error:", err.message);
     }
-    return { nextPersona: p.name, voiceId: p.voiceId, line: `Hi, I'm ${p.name} — ${p.role}. Let's get into it. ${situation.split(" ").slice(0, 6).join(" ")} — walk me through your thinking.`, intent: "Opening fallback", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "Session started" };
+    return { nextPersona: p.name, voiceId: p.voiceId, line: `Hi, I'm ${p.name} — ${p.role}. Walk me through what you're preparing for.`, intent: "Opening fallback", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "Session started" };
   }
 
   // ── Session end ─────────────────────────────────────────────────────────────
@@ -42,12 +59,11 @@ Introduce yourself in 1 sentence, then ask ONE sharp specific question. Return O
   }
 
   const trimmed = (transcript || "").trim();
-  const isGreeting = trimmed.split(/\s+/).filter(Boolean).length <= 4 &&
+  const isGreeting = !history.length &&
+    trimmed.split(/\s+/).filter(Boolean).length <= 4 &&
     /^(hi+|hello+|hey+|good\s*(morning|afternoon|evening)|howdy)\b/i.test(trimmed);
 
   const stage = turnCount < 2 ? "warm" : turnCount >= totalTurns - 2 ? "closing" : "mid";
-
-  // Last 4 turns only — less input = faster
   const recentHistory = history.slice(-4).map(t => `${t.speaker}: ${t.text}`).join("\n");
 
   const systemPrompt = `You are ${p.name}, ${p.role}. ${p.style}
@@ -66,7 +82,6 @@ Return ONLY: {"line":"...","intent":"..."}`;
       const line = sentences.slice(0, 2).join(" ").trim();
       return { nextPersona: p.name, voiceId: p.voiceId, line, intent: result.intent || "Follow-up", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "" };
     }
-    console.error("[judge] bad parse:", raw?.slice(0, 80));
   } catch (err) {
     console.error("[judge] LLM error:", err.message);
     try {
