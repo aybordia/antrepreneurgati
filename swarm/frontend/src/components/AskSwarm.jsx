@@ -41,6 +41,7 @@ export default function AskSwarm({ sessionResult, situation, debrief, onRunAgain
         currentAudioRef.current.pause();
         currentAudioRef.current = null;
       }
+      window.speechSynthesis?.cancel();
     };
   }, []);
 

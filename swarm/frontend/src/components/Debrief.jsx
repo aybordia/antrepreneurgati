@@ -90,6 +90,18 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
   const [text, setText] = useState("");
   const [cards, setCards] = useState(0);
   const [savedSessionId, setSavedSessionId] = useState(null);
+  const currentAudioRef = useRef(null);
+
+  // Stop all audio when navigating away
+  useEffect(() => {
+    return () => {
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+      }
+      window.speechSynthesis?.cancel();
+    };
+  }, []);
 
   const [interviewRating, setInterviewRating] = useState(0);
   const [debriefRating, setDebriefRating] = useState(0);
@@ -150,7 +162,7 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
     const script = buildScript(debrief);
     let i = 0;
     speakText({ text: script, voiceId: ADAM, stability: 0.8, similarityBoost: 0.75 })
-      .then(a => a?.play?.())
+      .then(a => { if (a) { currentAudioRef.current = a; a.play?.(); } })
       .catch(() => {});
     const id = setInterval(() => {
       i++;
