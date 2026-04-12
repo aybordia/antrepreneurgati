@@ -1,4 +1,4 @@
-import { callLLM } from "../lib/llm.js";
+import { callLLM, callLLMStream } from "../lib/llm.js";
 
 const SYSTEM_PROMPT = `You are Swarm AI, a brutally honest interview coach who just watched the user's full practice session. You have:
 - The full verbatim transcript of every question asked and every answer the user gave
@@ -56,16 +56,12 @@ ${priorChat ? `PRIOR CONVERSATION:\n${priorChat}\n` : ""}
 USER'S QUESTION:
 ${question}`;
 
-    const answer = await callLLM({
+    await callLLMStream({
       systemPrompt: SYSTEM_PROMPT,
       userPrompt,
-      maxTokens: 800,
+      maxTokens: 600,
+      onChunk: (tok) => writeChunk({ chunk: tok, done: false }),
     });
-
-    // Stream character by character for typewriter effect
-    for (const char of answer) {
-      writeChunk({ chunk: char, done: false });
-    }
     writeChunk({ chunk: "", done: true });
 
   } catch (err) {

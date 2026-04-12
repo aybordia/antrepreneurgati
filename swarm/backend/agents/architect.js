@@ -111,6 +111,7 @@ Output JSON now.`;
 
   const sessionData = {
     agent: "Architect",
+    situation,
     sessionSummary: `Practice session for: ${situation}`,
     personas: fallbackPersonas,
     sessionPlan: { difficultyProgression: "escalating", totalEstimatedMinutes: 5, questions: staticQuestions },

@@ -1,4 +1,4 @@
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Sphere, MeshDistortMaterial } from "@react-three/drei";
 import * as THREE from "three";
@@ -49,7 +49,7 @@ function OrbMesh({ color, speaking }) {
       <pointLight position={[-3, -1, 2]} intensity={1.2} color="#ffffff" />
       <pointLight ref={movingLight} position={[0, 2, -3]} intensity={1.0} color={color} />
       <pointLight position={[0, -3, 1]} intensity={0.5} color="#6ee7b7" />
-      <Sphere ref={meshRef} args={[1, 128, 128]}>
+      <Sphere ref={meshRef} args={[1, 64, 64]}>
         <MeshDistortMaterial
           color={color}
           emissive={color}
@@ -64,13 +64,38 @@ function OrbMesh({ color, speaking }) {
   );
 }
 
+// CSS fallback orb when WebGL is unavailable
+function FallbackOrb({ color, speaking, size }) {
+  return (
+    <div style={{
+      width: `${size}px`, height: `${size}px`, borderRadius: "50%",
+      background: `radial-gradient(circle at 35% 30%, ${color}ff 0%, ${color}44 60%, ${color}11 100%)`,
+      boxShadow: `0 0 ${speaking ? 40 : 20}px ${color}66, 0 0 ${speaking ? 80 : 40}px ${color}22`,
+      animation: speaking ? "orbPulse 0.8s ease-in-out infinite" : "orbPulse 3s ease-in-out infinite",
+      flexShrink: 0,
+    }} />
+  );
+}
+
 export default function OrbScene({ color = "#7B6CFF", speaking = false, size = 200 }) {
+  const [contextLost, setContextLost] = useState(false);
+
+  if (contextLost) {
+    return <FallbackOrb color={color} speaking={speaking} size={size} />;
+  }
+
   return (
     <div style={{ width: `${size}px`, height: `${size}px`, flexShrink: 0 }}>
       <Canvas
         camera={{ position: [0, 0, 3.2], fov: 44 }}
-        gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
+        gl={{ alpha: true, antialias: false, powerPreference: "low-power" }}
         style={{ background: "transparent" }}
+        onCreated={({ gl }) => {
+          gl.domElement.addEventListener("webglcontextlost", (e) => {
+            e.preventDefault();
+            setContextLost(true);
+          });
+        }}
       >
         <OrbMesh color={color} speaking={speaking} />
       </Canvas>
