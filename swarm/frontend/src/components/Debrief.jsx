@@ -125,21 +125,27 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
         if (!cancelled) {
           setDebrief(d);
           setLoading(false);
-          // Save to localStorage (free, persistent, no backend needed)
           try {
             const token = getIdToken ? await getIdToken() : null;
+            // Decode userId from JWT so we can key localStorage the same way
             let userId = "anonymous";
             if (token) {
               const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
               userId = payload.sub || "anonymous";
             }
-            const saved = saveSession(userId, {
+            const sessionPayload = {
               situation,
               history: sessionResult?.history || [],
               debrief: d,
               sessionData: sessionResult?.sessionData || {},
-            });
-            setSavedSessionId(saved.id);
+            };
+            // 1. Save to localStorage immediately (always works)
+            const local = saveSession(userId, sessionPayload);
+            setSavedSessionId(local.id);
+            // 2. Also save to MongoDB via backend (persists across devices)
+            postJSON("/api/sessions/save", sessionPayload, token)
+              .then(saved => { if (saved?.id) setSavedSessionId(saved.id); })
+              .catch(() => {});
           } catch {}
         }
       } catch {
