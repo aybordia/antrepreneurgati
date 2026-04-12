@@ -71,25 +71,23 @@ Pay particular attention to any findings that address this gap.`;
     rawSummary: "Live research was unavailable. Proceeding with general interview preparation.",
   };
 
-  console.log("[researcher] calling Groq LLM...");
+  console.log("[researcher] calling LLM...");
   let raw;
   try {
-    let isFirst = true;
-    raw = await callLLMStream({
-      systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 500,
-      onChunk: (tok) => {
-        writeChunk({ agent: "Researcher", chunk: tok, streamStart: isFirst });
-        isFirst = false;
-      },
-    });
+    const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 6000));
+    raw = await Promise.race([
+      callLLMStream({
+        systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 500,
+        onChunk: (tok) => { writeChunk({ agent: "Researcher", chunk: tok, streamStart: !raw }); },
+      }),
+      timeout,
+    ]);
   } catch (err) {
-    console.error("[researcher] LLM error:", err.message);
+    console.error("[researcher] LLM error/timeout:", err.message, "— using fallback");
     writeChunk({ agent: "Researcher", done: true });
     return FALLBACK;
   }
 
-  console.log("[researcher] LLM done, raw length:", raw?.length);
   writeChunk({ agent: "Researcher", done: true });
-
   return parseJSON(raw) ?? FALLBACK;
 }

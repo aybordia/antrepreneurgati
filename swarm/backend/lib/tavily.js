@@ -1,6 +1,6 @@
 export async function tavilySearch({ query, maxResults = 6 }) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000); // 8s timeout
+  const timeout = setTimeout(() => controller.abort(), 3000); // 3s timeout
 
   const response = await fetch("https://api.tavily.com/search", {
     method: "POST",
