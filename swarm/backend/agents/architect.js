@@ -106,55 +106,23 @@ Output JSON now.`;
     { text: "concrete plan and next steps",              assignedPersona: fallbackPersonas[0].name, intent: "Closing" },
   ];
 
-  const useFallback = (reason) => {
-    console.error("[architect] using instant fallback:", reason);
-    const fallback = {
-      agent: "Architect",
-      sessionSummary: `Practice session for: ${situation}`,
-      personas: fallbackPersonas,
-      sessionPlan: { difficultyProgression: "escalating", totalEstimatedMinutes: 5, questions: staticQuestions },
-      openingLine: "",
-      closingCondition: "After all topics are covered.",
-      _isFallback: true,
-      researchContext,
-    };
-    writeChunk({ agent: "Architect", done: true, sessionData: fallback });
-    return fallback;
+  // Skip LLM entirely — instant. Judge is fully generative, no LLM needed here.
+  writeChunk({ agent: "Architect", chunk: "Session architected.", streamStart: true });
+
+  const sessionData = {
+    agent: "Architect",
+    sessionSummary: `Practice session for: ${situation}`,
+    personas: fallbackPersonas,
+    sessionPlan: { difficultyProgression: "escalating", totalEstimatedMinutes: 5, questions: staticQuestions },
+    openingLine: "",
+    closingCondition: "After all topics are covered.",
+    researchContext: {
+      ...researchContext,
+      psychologicalProfile: "",
+      diagnosedWeakness: researchContext?.interviewerPatterns?.slice(0, 80) || "",
+    },
   };
 
-  let raw;
-  try {
-    let isFirst = true;
-    const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 7000));
-    raw = await Promise.race([
-      callLLM({ systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 600 }),
-      timeout,
-    ]);
-    writeChunk({ agent: "Architect", chunk: "Session designed.", streamStart: true });
-  } catch (err) {
-    return useFallback(err.message);
-  }
-
-  let parsed = parseJSON(raw);
-
-  if (!parsed || !parsed.personas || parsed.personas.length !== 3) {
-    return useFallback(`bad parse, personas=${parsed?.personas?.length}`);
-  }
-
-  // Ensure voiceIds are resolved correctly
-  parsed.personas = parsed.personas.map((p) => ({
-    ...p,
-    voiceId: Object.values(VOICE_IDS).includes(p.voiceId) ? p.voiceId : resolveVoiceId(p.voiceId),
-  }));
-
-  // Merge architect's inferred fields into researchContext for the judge
-  parsed.researchContext = {
-    ...researchContext,
-    psychologicalProfile: parsed.psychologicalProfile || "",
-    diagnosedWeakness:    parsed.diagnosedWeakness    || "",
-  };
-
-  writeChunk({ agent: "Architect", done: true, sessionData: parsed });
-
-  return parsed;
+  writeChunk({ agent: "Architect", done: true, sessionData });
+  return sessionData;
 }
