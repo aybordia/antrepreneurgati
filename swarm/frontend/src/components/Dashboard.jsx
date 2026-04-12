@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getJSON } from "../lib/api";
+import { getSessions } from "../lib/localSessions";
 
 const sv = {
   initial: { opacity: 0, filter: "blur(10px)" },
@@ -469,18 +469,10 @@ export default function Dashboard({ user, onNewSession, getIdToken }) {
   const [viewing, setViewing] = useState(null);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const token = await getIdToken();
-        const data = await getJSON("/api/sessions", token);
-        setSessions(data);
-      } catch (e) {
-        console.error("Failed to load sessions:", e);
-      }
-      setLoading(false);
-    };
-    load();
-  }, [getIdToken]);
+    if (!user?.sub) { setLoading(false); return; }
+    setSessions(getSessions(user.sub));
+    setLoading(false);
+  }, [user]);
 
   const avgScore = sessions.length
     ? Math.round(sessions.filter(s => s.clarityScore !== null).reduce((a, s) => a + (s.clarityScore || 0), 0) / Math.max(sessions.filter(s => s.clarityScore !== null).length, 1))

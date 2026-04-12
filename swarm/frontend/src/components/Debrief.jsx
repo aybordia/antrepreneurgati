@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { postJSON } from "../lib/api";
 import { speakText, stopAllAudio } from "../hooks/useVoiceOutput";
+import { saveSession } from "../lib/localSessions";
 
 const ADAM = "pNInz6obpgDQGcFmaJgB";
 
@@ -124,12 +125,22 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
         if (!cancelled) {
           setDebrief(d);
           setLoading(false);
-          postJSON("/api/sessions/save", {
-            situation,
-            history: sessionResult?.history || [],
-            debrief: d,
-            sessionData: sessionResult?.sessionData || {},
-          }, token).then(saved => { if (saved?.id) setSavedSessionId(saved.id); }).catch(() => {});
+          // Save to localStorage (free, persistent, no backend needed)
+          try {
+            const token = getIdToken ? await getIdToken() : null;
+            let userId = "anonymous";
+            if (token) {
+              const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+              userId = payload.sub || "anonymous";
+            }
+            const saved = saveSession(userId, {
+              situation,
+              history: sessionResult?.history || [],
+              debrief: d,
+              sessionData: sessionResult?.sessionData || {},
+            });
+            setSavedSessionId(saved.id);
+          } catch {}
         }
       } catch {
         if (!cancelled) {
