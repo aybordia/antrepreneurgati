@@ -76,7 +76,7 @@ Pay particular attention to any findings that address this gap.`;
   try {
     let isFirst = true;
     raw = await callLLMStream({
-      systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 1500,
+      systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 900,
       onChunk: (tok) => {
         writeChunk({ agent: "Researcher", chunk: tok, streamStart: isFirst });
         isFirst = false;

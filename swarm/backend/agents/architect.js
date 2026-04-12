@@ -1,5 +1,5 @@
 // PROMPT VERSION: 1.0
-import { callLLMStream, parseJSON } from "../lib/llm.js";
+import { callLLM, callLLMStream, parseJSON } from "../lib/llm.js";
 import { VOICE_IDS, resolveVoiceId } from "../lib/elevenlabs.js";
 
 const SYSTEM_PROMPT = `You are the Architect agent in a multi-agent AI system called Swarm. You run after all other agents have completed.

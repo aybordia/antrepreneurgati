@@ -151,6 +151,8 @@ const SITUATION_KEYWORDS = {
     "distributed", "scale", "url", "shortener", "request", "million", "backend",
     "infrastructure", "latency", "l4", "data structure", "software", "internship",
     "python", "go", "startup", "decision", "incomplete",
+    "cache", "database", "service", "api", "performance", "concurren", "tradeoff",
+    "architect", "implement", "memory", "network", "load", "microservice",
   ],
   "MIT Admissions": [
     "mit", "admissions", "passion", "curious", "research", "community", "applicant",

@@ -58,7 +58,7 @@ This matters — the profiler should include how this type of interviewer specif
   try {
     let isFirst = true;
     raw = await callLLMStream({
-      systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 1500,
+      systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 900,
       onChunk: (tok) => {
         writeChunk({ agent: "Profiler", chunk: tok, streamStart: isFirst });
         isFirst = false;

@@ -38,10 +38,14 @@ export default async function handler(req, res) {
   const keepalive = setInterval(() => writeChunk({ heartbeat: true }), 8000);
 
   try {
-    // Agents run sequentially; callLLM enforces pacing globally
-    const researcherOutput    = await runResearcher({ situation }, writeChunk);
-    const profilerOutput      = await runProfiler({ situation }, writeChunk);
-    const weakSpotOutput      = await runWeakSpotFinder({ situation }, writeChunk);
+    // Researcher, Profiler, WeakSpotFinder all need only `situation` — run in parallel
+    // to cut startup time from 5 sequential LLM calls to 3 stages
+    const [researcherOutput, profilerOutput, weakSpotOutput] = await Promise.all([
+      runResearcher({ situation }, writeChunk),
+      runProfiler({ situation }, writeChunk),
+      runWeakSpotFinder({ situation }, writeChunk),
+    ]);
+    // VoiceDesigner needs profilerOutput — runs after
     const voiceDesignerOutput = await runVoiceDesigner({ situation, profilerOutput }, writeChunk);
 
     // Distil the most useful research for the live session judge

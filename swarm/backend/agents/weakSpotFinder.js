@@ -60,7 +60,7 @@ Do not give general interview advice. This is about their specific gap in their 
   try {
     let isFirst = true;
     raw = await callLLMStream({
-      systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 1500,
+      systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 900,
       onChunk: (tok) => {
         writeChunk({ agent: "WeakSpotFinder", chunk: tok, streamStart: isFirst });
         isFirst = false;

@@ -1,5 +1,5 @@
-// PROMPT VERSION: 4.1 — fully generative, fast (callLLM, 200 tokens, tight prompts)
-import { callLLM, parseJSON } from "../lib/llm.js";
+// PROMPT VERSION: 4.2 — fully generative, callLLMStream for reliability
+import { callLLM, callLLMStream, parseJSON } from "../lib/llm.js";
 
 // Truncate research fields so they stay compact in the prompt
 const clip = (s, n = 120) => s && s.length > n ? s.slice(0, n) + "…" : (s || "");
@@ -87,7 +87,7 @@ Return ONLY JSON (no markdown): {"nextPersona":"${p.name}","voiceId":"${p.voiceI
   const userPrompt = `Conversation:\n${recentHistory}\n\nUser just said: "${transcript}"`;
 
   try {
-    const raw = await callLLM({ systemPrompt, userPrompt, maxTokens: 200 });
+    const raw = await callLLMStream({ systemPrompt, userPrompt, maxTokens: 400, onChunk: () => {} });
     const result = parseJSON(raw);
     if (result?.line) {
       const sentences = result.line.match(/[^.!?]+[.!?]+/g) || [result.line];
