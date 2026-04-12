@@ -45,16 +45,34 @@ Diagnose this weakness precisely and build surgical counter-strategies.
 
 Do not give general interview advice. This is about their specific gap in their specific context. The responseFramework examples must reference their actual situation — not generic placeholders.`;
 
-  let isFirst = true;
-  const raw = await callLLMStream({
-    systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 3000,
-    onChunk: (tok) => {
-      writeChunk({ agent: "WeakSpotFinder", chunk: tok, streamStart: isFirst });
-      isFirst = false;
-    },
-  });
+  const FALLBACK = {
+    agent: "WeakSpotFinder", diagnosedWeakness: "Analysis unavailable.",
+    rootCause: "", failureMechanism: "", commonMistakes: [],
+    responseFrameworks: [
+      { name: "Bridge", description: "Bridge to your strengths.", template: "Acknowledge, bridge, strength.", example: "" },
+      { name: "STAR", description: "Situation-Task-Action-Result.", template: "State situation, task, action, result.", example: "" },
+      { name: "Reframe", description: "Reframe the weakness.", template: "Acknowledge honestly, then show growth.", example: "" },
+    ],
+    practicePrompts: [], warningSignals: [], recoveryMove: "",
+  };
+
+  let raw;
+  try {
+    let isFirst = true;
+    raw = await callLLMStream({
+      systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 1500,
+      onChunk: (tok) => {
+        writeChunk({ agent: "WeakSpotFinder", chunk: tok, streamStart: isFirst });
+        isFirst = false;
+      },
+    });
+  } catch (err) {
+    console.error("[weakSpotFinder] LLM error:", err.message);
+    writeChunk({ agent: "WeakSpotFinder", done: true });
+    return FALLBACK;
+  }
 
   writeChunk({ agent: "WeakSpotFinder", done: true });
 
-  return parseJSON(raw);
+  return parseJSON(raw) ?? FALLBACK;
 }

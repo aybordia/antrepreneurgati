@@ -50,16 +50,34 @@ ${JSON.stringify(profilerOutput.interviewerPersonas)}
 
 Design the voice specifications for each persona. The voices must feel like genuinely different people — different age, different energy, different pacing. Someone listening blindfolded should be able to tell immediately when the persona changes.`;
 
-  let isFirst = true;
-  const raw = await callLLMStream({
-    systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 1000,
-    onChunk: (tok) => {
-      writeChunk({ agent: "VoiceDesigner", chunk: tok, streamStart: isFirst });
-      isFirst = false;
-    },
-  });
+  const FALLBACK = {
+    agent: "VoiceDesigner",
+    voiceSpecs: [
+      { personaArchetype: "The Skeptic",     personaName: "Alex",   voiceProfile: { gender: "male",   ageRange: "40s-50s", pace: "measured", warmth: "cool",   accentDirection: "American neutral", vocabularyRegister: "executive",      signatureHabit: "Uses silence after hard questions", elevenLabsVoiceTarget: "Arnold", stability: 0.7, similarityBoost: 0.75 } },
+      { personaArchetype: "The Warm Mentor", personaName: "Jordan", voiceProfile: { gender: "female", ageRange: "30s",     pace: "moderate", warmth: "warm",   accentDirection: "American neutral", vocabularyRegister: "conversational",  signatureHabit: "Summarizes before challenging",     elevenLabsVoiceTarget: "Rachel", stability: 0.6, similarityBoost: 0.80 } },
+      { personaArchetype: "The Stress Tester",personaName: "Morgan",voiceProfile: { gender: "male",   ageRange: "30s-40s", pace: "brisk",    warmth: "cold",   accentDirection: "American neutral", vocabularyRegister: "technical",       signatureHabit: "Asks rapid follow-ups",              elevenLabsVoiceTarget: "Josh",   stability: 0.4, similarityBoost: 0.75 } },
+    ],
+    sessionPacingNotes: "Moderate rhythm, escalating difficulty.",
+    silenceGuidance: "Use silence after difficult questions to add pressure.",
+  };
+
+  let raw;
+  try {
+    let isFirst = true;
+    raw = await callLLMStream({
+      systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 1000,
+      onChunk: (tok) => {
+        writeChunk({ agent: "VoiceDesigner", chunk: tok, streamStart: isFirst });
+        isFirst = false;
+      },
+    });
+  } catch (err) {
+    console.error("[voiceDesigner] LLM error:", err.message);
+    writeChunk({ agent: "VoiceDesigner", done: true });
+    return FALLBACK;
+  }
 
   writeChunk({ agent: "VoiceDesigner", done: true });
 
-  return parseJSON(raw);
+  return parseJSON(raw) ?? FALLBACK;
 }

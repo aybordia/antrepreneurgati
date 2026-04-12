@@ -6,7 +6,7 @@
 import { applyRating } from "../lib/prefsStore.js";
 
 export default async function handler(req, res) {
-  const userId = req.userId;
+  const userId = req.user?.sub;
   const { sessionId, interviewRating, debriefRating, interviewFeedback, debriefFeedback } = req.body;
 
   if (!sessionId) return res.status(400).json({ error: "sessionId required" });

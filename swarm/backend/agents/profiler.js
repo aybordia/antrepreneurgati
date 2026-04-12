@@ -54,16 +54,47 @@ If it's a negotiation: profile the power dynamic and what the other party cares 
 The user's stated weakness or fear: "${extractedGap}"
 This matters — the profiler should include how this type of interviewer specifically responds to candidates who exhibit this weakness.`;
 
-  let isFirst = true;
-  const raw = await callLLMStream({
-    systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 3000,
-    onChunk: (tok) => {
-      writeChunk({ agent: "Profiler", chunk: tok, streamStart: isFirst });
-      isFirst = false;
-    },
-  });
+  let raw;
+  try {
+    let isFirst = true;
+    raw = await callLLMStream({
+      systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 1500,
+      onChunk: (tok) => {
+        writeChunk({ agent: "Profiler", chunk: tok, streamStart: isFirst });
+        isFirst = false;
+      },
+    });
+  } catch (err) {
+    console.error("[profiler] LLM error:", err.message);
+    writeChunk({ agent: "Profiler", done: true });
+    return {
+      agent: "Profiler", personaType: "Interviewer", demographics: "Unknown",
+      coreValues: [], communicationStyle: "", leansIn: [], checksOut: [],
+      silenceUsage: "", pushbackStyle: "", redFlags: [], greenFlags: [],
+      catchPhrasePatterns: [], psychologicalProfile: "",
+      interviewerPersonas: [
+        { name: "Alex", archetype: "The Skeptic", shortBio: "Experienced evaluator.", voiceDescription: "Medium pace, neutral warmth, conversational." },
+        { name: "Jordan", archetype: "The Warm Mentor", shortBio: "Supportive interviewer.", voiceDescription: "Slow pace, warm, academic." },
+        { name: "Morgan", archetype: "The Stress Tester", shortBio: "Challenges every answer.", voiceDescription: "Fast pace, cold, technical." },
+      ],
+    };
+  }
 
   writeChunk({ agent: "Profiler", done: true });
 
-  return parseJSON(raw);
+  const result = parseJSON(raw);
+  if (!result) {
+    return {
+      agent: "Profiler", personaType: "Interviewer", demographics: "Unknown",
+      coreValues: [], communicationStyle: "", leansIn: [], checksOut: [],
+      silenceUsage: "", pushbackStyle: "", redFlags: [], greenFlags: [],
+      catchPhrasePatterns: [], psychologicalProfile: "",
+      interviewerPersonas: [
+        { name: "Alex", archetype: "The Skeptic", shortBio: "Experienced evaluator.", voiceDescription: "Medium pace, neutral warmth, conversational." },
+        { name: "Jordan", archetype: "The Warm Mentor", shortBio: "Supportive interviewer.", voiceDescription: "Slow pace, warm, academic." },
+        { name: "Morgan", archetype: "The Stress Tester", shortBio: "Challenges every answer.", voiceDescription: "Fast pace, cold, technical." },
+      ],
+    };
+  }
+  return result;
 }

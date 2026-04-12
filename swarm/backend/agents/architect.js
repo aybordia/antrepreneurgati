@@ -90,20 +90,53 @@ ${styleHint ? `\n${styleHint}` : ""}
 
 Design the optimal session plan. Make questions specific to the research. Map each elevenLabsVoiceTarget to a real voice ID from the VOICE_IDS map in the rules.`;
 
-  let isFirst = true;
-  const raw = await callLLMStream({
-    systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 4096,
-    onChunk: (tok) => {
-      writeChunk({ agent: "Architect", chunk: tok, streamStart: isFirst });
-      isFirst = false;
+  const FALLBACK_SESSION = {
+    agent: "Architect",
+    sessionSummary: "A practice session targeting your specific scenario.",
+    personas: [
+      { name: "Alex",   role: "Senior Interviewer", voiceId: VOICE_IDS["Arnold"] ?? Object.values(VOICE_IDS)[0], color: "#7B6CFF", orbIndex: 0, style: "Direct and probing." },
+      { name: "Jordan", role: "Panel Member",        voiceId: VOICE_IDS["Rachel"] ?? Object.values(VOICE_IDS)[1], color: "#F5A623", orbIndex: 1, style: "Warm but thorough." },
+      { name: "Morgan", role: "Domain Expert",       voiceId: VOICE_IDS["Josh"]   ?? Object.values(VOICE_IDS)[2], color: "#6ee7b7", orbIndex: 2, style: "Technical and fast-paced." },
+    ],
+    sessionPlan: {
+      difficultyProgression: "escalating",
+      totalEstimatedMinutes: 5,
+      questions: [
+        { text: "Tell me about yourself and what brings you here today.", assignedPersona: "Jordan", intent: "Warm-up and context-setting.", followUpTriggers: [], curveballAfter: false, suggestedFollowUp: "What specifically drew you to this?" },
+        { text: "Walk me through the biggest challenge you've faced in this area.", assignedPersona: "Alex", intent: "Assess depth of experience.", followUpTriggers: ["vague answer"], curveballAfter: false, suggestedFollowUp: "What would you do differently now?" },
+        { text: "How do you handle situations where you lack expertise?", assignedPersona: "Alex", intent: "Target stated weakness.", followUpTriggers: ["defensive response"], curveballAfter: false, suggestedFollowUp: "Give me a specific example." },
+        { text: "What's the most important thing you want me to remember about you?", assignedPersona: "Morgan", intent: "Closing self-advocacy.", followUpTriggers: [], curveballAfter: false, suggestedFollowUp: "Why should that matter to us?" },
+        { text: "If you had to start over, what would you do differently?", assignedPersona: "Jordan", intent: "Reflection and self-awareness.", followUpTriggers: [], curveballAfter: true, suggestedFollowUp: "Be specific about the first thing you'd change." },
+        { text: "What questions do you have for us?", assignedPersona: "Alex", intent: "Reverse questioning — signals preparation.", followUpTriggers: [], curveballAfter: false, suggestedFollowUp: "" },
+      ],
     },
-  });
+    openingLine: "Thanks for joining us today. Let's get started.",
+    closingCondition: "After all questions are completed or user signals they are done.",
+  };
 
-  const parsed = parseJSON(raw);
+  let raw;
+  try {
+    let isFirst = true;
+    raw = await callLLMStream({
+      systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 2000,
+      onChunk: (tok) => {
+        writeChunk({ agent: "Architect", chunk: tok, streamStart: isFirst });
+        isFirst = false;
+      },
+    });
+  } catch (err) {
+    console.error("[architect] LLM error:", err.message);
+    writeChunk({ agent: "Architect", done: true, sessionData: FALLBACK_SESSION });
+    return FALLBACK_SESSION;
+  }
 
-  // Validate persona count
-  if (!parsed.personas || parsed.personas.length !== 3) {
-    throw new Error(`Architect returned ${parsed.personas?.length} personas, expected 3`);
+  let parsed = parseJSON(raw);
+
+  // Fall back to default session if parse failed or personas are missing
+  if (!parsed || !parsed.personas || parsed.personas.length !== 3) {
+    console.error("[architect] bad output (personas:", parsed?.personas?.length, ") — using fallback session");
+    writeChunk({ agent: "Architect", done: true, sessionData: FALLBACK_SESSION });
+    return FALLBACK_SESSION;
   }
 
   // Ensure voiceIds are resolved correctly

@@ -104,11 +104,18 @@ export async function callLLMStream({ systemPrompt, userPrompt, model = DEFAULT_
 }
 
 // Helper: safely parse JSON from LLM output (strips markdown fences, repairs common issues)
+// Returns null instead of throwing so callers can supply fallbacks.
 export function parseJSON(raw) {
+  if (!raw) return null;
   const cleaned = raw.replace(/```json\n?|\n?```/g, "").trim();
   try {
     return JSON.parse(cleaned);
   } catch {
-    return JSON.parse(jsonrepair(cleaned));
+    try {
+      return JSON.parse(jsonrepair(cleaned));
+    } catch (e) {
+      console.error("[parseJSON] repair failed:", e.message, "— raw length:", raw.length);
+      return null;
+    }
   }
 }

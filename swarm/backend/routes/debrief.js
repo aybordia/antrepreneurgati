@@ -51,7 +51,7 @@ export default async function handler(req, res) {
   const { fullTranscript, situation, agentResearch, sessionPlan } = req.body;
 
   // Load user debrief style preference
-  const userPrefs = req.userId ? getPrefs(req.userId) : null;
+  const userPrefs = req.user?.sub ? getPrefs(req.user.sub) : null;
   const debriefHint = buildDebriefStyleHint(userPrefs);
 
   try {
@@ -71,8 +71,23 @@ ${fullTranscript.map((t) => `[${t.speaker}]: ${t.text}`).join("\n")}
 Analyze this session and produce your Debrief Analyzer output JSON. Be honest. Be specific. Quote the transcript directly for best/worst moments.
 ${debriefHint ? `\n${debriefHint}` : ""}`;
 
-    const raw = await callLLM({ systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 2000 });
+    const raw = await callLLM({ systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 1500 });
     const result = parseJSON(raw);
+
+    if (!result) {
+      console.error("[debrief] JSON parse failed — returning fallback debrief");
+      return res.json({
+        clarityScore: 50,
+        clarityRationale: "Debrief analysis was unavailable due to a processing error.",
+        confidenceMap: {},
+        contentGaps: [],
+        bestMoment: { quote: "", reason: "Could not analyze session." },
+        worstMoment: { quote: "", reason: "Could not analyze session." },
+        patterns: [],
+        overallVerdict: "Session analysis could not be completed. Please try again.",
+        priorityFix: "Retry the debrief — a temporary error occurred.",
+      });
+    }
 
     res.json(result);
   } catch (err) {

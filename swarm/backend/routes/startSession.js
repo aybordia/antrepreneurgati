@@ -28,9 +28,10 @@ export default async function handler(req, res) {
   }
 
   // Load user preferences to personalise this session
-  const userPrefs = req.userId ? getPrefs(req.userId) : null;
+  const userId = req.user?.sub;
+  const userPrefs = userId ? getPrefs(userId) : null;
   const styleHint = buildInterviewStyleHint(userPrefs);
-  if (styleHint) console.log(`[startSession] injecting style prefs for user=${req.userId} (${userPrefs.sessionCount} sessions)`);
+  if (styleHint) console.log(`[startSession] injecting style prefs for user=${userId} (${userPrefs.sessionCount} sessions)`);
 
   try {
     // Agents run sequentially; callLLM enforces pacing globally

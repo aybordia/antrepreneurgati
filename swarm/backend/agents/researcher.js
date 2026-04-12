@@ -63,18 +63,33 @@ Analyze these results and produce your Researcher output JSON. Focus on insights
 The user mentioned this specific gap or concern: "${extractedGap}"
 Pay particular attention to any findings that address this gap.`;
 
+  const FALLBACK = {
+    agent: "Researcher", keyFindings: [],
+    interviewerPatterns: "Research unavailable for this session.",
+    successPatterns: "Research unavailable for this session.",
+    redFlags: [], trendingTopics: [],
+    rawSummary: "Live research was unavailable. Proceeding with general interview preparation.",
+  };
+
   console.log("[researcher] calling Groq LLM...");
-  let isFirst = true;
-  const raw = await callLLMStream({
-    systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 3000,
-    onChunk: (tok) => {
-      writeChunk({ agent: "Researcher", chunk: tok, streamStart: isFirst });
-      isFirst = false;
-    },
-  });
+  let raw;
+  try {
+    let isFirst = true;
+    raw = await callLLMStream({
+      systemPrompt: SYSTEM_PROMPT, userPrompt, maxTokens: 1500,
+      onChunk: (tok) => {
+        writeChunk({ agent: "Researcher", chunk: tok, streamStart: isFirst });
+        isFirst = false;
+      },
+    });
+  } catch (err) {
+    console.error("[researcher] LLM error:", err.message);
+    writeChunk({ agent: "Researcher", done: true });
+    return FALLBACK;
+  }
 
   console.log("[researcher] LLM done, raw length:", raw?.length);
   writeChunk({ agent: "Researcher", done: true });
 
-  return parseJSON(raw);
+  return parseJSON(raw) ?? FALLBACK;
 }
