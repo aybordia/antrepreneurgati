@@ -2,93 +2,67 @@
 import { callLLM, callLLMStream, parseJSON } from "../lib/llm.js";
 import { VOICE_IDS, resolveVoiceId } from "../lib/elevenlabs.js";
 
-const SYSTEM_PROMPT = `You are the Architect agent in a multi-agent AI system called Swarm. You run after all other agents have completed.
+const SYSTEM_PROMPT = `You are the Session Architect. Given a situation and research, design the full practice session.
 
-Your job: Read the complete research and analysis from the other four agents and design the optimal practice session structure for this specific user. You are the director of the experience.
+You must also infer:
+- WHO the interviewers are (names, roles, personalities specific to this situation)
+- WHAT the user's weak spot is and how to probe it
+- WHICH voices fit each persona
 
-Output format: Return ONLY a valid JSON object with this exact schema:
+Output ONLY valid JSON:
 {
   "agent": "Architect",
-  "sessionSummary": "string — 2 sentences on what this session is designed to accomplish for this specific user",
+  "sessionSummary": "string — 2 sentences specific to this user's situation",
+  "psychologicalProfile": "string — what the interviewer is really evaluating",
+  "diagnosedWeakness": "string — the user's likely weak spot based on their situation",
   "personas": [
     {
-      "name": "string — from Profiler",
-      "role": "string — their institutional role",
-      "voiceId": "string — ElevenLabs voice ID",
-      "color": "string — hex color",
+      "name": "string — UNIQUE realistic name fitting this situation (NOT Alex/Jordan/Morgan)",
+      "role": "string — specific institutional role",
+      "voiceId": "string — from VOICE_IDS map",
+      "color": "string — hex",
       "orbIndex": 0,
       "style": "string — 1 sentence behavioral description"
     }
   ],
   "sessionPlan": {
-    "difficultyProgression": "linear or escalating or wave",
+    "difficultyProgression": "escalating",
     "totalEstimatedMinutes": 5,
     "questions": [
       {
-        "text": "string — exact question to ask",
-        "assignedPersona": "string — must match one of personas[].name",
-        "intent": "string — what this question is testing",
-        "followUpTriggers": ["string"],
+        "text": "string — specific question for this situation",
+        "assignedPersona": "string — matches personas[].name",
+        "intent": "string",
+        "followUpTriggers": [],
         "curveballAfter": false,
-        "suggestedFollowUp": "string — harder follow-up if user stumbles"
+        "suggestedFollowUp": "string"
       }
     ]
   },
-  "openingLine": "string — the exact first thing the session moderator says to begin",
-  "closingCondition": "string — how the session knows when to end"
+  "openingLine": "",
+  "closingCondition": "After all topics covered"
 }
 
 Rules:
-- sessionPlan.questions: minimum 6, maximum 10
-- First question must be a warm-up (lower stakes, rapport-building)
-- Question 2 or 3 must directly target the user's stated weakness
-- At least one question must be a curveball (unexpected, off-script)
-- Last question should leave the user feeling tested but capable
-- personas must have exactly 3 entries
-- orbIndex: 0, 1, 2 for the 3 personas
-- Colors for personas: use #7B6CFF, #F5A623, #6ee7b7 in that order
-- voiceId must be a real ElevenLabs voice ID from this map: ${JSON.stringify(VOICE_IDS)}
-- Map the VoiceDesigner's elevenLabsVoiceTarget name to the ID above
-- Do not include any text outside the JSON object. No preamble, no explanation.`;
+- personas: exactly 3, with UNIQUE names that fit this specific situation
+- questions: 6-8, escalating difficulty
+- voiceId must come from: ${JSON.stringify(VOICE_IDS)}
+- Colors: #7B6CFF, #F5A623, #6ee7b7 in that order
+- No preamble. No markdown. JSON only.`;
 
-export async function runArchitect({ situation, researcherOutput, profilerOutput, weakSpotOutput, voiceDesignerOutput, styleHint, researchContext }, writeChunk) {
-  writeChunk({ agent: "Architect", chunk: "Architecting your personalised session plan…", thinking: true });
+export async function runArchitect({ situation, researcherOutput, styleHint, researchContext }, writeChunk) {
+  writeChunk({ agent: "Architect", chunk: "Designing your session…", thinking: true });
 
-  // Compress inputs to stay within Groq 6000 TPM — only pass fields Architect actually needs
-  const compressedInputs = {
-    researcher: {
-      interviewerPatterns: researcherOutput.interviewerPatterns,
-      successPatterns: researcherOutput.successPatterns,
-      redFlags: researcherOutput.redFlags,
-      trendingTopics: researcherOutput.trendingTopics,
-      keyFindings: (researcherOutput.keyFindings || []).slice(0, 3).map(f => f.insight),
-    },
-    profiler: {
-      personaType: profilerOutput.personaType,
-      interviewerPersonas: profilerOutput.interviewerPersonas,
-      pushbackStyle: profilerOutput.pushbackStyle,
-    },
-    weakSpot: {
-      diagnosedWeakness: weakSpotOutput.diagnosedWeakness,
-      failureMechanism: weakSpotOutput.failureMechanism,
-      responseFrameworks: (weakSpotOutput.responseFrameworks || []).map(f => ({ name: f.name, template: f.template })),
-      warningSignals: weakSpotOutput.warningSignals,
-      recoveryMove: weakSpotOutput.recoveryMove,
-    },
-    voiceDesigner: {
-      voiceSpecs: (voiceDesignerOutput.voiceSpecs || []).map(v => ({
-        personaName: v.personaName,
-        elevenLabsVoiceTarget: v.voiceProfile?.elevenLabsVoiceTarget,
-      })),
-    },
-  };
+  const rc = researcherOutput || {};
+  const userPrompt = `Situation: "${situation}"
 
-  const userPrompt = `The user's situation: "${situation}"
+Research findings:
+- Interviewer patterns: ${rc.interviewerPatterns || ""}
+- Success patterns: ${rc.successPatterns || ""}
+- Key insights: ${(rc.keyFindings || []).slice(0, 3).map(f => f.insight || f).join(" | ")}
+${styleHint ? `\nUser preferences: ${styleHint}` : ""}
 
-${JSON.stringify(compressedInputs)}
-${styleHint ? `\n${styleHint}` : ""}
-
-Design the optimal session plan. Make questions specific to the research. Map each elevenLabsVoiceTarget to a real voice ID from the VOICE_IDS map in the rules.`;
+Design the full session. Infer the interviewer psychology, the user's weak spot, and create 3 UNIQUE personas with realistic names specific to this situation. Generate specific questions from the research.`;
 
   // Build situation-aware fallback personas so the session feels right
   // even when the Architect LLM call fails
@@ -225,8 +199,12 @@ Design the optimal session plan. Make questions specific to the research. Map ea
     voiceId: Object.values(VOICE_IDS).includes(p.voiceId) ? p.voiceId : resolveVoiceId(p.voiceId),
   }));
 
-  // Attach research context so judgeOrchestrator can use it during live turns
-  parsed.researchContext = researchContext;
+  // Merge architect's inferred fields into researchContext for the judge
+  parsed.researchContext = {
+    ...researchContext,
+    psychologicalProfile: parsed.psychologicalProfile || "",
+    diagnosedWeakness:    parsed.diagnosedWeakness    || "",
+  };
 
   writeChunk({ agent: "Architect", done: true, sessionData: parsed });
 

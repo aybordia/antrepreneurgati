@@ -87,7 +87,7 @@ Return ONLY JSON (no markdown): {"nextPersona":"${p.name}","voiceId":"${p.voiceI
   const userPrompt = `Conversation:\n${recentHistory}\n\nUser just said: "${transcript}"`;
 
   try {
-    const raw = await callLLMStream({ systemPrompt, userPrompt, maxTokens: 400, onChunk: () => {} });
+    const raw = await callLLM({ systemPrompt, userPrompt, maxTokens: 250 });
     const result = parseJSON(raw);
     if (result?.line) {
       const sentences = result.line.match(/[^.!?]+[.!?]+/g) || [result.line];

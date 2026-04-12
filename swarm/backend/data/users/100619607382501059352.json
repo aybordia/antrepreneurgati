@@ -1,0 +1,858 @@
+[
+  {
+    "id": "879a72b9-4eb1-4ae3-9c36-5d768f150d82",
+    "userId": "100619607382501059352",
+    "situation": "MIT interview with professor who asks me about my cs experience",
+    "history": [
+      {
+        "speaker": "Dr. Rachel Kim",
+        "text": "I was expecting a more detailed description of a specific project or experience.  Can you try again?",
+        "timestamp": 1775963879205
+      }
+    ],
+    "debrief": {
+      "clarityScore": 62,
+      "clarityRationale": "The user's answers were often vague and lacking in specific examples, with the professor prompting for more detail on multiple occasions.",
+      "confidenceMap": {
+        "Can you describe a project or experience where you had to apply a specific CS concept?": {
+          "score": 40,
+          "notes": "The user failed to provide a specific example and the professor had to prompt them to try again."
+        },
+        "I understand you're interested in pursuing a CS PhD at MIT. What specific research areas within CS appeal to you?": {
+          "score": 60,
+          "notes": "The user mentioned general interest in research, but didn't provide any specific details or areas of interest."
+        },
+        "Reflect on a past experience where you learned a valuable CS lesson. How would you apply that knowledge in a future project?": {
+          "score": 50,
+          "notes": "The user's answer was vague and didn't provide a clear example of how they would apply the lesson in a future project."
+        },
+        "You mentioned having worked on a project involving [specific CS concept]. How do you think you could further improve or generalize that concept to broader applications in CS?": {
+          "score": 30,
+          "notes": "The user had not previously mentioned working on such a project, and seemed uncertain about how to answer the question."
+        },
+        "How would you design an experiment to investigate the impact of [cs concept] on [specific area of CS]?": {
+          "score": 20,
+          "notes": "The user's answer was vague and didn't demonstrate any understanding of how to design an experiment."
+        },
+        "Let's consider a hypothetical project where you need to [complex cs scenario]. Can you walk me through your thought process and how you'd approach it?": {
+          "score": 40,
+          "notes": "The user's answer was vague and didn't demonstrate a clear thought process for approaching the complex scenario."
+        },
+        "Describe a time when you encountered a technical challenge in a CS project or experience. How did you resolve it?": {
+          "score": 30,
+          "notes": "The user didn't provide a specific example of a technical challenge they've encountered."
+        },
+        "Can you discuss a specific project or experience that showcases your CS skills and expertise?": {
+          "score": 10,
+          "notes": "The user failed to provide a specific example, and their answer was vague and lacking in detail."
+        },
+        "What do you think is the most significant misconception or misunderstanding in the CS community about [specific cs concept or area]?": {
+          "score": 20,
+          "notes": "The user didn't provide any specific insight or understanding of a misconception in the CS community."
+        },
+        "Let's assume you've been tasked with building a [cs-related product or system]. Can you describe your thought process and key decisions that would go into its design and implementation?": {
+          "score": 30,
+          "notes": "The user's answer was vague and didn't demonstrate a clear thought process for designing and implementing the product or system."
+        }
+      },
+      "contentGaps": [
+        {
+          "gap": "Providing specific examples of CS projects or experiences, including challenges and solutions.",
+          "importance": "high",
+          "suggestion": "Prepare specific examples of projects or experiences, including challenges and solutions, to demonstrate expertise and thought process."
+        },
+        {
+          "gap": "Demonstrating understanding of research areas within CS and potential dissertation topics.",
+          "importance": "high",
+          "suggestion": "Conduct research and prepare examples of specific research areas within CS that interest you, and potential dissertation topics."
+        },
+        {
+          "gap": "Designing experiments to investigate the impact of CS concepts on specific areas of CS.",
+          "importance": "medium",
+          "suggestion": "Learn about experimental design and prepare examples of how you would design an experiment to investigate the impact of CS concepts on specific areas of CS."
+        }
+      ],
+      "bestMoment": {
+        "quote": "Unfortunately, this user didn't have a strong answer to share.",
+        "reason": "The user's answers were often vague and lacking in specific examples."
+      },
+      "worstMoment": {
+        "quote": "I was expecting a more detailed description of a specific project or experience. Can you try again?",
+        "reason": "The user failed to provide a specific example and the professor had to prompt them to try again, indicating a lack of preparation and understanding."
+      },
+      "patterns": [
+        {
+          "pattern": "Vagueness and lack of specificity in answers.",
+          "rationale": "The user's answers were often vague and lacking in specific examples, which made it difficult to assess their expertise and thought process."
+        }
+      ],
+      "overallVerdict": "Unfortunately, this user struggled to provide specific examples and demonstrate their thought process and expertise in CS, which is a critical aspect of a PhD interview at MIT. While they expressed general interest in research, they lacked the specific details and understanding required to have a strong conversation with the professor.",
+      "priorityFix": "Preparing specific examples of CS projects or experiences, including challenges and solutions, to demonstrate expertise and thought process."
+    },
+    "sessionData": {
+      "agent": "Architect",
+      "sessionSummary": "This session is designed to prepare the user for their CS PhD interview at MIT by targeting their weaknesses in providing concrete examples from personal CS experience and addressing common mistakes that lead to overhypothetical scenarios.",
+      "personas": [
+        {
+          "name": "Dr. Rachel Kim",
+          "role": "MIT CS Professor with a Skeptical Approach",
+          "voiceId": "EXAVITQu4vr4xnSDxMaL",
+          "color": "#7B6CFF",
+          "orbIndex": 0,
+          "style": "Dr. Kim is the embodiment of intellectual curiosity and rigor, always pushing boundaries and challenging assumptions."
+        },
+        {
+          "name": "Dr. Brian Chen",
+          "role": "Warm and Supportive MIT CS Professor",
+          "voiceId": "pNInz6obpgDQGcFmaJgB",
+          "color": "#F5A623",
+          "orbIndex": 1,
+          "style": "Dr. Chen fosters a welcoming environment where students feel comfortable sharing their thoughts and ideas, guiding them with kindness and expertise."
+        },
+        {
+          "name": "Dr. Sophia Patel",
+          "role": "Inquisitive and Rigorous MIT CS Professor",
+          "voiceId": "VR6AewLTigWG4xSOukaG",
+          "color": "#6ee7b7",
+          "orbIndex": 2,
+          "style": "Dr. Patel brings a keen mind and sharp instincts to the table, skillfully probing for insight and clarity while pushing candidates to think critically."
+        }
+      ],
+      "sessionPlan": {
+        "difficultyProgression": "escalating",
+        "totalEstimatedMinutes": 45,
+        "questions": [
+          {
+            "text": "Can you describe a project or experience where you had to apply a specific CS concept?",
+            "assignedPersona": "Dr. Rachel Kim",
+            "intent": "Warm-up: getting familiar with the conversation style"
+          },
+          {
+            "text": "I understand you're interested in pursuing a CS PhD at MIT. What specific research areas within CS appeal to you?",
+            "assignedPersona": "Dr. Brian Chen",
+            "intent": "Warm-up, exploring research interests"
+          },
+          {
+            "text": "Reflect on a past experience where you learned a valuable CS lesson. How would you apply that knowledge in a future project?",
+            "assignedPersona": "Dr. Sophia Patel",
+            "intent": "Critical thinking: evaluating past experiences for future applications"
+          },
+          {
+            "text": "You mentioned having worked on a project involving [specific CS concept]. How do you think you could further improve or generalize that concept to broader applications in CS?",
+            "assignedPersona": "Dr. Rachel Kim",
+            "intent": "Critical thinking: assessing potential improvements to a specific CS concept"
+          },
+          {
+            "text": "How would you design an experiment to investigate the impact of [cs concept] on [specific area of CS]?",
+            "assignedPersona": "Dr. Sophia Patel",
+            "intent": "Critical thinking: experimental design and investigation"
+          },
+          {
+            "text": "Let's consider a hypothetical project where you need to [complex cs scenario]. Can you walk me through your thought process and how you'd approach it?",
+            "assignedPersona": "Dr. Brian Chen",
+            "intent": "Critical thinking: walking through thought processes for complex scenarios"
+          },
+          {
+            "text": "Describe a time when you encountered a technical challenge in a CS project or experience. How did you resolve it?",
+            "assignedPersona": "Dr. Sophia Patel",
+            "intent": "Real-world application: technical challenge resolution"
+          },
+          {
+            "text": "Can you discuss a specific project or experience that showcases your CS skills and expertise?",
+            "assignedPersona": "Dr. Rachel Kim",
+            "intent": "Showcasing CS skills and expertise"
+          },
+          {
+            "text": "What do you think is the most significant misconception or misunderstanding in the CS community about [specific cs concept or area]?",
+            "assignedPersona": "Dr. Sophia Patel",
+            "intent": "Critical thinking: identifying misconceptions and misunderstandings"
+          },
+          {
+            "text": "Let's assume you've been tasked with building a [cs-related product or system]. Can you describe your thought process and key decisions that would go into its design and implementation?",
+            "assignedPersona": "Dr. Brian Chen",
+            "intent": "Complex problem-solving: system design and implementation"
+          }
+        ]
+      },
+      "openingLine": "Hello, I'm Dr. Kim. I'd like to start our conversation today by asking you to describe a project or experience where you applied a specific CS concept. Can you walk me through that for me?",
+      "closingCondition": "The session will conclude when the user is asked if they feel confident and prepared to engage in a conversation about their CS experience and interests with an imaginary interviewer."
+    },
+    "createdAt": 1775963959406
+  },
+  {
+    "id": "5cbd8fda-fd3d-421f-a5df-030e83a7b1d7",
+    "userId": "100619607382501059352",
+    "situation": "I have an MIT interview with a professor who will test me on my computer science experience.",
+    "history": [
+      {
+        "speaker": "Dr. Rachel Kim",
+        "text": "I'm not getting a very strong signal here, can you try again?  What makes you think you can design a recommendation system?  Provide something more substantial.",
+        "timestamp": 1775964394357
+      },
+      {
+        "speaker": "You",
+        "text": "Um, so basically what, what makes I think I can design a recommendation system is, um-",
+        "timestamp": 1775964415085
+      },
+      {
+        "speaker": "Dr. Rachel Kim",
+        "text": "Looks like we're still waiting for a clear answer.  Can you give me a concise reason why you think you can design a recommendation system?",
+        "timestamp": 1775964426821
+      },
+      {
+        "speaker": "You",
+        "text": "(rires)",
+        "timestamp": 1775964435663
+      },
+      {
+        "speaker": "Dr. Rachel Kim",
+        "text": "It's time to stop making jokes and give me a real answer, with facts and examples.  What makes you think you can design a recommendation system?",
+        "timestamp": 1775964440549
+      },
+      {
+        "speaker": "You",
+        "text": "(카메라 셔터음)",
+        "timestamp": 1775964450191
+      },
+      {
+        "speaker": "Dr. Rachel Kim",
+        "text": "It seems I've given you enough chances to prove your abilities.  Can you at least give me a sincere 'I don't know'?",
+        "timestamp": 1775964454722
+      },
+      {
+        "speaker": "You",
+        "text": "(바닥 소리)",
+        "timestamp": 1775964463514
+      },
+      {
+        "speaker": "Skeptic",
+        "text": "It seems you're struggling to articulate a clear thought process.  Can you reflect on your recent responses and tell me what's behind this behavior?",
+        "timestamp": 1775964469504
+      },
+      {
+        "speaker": "You",
+        "text": "No, I do not want to reflect.",
+        "timestamp": 1775964482563
+      }
+    ],
+    "debrief": {
+      "clarityScore": 45,
+      "clarityRationale": "The user struggled to articulate clear, concise answers, often responding with vague statements or laughing nervously. In several instances, they were unable to provide a specific reason for answering a question.",
+      "confidenceMap": {
+        "What do you think are the most significant challenges in designing a recommendation system for e-commerce platforms? How would you approach this problem?": {
+          "score": 40,
+          "notes": "Failed to provide a clear or specific answer. Responded with a vague statement, then laughed, and eventually remained silent after several prompts for clarification."
+        },
+        "How would you approach a hypothetical scenario where you need to design a database for a social network platform? What data structures and algorithms would you use?": {
+          "score": 60,
+          "notes": "Provided a brief but somewhat accurate response. However, the answer lacked specific details and the user failed to elaborate further when prompted to do so."
+        },
+        "Can you describe a situation where you applied problem-solving skills to optimize an algorithm in a real-world scenario?": {
+          "score": 50,
+          "notes": "Failed to provide a clear and compelling example of problem-solving skills. When pressed for more details, the user refused to elaborate and responded with a laugh."
+        },
+        "How do you think a professor like Dr. Taylor would approach a technical problem in the classroom? What strategies would they use to engage students?": {
+          "score": 70,
+          "notes": "Provided a brief and somewhat accurate response. However, the user failed to elaborate further or provide additional supporting evidence to back their claims."
+        },
+        "What are some potential areas where you struggle to apply your computer science skills to real-world problems? How do you think you could improve?": {
+          "score": 30,
+          "notes": "Failed to identify any areas of improvement and refused to consider potential strategies for addressing these gaps. The response came across as dismissive and unreflective."
+        },
+        "How would you approach a hypothetical scenario where you need to design a system to optimize database queries? What data structures and algorithms would you use?": {
+          "score": 60,
+          "notes": "Provided a brief but somewhat accurate response. However, the user failed to elaborate further when prompted to do so and demonstrated a lack of conviction in their answer."
+        },
+        "Can you describe a situation where you applied problem-solving skills to optimize an algorithm in a real-world scenario? What was the outcome?": {
+          "score": 40,
+          "notes": "Failed to provide a clear and compelling example of problem-solving skills. When pressed for more details, the user remained silent and made little to no effort to engage with the question."
+        },
+        "How do you think a professor like Dr. Rodriguez would approach a technical problem in the classroom? What strategies would they use to challenge students?": {
+          "score": 60,
+          "notes": "Provided a brief but somewhat accurate response. However, the user failed to elaborate further or provide additional supporting evidence to back their claims."
+        }
+      },
+      "contentGaps": [
+        {
+          "gap": "Discussing specific algorithms and data structures used in e-commerce recommendation systems",
+          "importance": "high",
+          "suggestion": "Provide concrete examples of how you would implement algorithms like collaborative filtering or content-based filtering in a recommendation system, and describe the data structures you would use to support these approaches."
+        },
+        {
+          "gap": "Describing real-world scenarios where problem-solving skills were applied to optimize algorithms",
+          "importance": "high",
+          "suggestion": "Provide specific details about a project or scenario where you optimized an algorithm, including the challenges you faced, the steps you took to improve the algorithm, and the outcome of your efforts."
+        }
+      ],
+      "bestMoment": {
+        "quote": "Provided a brief but somewhat accurate response to the question \"How do you think a professor like Dr. Taylor would approach a technical problem in the classroom? What strategies would they use to engage students?\"",
+        "reason": "The user demonstrated a basic understanding of classroom engagement strategies, even if their response was not particularly detailed or reflective."
+      },
+      "worstMoment": {
+        "quote": "Failed to provide a clear or specific answer to the question \"What makes you think you can design a recommendation system? Provide something more substantial.\" The user responded with a laugh and remained silent after several prompts for clarification.",
+        "reason": "The user demonstrated a fundamental inability to articulate a clear thought process, leading to a prolonged and unproductive exchange."
+      },
+      "patterns": [
+        {
+          "pattern": "Lack of clarity and specificity in responses",
+          "description": "The user frequently failed to provide clear or specific answers to questions, often responding with vague statements or laughing nervously."
+        }
+      ],
+      "overallVerdict": "The user struggled to articulate clear, concise answers to technical questions, often relying on vague statements or laughing nervously. Despite occasional glimpses of basic understanding, the user's lack of confidence and clarity made it difficult to engage with their responses. To improve, the user should focus on developing more specific, evidence-backed thoughts and learn to communicate these ideas clearly and confidently.",
+      "priorityFix": "The user needs to develop their ability to articulate clear, specific thoughts and respond confidently to technical questions."
+    },
+    "sessionData": {
+      "agent": "Architect",
+      "sessionSummary": "This session is designed to help you prepare for your MIT interview by addressing your tendency to overemphasize lack of direct experience with MIT or interview-specific CS concepts and refining your technical skills and problem-solving abilities.",
+      "personas": [
+        {
+          "name": "Dr. Rachel Kim",
+          "role": "Professor of Computer Science",
+          "voiceId": "EXAVITQu4vr4xnSDxMaL",
+          "color": "#7B6CFF",
+          "orbIndex": 0,
+          "style": "Dr. Kim is a renowned expert in computer system architecture, known for her direct and slightly provocative approach to teaching. She expects nothing but excellence from her students and will push you to your limits."
+        },
+        {
+          "name": "Dr. Eric Taylor",
+          "role": "Professor and Researcher in Computer Science",
+          "voiceId": "VR6AewLTigWG4xSOukaG",
+          "color": "#F5A623",
+          "orbIndex": 1,
+          "style": "Dr. Taylor is a respected educator and researcher with a warm and supportive demeanor. He expects you to be well-prepared and will provide nuanced feedback to help you grow."
+        },
+        {
+          "name": "Dr. Maria Rodriguez",
+          "role": "Professor of Computer Science",
+          "voiceId": "jBpfuIE2acCO8z3wKNLl",
+          "color": "#6ee7b7",
+          "orbIndex": 2,
+          "style": "Dr. Rodriguez is a brilliant researcher with a reputation for creating high-pressure environments to test students' limits. She expects nothing but excellence from her candidates and will challenge you to think critically and solve complex problems."
+        }
+      ],
+      "sessionPlan": {
+        "difficultyProgression": "linear",
+        "totalEstimatedMinutes": 45,
+        "questions": [
+          {
+            "text": "What do you think are the most significant challenges in designing a recommendation system for e-commerce platforms? How would you approach this problem?",
+            "assignedPersona": "Dr. Eric Taylor",
+            "intent": "Technical skills: System design, data structures, and algorithms",
+            "followUpTriggers": [
+              "data structures",
+              "algorithms",
+              "relevance"
+            ],
+            "curveballAfter": false,
+            "suggestedFollowUp": "Describe a time when you had to optimize an algorithm in a real-world scenario. What strategies did you use?"
+          },
+          {
+            "text": "How would you approach a hypothetical scenario where you need to design a database for a social network platform? What data structures and algorithms would you use?",
+            "assignedPersona": "Dr. Maria Rodriguez",
+            "intent": "Technical skills: Databases, data structures, and algorithms",
+            "followUpTriggers": [
+              "databases",
+              "data structures",
+              "algorithms"
+            ],
+            "curveballAfter": false,
+            "suggestedFollowUp": "Explain how you would optimize the database for high query performance."
+          },
+          {
+            "text": "Can you describe a situation where you applied problem-solving skills to optimize an algorithm in a real-world scenario?",
+            "assignedPersona": "Dr. Rachel Kim",
+            "intent": "Technical skills: Problem-solving, algorithm optimization",
+            "followUpTriggers": [
+              "problem-solving",
+              "algorithm optimization"
+            ],
+            "curveballAfter": true,
+            "suggestedFollowUp": "Walk me through a hypothetical CS concept, such as a data structure or algorithm, and describe how you would apply it to a real-world problem."
+          },
+          {
+            "text": "How do you think a professor like Dr. Taylor would approach a technical problem in the classroom? What strategies would they use to engage students?",
+            "assignedPersona": "Dr. Eric Taylor",
+            "intent": "Soft skills: Communication, teaching, and mentorship",
+            "followUpTriggers": [
+              "communication",
+              "teaching",
+              "mentorship"
+            ],
+            "curveballAfter": false,
+            "suggestedFollowUp": "Describe a time when you had to communicate complex technical concepts to a non-technical audience."
+          },
+          {
+            "text": "What are some potential areas where you struggle to apply your computer science skills to real-world problems? How do you think you could improve?",
+            "assignedPersona": "Dr. Maria Rodriguez",
+            "intent": "Self-awareness and improvement: Technical skills, problem-solving",
+            "followUpTriggers": [
+              "technical skills",
+              "problem-solving"
+            ],
+            "curveballAfter": true,
+            "suggestedFollowUp": "Explain how you would create a concrete plan to improve your technical skills and apply them to real-world problems."
+          },
+          {
+            "text": "How would you approach a hypothetical scenario where you need to design a system to optimize database queries? What data structures and algorithms would you use?",
+            "assignedPersona": "Dr. Rachel Kim",
+            "intent": "Technical skills: System design, data structures, and algorithms",
+            "followUpTriggers": [
+              "system design",
+              "data structures",
+              "algorithms"
+            ],
+            "curveballAfter": false,
+            "suggestedFollowUp": "Describe a time when you had to optimize an algorithm in a real-world scenario. What strategies did you use?"
+          },
+          {
+            "text": "Can you describe a situation where you applied problem-solving skills to optimize an algorithm in a real-world scenario? What was the outcome?",
+            "assignedPersona": "Dr. Eric Taylor",
+            "intent": "Technical skills: Problem-solving, algorithm optimization",
+            "followUpTriggers": [
+              "problem-solving",
+              "algorithm optimization"
+            ],
+            "curveballAfter": true,
+            "suggestedFollowUp": "Explain how you would create a concrete plan to improve your technical skills and apply them to real-world problems."
+          },
+          {
+            "text": "How do you think a professor like Dr. Rodriguez would approach a technical problem in the classroom? What strategies would they use to challenge students?",
+            "assignedPersona": "Dr. Maria Rodriguez",
+            "intent": "Soft skills: Communication, teaching, and mentorship",
+            "followUpTriggers": [
+              "communication",
+              "teaching",
+              "mentorship"
+            ],
+            "curveballAfter": false,
+            "suggestedFollowUp": "Describe a time when you had to communicate complex technical concepts to a non-technical audience."
+          },
+          {
+            "text": "What are some potential areas where you struggle to apply your computer science skills to real-world problems? How do you think you could improve?",
+            "assignedPersona": "Dr. Rachel Kim",
+            "intent": "Self-awareness and improvement: Technical skills, problem-solving",
+            "followUpTriggers": [
+              "technical skills",
+              "problem-solving"
+            ],
+            "curveballAfter": true,
+            "suggestedFollowUp": "Explain how you would create a concrete plan to improve your technical skills and apply them to real-world problems."
+          }
+        ]
+      },
+      "openingLine": "Hello, I'll be playing the role of Dr. Rachel Kim, and we're about to simulate an interview for a computer science position. Please introduce yourself and tell me about your background in computer science.",
+      "closingCondition": "You've completed all questions and demonstrated a clear understanding of technical concepts, problem-solving skills, and soft skills required for a computer science position."
+    },
+    "createdAt": 1775964574650
+  },
+  {
+    "id": "9761405c-1754-48a6-99d7-f05ec965c6db",
+    "userId": "100619607382501059352",
+    "situation": "I have an MIT interview in two days where the professor will be testing me about my computer science experience.",
+    "history": [
+      {
+        "speaker": "Professor Chen",
+        "text": "That's quite a lot to expect from an empty answer, isn't it?  Can you tell me about your favorite project or experience in computer science that actually shows something specific?",
+        "timestamp": 1775965006204
+      },
+      {
+        "speaker": "You",
+        "text": "Hi. Yeah, so basically, um, what-- Uh, some projects that I did is I built a Jarvis system which qualified me into ISEF Nationals. And I used Arduino systems and, um... Yeah.",
+        "timestamp": 1775965036151
+      },
+      {
+        "speaker": "Professor Chen",
+        "text": "It seems you got a bit lost there.  Can you clarify the specific steps you took to build the Jarvis system?  For example, what algorithms or techniques did you apply?",
+        "timestamp": 1775965036629
+      },
+      {
+        "speaker": "You",
+        "text": "Hello.",
+        "timestamp": 1775965049574
+      },
+      {
+        "speaker": "Professor Chen",
+        "text": "It seems like we're stuck in a loop.  Can you please give me a more substantial answer to my question about your favorite project or experience in computer science?",
+        "timestamp": 1775965050294
+      },
+      {
+        "speaker": "You",
+        "text": "Okej.",
+        "timestamp": 1775965061282
+      },
+      {
+        "speaker": "Professor Chen",
+        "text": "I expect a more substantial answer, not just a simple word this time.  Please try again.",
+        "timestamp": 1775965062001
+      },
+      {
+        "speaker": "You",
+        "text": "Yeah, so basically, um, algorithms that I applied are multiple voice features. Um, multiple-- I used screen and fingerprinting detection and more, et cetera.",
+        "timestamp": 1775965080943
+      },
+      {
+        "speaker": "Professor Chen",
+        "text": "I'm afraid that answer doesn't show me the depth of experience I'm looking for.  Can you walk me through the specifics of how you implemented these 'multiple voice features'?",
+        "timestamp": 1775965081594
+      }
+    ],
+    "debrief": {
+      "clarityScore": 54,
+      "clarityRationale": "The candidate struggled to articulate specific details about their experience, using filler words (um, yeah, so basically) and vague statements (et cetera).",
+      "confidenceMap": {
+        "Can you tell me about your favorite project or experience in computer science?": {
+          "score": 38,
+          "notes": "The candidate provided little detail and lacked evidence to back up their claims."
+        },
+        "Don't just tell me about your experience, show me how you applied what you learned to solve a problem.": {
+          "score": 20,
+          "notes": "The candidate failed to demonstrate concrete steps taken to solve a problem, indicating a lack of understanding of how to apply learned concepts to solve real-world issues."
+        },
+        "Suppose you had to explain a complex concept in computer science to a non-technical person. How would you approach this task?": {
+          "score": 50,
+          "notes": "The candidate did not receive a question, so their confidence score is based on the ability to think critically in the absence of prompting."
+        },
+        "Can you tell me about a time when you asked a follow-up question to a problem or challenge in computer science?": {
+          "score": 40,
+          "notes": "The candidate failed to provide a specific example and demonstrated a lack of self-initiative."
+        },
+        "If I had to choose between two similar solutions to a problem in computer science, how would you decide which one to choose?": {
+          "score": 80,
+          "notes": "The candidate provided a clear and concise answer, demonstrating strong problem-solving skills."
+        },
+        "Can you tell me about a project or experience that showcases your passion and enthusiasm for computer science?": {
+          "score": 50,
+          "notes": "The candidate did not receive a question, so their confidence score is based on the ability to think critically in the presence of prompting."
+        },
+        "Suppose you were working on a project in computer science and encountered a sudden and unexpected technical issue. How would you approach this situation?": {
+          "score": 60,
+          "notes": "The candidate did not provide a clear answer and seemed uncertain about how to handle unexpected technical issues."
+        }
+      },
+      "contentGaps": [
+        {
+          "gap": "Specific examples of problems that were solved or challenges that were overcome in computer science projects.",
+          "importance": "high",
+          "suggestion": "Provide concrete, evidence-backed examples that demonstrate your ability to apply learned concepts to real-world situations."
+        },
+        {
+          "gap": "Self-initiative and the ability to ask follow-up questions when encountering problems or challenges in computer science.",
+          "importance": "medium",
+          "suggestion": "Demonstrate self-initiative by asking questions and seeking clarification when encountering difficulties in computer science projects."
+        }
+      ],
+      "bestMoment": {
+        "quote": "If I had to choose between two similar solutions to a problem in computer science, how would you decide which one to choose?",
+        "reason": "The candidate provided a clear and concise answer, demonstrating strong problem-solving skills, and showed the ability to think critically in response to a scenario-based question."
+      },
+      "worstMoment": {
+        "quote": "Yeah, so basically, um, what-- Uh, some projects that I did is I built a Jarvis system which qualified me into ISEF Nationals. And I used Arduino systems and, um... Yeah.",
+        "reason": "The candidate began with an empty answer, struggled to articulate specific details, and demonstrated a lack of preparedness for the interview."
+      },
+      "patterns": [
+        {
+          "pattern": "Lack of preparation and poor articulation of specific experiences.",
+          "description": "The candidate failed to provide concrete examples and struggled to articulate their experiences, suggesting a lack of preparation for the interview."
+        }
+      ],
+      "overallVerdict": "Unfortunately, the candidate struggled to demonstrate a strong understanding of computer science concepts and failed to provide concrete examples to support their claims. While there were some brief moments of clarity, these efforts were insufficient to elevate their overall performance.",
+      "priorityFix": "Develop a structured approach to highlighting specific experiences and demonstrating how learned concepts have been applied to solve real-world problems or challenges in computer science."
+    },
+    "sessionData": {
+      "agent": "Architect",
+      "sessionSummary": "This practice session is designed to help the user prepare for their MIT interview by building rapport, addressing their weakness in overemphasizing lack of experience, and developing the ability to think critically and engage in two-way conversations with the interviewer.",
+      "personas": [
+        {
+          "name": "Professor Chen",
+          "role": "MIT Alum and Computer Science Lecturer",
+          "voiceId": "VR6AewLTigWG4xSOukaG",
+          "color": "#7B6CFF",
+          "orbIndex": 0,
+          "style": "Direct and to the point, with a hint of skepticism"
+        },
+        {
+          "name": "Dr. Patel",
+          "role": "MIT Alum and Computer Science Lecturer",
+          "voiceId": "EXAVITQu4vr4xnSDxMaL",
+          "color": "#F5A623",
+          "orbIndex": 1,
+          "style": "Warm and encouraging, with a focus on guiding the user"
+        },
+        {
+          "name": "Dr. Nakamura",
+          "role": "MIT Alum and Computer Science Lecturer",
+          "voiceId": "TxGEqnHWrfWFTfGW9XjX",
+          "color": "#6ee7b7",
+          "orbIndex": 2,
+          "style": "Challenging and fast-paced, with a focus on testing the user's knowledge"
+        }
+      ],
+      "sessionPlan": {
+        "difficultyProgression": "escalating",
+        "totalEstimatedMinutes": 10,
+        "questions": [
+          {
+            "text": "Can you tell me about your favorite project or experience in computer science?",
+            "assignedPersona": "Dr. Patel",
+            "intent": "Warm-up question to build rapport and establish a conversational tone",
+            "followUpTriggers": [
+              "Technical detail",
+              "Passion and enthusiasm"
+            ],
+            "curveballAfter": false,
+            "suggestedFollowUp": "Let's talk about a time when you overcame a challenging problem in computer science."
+          },
+          {
+            "text": "Don't just tell me about your experience, show me how you applied what you learned to solve a problem.",
+            "assignedPersona": "Professor Chen",
+            "intent": "Target the user's weakness by asking them to demonstrate critical thinking and problem-solving skills",
+            "followUpTriggers": [
+              "Specific example",
+              "Technical takeaway"
+            ],
+            "curveballAfter": true,
+            "suggestedFollowUp": "I'd like you to walk me through your thought process as you approached this problem."
+          },
+          {
+            "text": "Suppose you had to explain a complex concept in computer science to a non-technical person. How would you approach this task?",
+            "assignedPersona": "Dr. Nakamura",
+            "intent": "Curveball question to test the user's ability to think on their feet and communicate technical ideas in a clear and concise manner",
+            "followUpTriggers": [
+              "Simple vocabulary",
+              "Analogy or metaphor"
+            ],
+            "curveballAfter": true,
+            "suggestedFollowUp": "I'd like you to provide an example of how you would apply this approach to a real-world scenario."
+          },
+          {
+            "text": "Can you tell me about a time when you asked a follow-up question to a problem or challenge in computer science?",
+            "assignedPersona": "Dr. Patel",
+            "intent": "Assess the user's ability to ask relevant and thoughtful questions",
+            "followUpTriggers": [
+              "Specific question",
+              "Engagement and interest"
+            ],
+            "curveballAfter": false,
+            "suggestedFollowUp": "Let's talk about a situation where you had to think critically about a problem and come up with a creative solution."
+          },
+          {
+            "text": "If I had to choose between two similar solutions to a problem in computer science, how would you decide which one to choose?",
+            "assignedPersona": "Professor Chen",
+            "intent": "Test the user's ability to evaluate trade-offs and make informed decisions",
+            "followUpTriggers": [
+              "Technical detail",
+              "Trade-offs"
+            ],
+            "curveballAfter": true,
+            "suggestedFollowUp": "I'd like you to walk me through your thought process as you considered these options."
+          },
+          {
+            "text": "Can you tell me about a project or experience that showcases your passion and enthusiasm for computer science?",
+            "assignedPersona": "Dr. Patel",
+            "intent": "Leave the user feeling tested but capable by highlighting their strengths and interests",
+            "followUpTriggers": [
+              "Passion and enthusiasm",
+              "Technical takeaway"
+            ],
+            "curveballAfter": false,
+            "suggestedFollowUp": "Let's talk about how you can apply your passion for computer science to a real-world problem or challenge."
+          },
+          {
+            "text": "Suppose you were working on a project in computer science and encountered a sudden and unexpected technical issue. How would you approach this situation?",
+            "assignedPersona": "Dr. Nakamura",
+            "intent": "Final question to test the user's ability to think critically and respond to unexpected challenges",
+            "followUpTriggers": [
+              "Adaptability",
+              "Technical problem-solving"
+            ],
+            "curveballAfter": true,
+            "suggestedFollowUp": "I'd like you to walk me through your thought process as you addressed this issue."
+          }
+        ]
+      },
+      "openingLine": "Let's dive into what you can expect from an MIT interview, and work through some scenarios to help you feel more confident and prepared.",
+      "closingCondition": "The user can respond confidently and thoughtfully to each question, demonstrating their critical thinking, problem-solving skills, and passion for computer science."
+    },
+    "createdAt": 1775965088440
+  },
+  {
+    "id": "5d681537-1431-4e9e-83ad-4e525555a766",
+    "userId": "100619607382501059352",
+    "situation": "I have an MIT interview in two days where the professor will be testing me about my computer science experience.",
+    "history": [
+      {
+        "speaker": "Dr. Emily Chen",
+        "text": "Welcome to this practice session, where we'll work together to prepare you for your MIT interview. Tell me about a computer science project you worked on in high school, and what motivated you to take it on.",
+        "timestamp": 1775968274500
+      },
+      {
+        "speaker": "You",
+        "text": "So, a project I've created is... What I did is I created a, um, computer vision model that detects, that detects, um- Oh, damn. (laughs) ... cars with, um, with invalid license plates or in- any invalid or illegal materials that are illegally in it.",
+        "timestamp": 1775968311422
+      },
+      {
+        "speaker": "Dr. Emily Chen",
+        "text": "I couldn't quite get that.  Can you take a step back and tell me what inspired you to work on a computer vision project in the first place?",
+        "timestamp": 1775968311806
+      },
+      {
+        "speaker": "You",
+        "text": "Yeah, so basically what inspired me is that, um, I, I really liked how OpenCV, like, which is the computer vision open source model and how it worked, and it was really impressive to me.",
+        "timestamp": 1775968337698
+      },
+      {
+        "speaker": "Dr. Emily Chen",
+        "text": "I'm still a bit uncertain what you mean by being 'impressed' by OpenCV.  Can you elaborate on what specific aspects drew you to it?",
+        "timestamp": 1775968338488
+      }
+    ],
+    "debrief": {
+      "clarityScore": 45,
+      "clarityRationale": "The user's responses lacked specific details and struggled with providing concrete examples, making it challenging to understand their experiences and the context of their project.",
+      "confidenceMap": {
+        "Tell me about a computer science project you worked on in high school, and what motivated you to take it on.": {
+          "score": 20,
+          "notes": "The user's initial response started strongly but stalled with filler words, revealing uncertainty and disorganization"
+        },
+        "I've noticed that you haven't provided any concrete examples of your computer science experiences. Can you tell me about a time when you applied technical skills to solve a problem?": {
+          "score": 30,
+          "notes": "The user again struggled to provide specific details and resorted to general descriptions, failing to address the professor's concern"
+        }
+      },
+      "contentGaps": [
+        {
+          "gap": "A clear description of the technical skills applied and the results achieved in the project",
+          "importance": "high",
+          "suggestion": "The user should focus on providing specific anecdotes and metrics to demonstrate their technical abilities"
+        },
+        {
+          "gap": "A discussion on how the project was approached, including challenges faced and solutions implemented",
+          "importance": "high",
+          "suggestion": "The user should elaborate on the thought process and technical decisions made during the project"
+        }
+      ],
+      "bestMoment": {
+        "quote": "a project I've created is... What I did is I created a, um, computer vision model that detects, that detects, um- Oh, damn. (laughs) ... cars with, um, with invalid license plates or in- any invalid or illegal materials that are illegally in it.",
+        "reason": "The user attempted to start their response strongly by sharing an idea they had"
+      },
+      "worstMoment": {
+        "quote": "Yeah, so basically what inspired me is that, um, I, I really liked how OpenCV, like, which is the computer vision open source model and how it worked, and it was really impressive to me.",
+        "reason": "The response was vague, lacked specific details, and revealed a fundamental weakness in articulating technical experiences"
+      },
+      "patterns": [
+        "Difficulty in articulating thoughts and providing specific details, resulting in vague and uncertain responses"
+      ],
+      "overallVerdict": "The user struggled to articulate their experiences, failed to provide concrete examples, and lacked a clear understanding of how their project applied technical skills. They should focus on developing specific anecdotes, providing metrics, and elaborating on their thought process and technical decisions.",
+      "priorityFix": "Developing clear and specific descriptions of technical skills applied and results achieved in projects to demonstrate technical abilities and address concerns in future interviews"
+    },
+    "sessionData": {
+      "agent": "Architect",
+      "sessionSummary": "This session will help the user prepare for their MIT interview by addressing their weakness in articulating computer science experience and providing strategies to navigate high-pressure interview settings.",
+      "personas": [
+        {
+          "name": "Dr. Emily Chen",
+          "role": "The Skeptic",
+          "voiceId": "EXAVITQu4vr4xnSDxMaL",
+          "color": "#7B6CFF",
+          "orbIndex": 0,
+          "style": "uses pauses to prompt the candidate to continue"
+        },
+        {
+          "name": "Prof. Ryan Thompson",
+          "role": "The Warm Mentor",
+          "voiceId": "TxGEqnHWrfWFTfGW9XjX",
+          "color": "#F5A623",
+          "orbIndex": 1,
+          "style": "summarizes a candidate's answer before challenging them"
+        },
+        {
+          "name": "Dr. Sofia Patel",
+          "role": "The Stress Tester",
+          "voiceId": "VR6AewLTigWG4xSOukaG",
+          "color": "#6ee7b7",
+          "orbIndex": 2,
+          "style": "asks pointed questions to test a candidate's resolve"
+        }
+      ],
+      "sessionPlan": {
+        "difficultyProgression": "linear",
+        "totalEstimatedMinutes": 50,
+        "questions": [
+          {
+            "text": "Tell me about a computer science project you worked on in high school, and what motivated you to take it on.",
+            "assignedPersona": "Dr. Emily Chen",
+            "intent": "Warm-up question to assess candidate's communication skills",
+            "followUpTriggers": [
+              "failure to provide specific examples"
+            ],
+            "curveballAfter": false,
+            "suggestedFollowUp": ""
+          },
+          {
+            "text": "I've noticed that you haven't provided any concrete examples of your computer science experiences. Can you tell me about a time when you applied technical skills to solve a problem?",
+            "assignedPersona": "Dr. Sofia Patel",
+            "intent": "Directly targets the user's stated weakness",
+            "followUpTriggers": [
+              "lack of clarity and conviction"
+            ],
+            "curveballAfter": true,
+            "suggestedFollowUp": "The 3-Part Problem Statement"
+          },
+          {
+            "text": "Let's practice articulating your experiences using the STAR Method. Can you tell me about a situation where you applied a technical approach and what results you achieved?",
+            "assignedPersona": "Prof. Ryan Thompson",
+            "intent": "Provides a strategy to address the user's weakness",
+            "followUpTriggers": [
+              "inability to apply the STAR Method"
+            ],
+            "curveballAfter": false,
+            "suggestedFollowUp": ""
+          },
+          {
+            "text": "How do you think your computer science experiences have prepared you for a career in this field?",
+            "assignedPersona": "Dr. Emily Chen",
+            "intent": "Assesses candidate's understanding of their own experiences",
+            "followUpTriggers": [
+              "lack of passion or enthusiasm"
+            ],
+            "curveballAfter": true,
+            "suggestedFollowUp": "Use Kaggle datasets and government portals for real-world data practice"
+          },
+          {
+            "text": "Can you tell me about a time when you had to navigate a high-pressure interview setting? How did you handle it?",
+            "assignedPersona": "Dr. Sofia Patel",
+            "intent": "Tests candidate's ability to think critically under pressure",
+            "followUpTriggers": [
+              "inability to think critically"
+            ],
+            "curveballAfter": false,
+            "suggestedFollowUp": "The 'What I Learned' Framework"
+          },
+          {
+            "text": "Let's practice responding to challenging questions using the 3-Part Problem Statement. Can you tell me about a problem you faced and how you addressed it?",
+            "assignedPersona": "Prof. Ryan Thompson",
+            "intent": "Provides a strategy to address challenging questions",
+            "followUpTriggers": [
+              "inability to apply the 3-Part Problem Statement"
+            ],
+            "curveballAfter": false,
+            "suggestedFollowUp": ""
+          },
+          {
+            "text": "Tell me about a computer science project or experience that you're particularly proud of. What skills did you develop and how did you apply them?",
+            "assignedPersona": "Dr. Emily Chen",
+            "intent": "Assesses candidate's ability to articulate their experiences",
+            "followUpTriggers": [
+              "lack of clarity and conviction"
+            ],
+            "curveballAfter": true,
+            "suggestedFollowUp": "Use Kaggle datasets and government portals for real-world data practice"
+          }
+        ]
+      },
+      "openingLine": "Welcome to this practice session, where we'll work together to prepare you for your MIT interview.",
+      "closingCondition": "The session will end when the user is able to articulate their experiences with clarity and conviction."
+    },
+    "createdAt": 1775968348535
+  }
+]
