@@ -1,4 +1,3 @@
-import { MongoClient } from "mongodb";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -7,17 +6,22 @@ import crypto from "crypto";
 // ── MongoDB (production) ─────────────────────────────────────────
 let client = null;
 let db     = null;
+let dbFailed = false;
 
 async function getDB() {
   if (db) return db;
+  if (dbFailed) return null;
   if (!process.env.MONGODB_URI) return null;
   try {
-    client = new MongoClient(process.env.MONGODB_URI);
+    // Dynamic import so a missing package never crashes the server
+    const { MongoClient } = await import("mongodb");
+    client = new MongoClient(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
     await client.connect();
     db = client.db("swarm");
     console.log("[db] Connected to MongoDB Atlas");
     return db;
   } catch (e) {
+    dbFailed = true;
     console.error("[db] MongoDB connection failed, falling back to file storage:", e.message);
     return null;
   }
