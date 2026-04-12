@@ -20,9 +20,9 @@ function getProviderConfig() {
 
 const DEFAULT_MODEL = null; // resolved per-call from getProviderConfig()
 
-// Small gap between calls to avoid burst limits
+// Gemini free tier: 15 RPM = 1 call per 4s minimum
 let lastCallTime = 0;
-const MIN_INTERVAL_MS = 200;
+const MIN_INTERVAL_MS = 4200;
 
 async function rateLimit() {
   const now = Date.now();
@@ -37,24 +37,27 @@ function getClient() {
   return new OpenAI({ apiKey, baseURL });
 }
 
-// Parse retry-after from Groq 429 messages. Returns ms to wait, or null if too long.
-// If Groq says wait > 5s we throw immediately — agent fallbacks handle it faster than waiting.
+// Parse retry-after from 429 messages. Returns ms to wait, or null to fail fast.
 function parseRetryMs(errMessage = "") {
+  // Explicit minutes → fail fast, use fallback
+  if (/\d+\s*m(?:in)?/i.test(errMessage)) return null;
+
+  // Explicit seconds
   const secMatch = errMessage.match(/(\d+(?:\.\d+)?)\s*s(?:econds?)?/i);
   if (secMatch) {
     const ms = Math.ceil(parseFloat(secMatch[1])) * 1000 + 200;
-    return ms > 5000 ? null : ms;
+    return ms > 10000 ? null : ms;
   }
-  const minMatch = errMessage.match(/(\d+)\s*m(?:in)?.*?(\d+(?:\.\d+)?)\s*s/i);
-  if (minMatch) return null; // minutes-long wait → fail fast
-  return null; // unknown format → fail fast
+
+  // No body / unknown format (Gemini RPM hit) → wait 4s and retry
+  return 4200;
 }
 
 // Non-streaming call — returns full response text
 export async function callLLM({ systemPrompt, userPrompt, model, maxTokens = 2048 }) {
   await rateLimit();
   const resolvedModel = model || getProviderConfig().model;
-  const maxRetries = 2;
+  const maxRetries = 3;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const response = await getClient().chat.completions.create({
@@ -86,7 +89,7 @@ export async function callLLM({ systemPrompt, userPrompt, model, maxTokens = 204
 export async function callLLMStream({ systemPrompt, userPrompt, model, maxTokens = 2048, onChunk }) {
   await rateLimit();
   const resolvedModel = model || getProviderConfig().model;
-  const maxRetries = 2;
+  const maxRetries = 3;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const stream = await getClient().chat.completions.create({
