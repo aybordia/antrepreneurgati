@@ -113,48 +113,57 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
   // Load debrief
   useEffect(() => {
     let cancelled = false;
-    const load = async () => {
+
+    // Decode userId once — used in both success and fallback paths
+    async function getUserId() {
       try {
-        const token = getIdToken ? await getIdToken() : undefined;
-        const d = await postJSON("/api/debrief", {
+        const token = getIdToken ? await getIdToken() : null;
+        if (!token) return "anonymous";
+        const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+        return payload.sub || "anonymous";
+      } catch { return "anonymous"; }
+    }
+
+    async function persistSession(debrief, token, userId) {
+      const sessionPayload = {
+        situation,
+        history: sessionResult?.history || [],
+        debrief,
+        sessionData: sessionResult?.sessionData || {},
+      };
+      // Always save locally first
+      try {
+        const local = saveSession(userId, sessionPayload);
+        setSavedSessionId(local.id);
+      } catch {}
+      // Also push to MongoDB (best-effort)
+      try {
+        const saved = await postJSON("/api/sessions/save", sessionPayload, token);
+        if (saved?.id) setSavedSessionId(saved.id);
+      } catch {}
+    }
+
+    const load = async () => {
+      const token = getIdToken ? await getIdToken() : undefined;
+      const userId = await getUserId();
+      let d;
+      try {
+        d = await postJSON("/api/debrief", {
           fullTranscript: sessionResult?.history || [],
           situation,
           agentResearch: sessionResult?.sessionData?.agentResearch || {},
           sessionPlan: sessionResult?.sessionData?.sessionPlan || {},
         }, token);
-        if (!cancelled) {
-          setDebrief(d);
-          setLoading(false);
-          try {
-            const token = getIdToken ? await getIdToken() : null;
-            // Decode userId from JWT so we can key localStorage the same way
-            let userId = "anonymous";
-            if (token) {
-              const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
-              userId = payload.sub || "anonymous";
-            }
-            const sessionPayload = {
-              situation,
-              history: sessionResult?.history || [],
-              debrief: d,
-              sessionData: sessionResult?.sessionData || {},
-            };
-            // 1. Save to localStorage immediately (always works)
-            const local = saveSession(userId, sessionPayload);
-            setSavedSessionId(local.id);
-            // 2. Also save to MongoDB via backend (persists across devices)
-            postJSON("/api/sessions/save", sessionPayload, token)
-              .then(saved => { if (saved?.id) setSavedSessionId(saved.id); })
-              .catch(() => {});
-          } catch {}
-        }
       } catch {
-        if (!cancelled) {
-          setDebrief({ clarityScore: 72, clarityRationale: "Analysis based on available session data.", contentGaps: [], patterns: [], overallVerdict: "Session analysed.", priorityFix: "Continue practising.", bestMoment: null, worstMoment: null });
-          setLoading(false);
-        }
+        d = { clarityScore: 72, clarityRationale: "Analysis based on available session data.", contentGaps: [], patterns: [], overallVerdict: "Session analysed.", priorityFix: "Continue practising.", bestMoment: null, worstMoment: null };
+      }
+      if (!cancelled) {
+        setDebrief(d);
+        setLoading(false);
+        persistSession(d, token, userId);
       }
     };
+
     load();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
