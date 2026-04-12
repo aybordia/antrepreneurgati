@@ -1,9 +1,15 @@
 const ELEVENLABS_API_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY;
 
-// Module-level tracker — one audio plays at a time across all screens
 let _activeAudio = null;
+let _activeFetchController = null; // abort in-flight TTS fetches
 
 export function stopAllAudio() {
+  // Abort any in-flight TTS fetch
+  if (_activeFetchController) {
+    _activeFetchController.abort();
+    _activeFetchController = null;
+  }
+  // Stop any playing audio
   if (_activeAudio) {
     _activeAudio.pause();
     _activeAudio.currentTime = 0;
@@ -16,18 +22,16 @@ function speakWithBrowserTTS(text) {
   return new Promise((resolve) => {
     window.speechSynthesis.cancel();
     const utt = new SpeechSynthesisUtterance(text);
-    utt.rate = 1.0;
+    utt.rate = 1.1;
     utt.pitch = 1.0;
-    const timeout = setTimeout(resolve, Math.max(text.length * 75, 3000));
+    const timeout = setTimeout(resolve, Math.max(text.length * 60, 2000));
     utt.onend = () => { clearTimeout(timeout); resolve(); };
     utt.onerror = () => { clearTimeout(timeout); resolve(); };
     window.speechSynthesis.speak(utt);
   });
 }
 
-// NOTE: ElevenLabs key is exposed in the browser bundle — acceptable for hackathon demo only.
 export async function speakText({ text, voiceId, stability = 0.42, similarityBoost = 0.82 }) {
-  // Stop anything currently playing before starting new audio
   stopAllAudio();
 
   if (!ELEVENLABS_API_KEY || !voiceId) {
@@ -35,9 +39,13 @@ export async function speakText({ text, voiceId, stability = 0.42, similarityBoo
     return null;
   }
 
+  const controller = new AbortController();
+  _activeFetchController = controller;
+
   try {
     const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: "POST",
+      signal: controller.signal,
       headers: {
         "xi-api-key": ELEVENLABS_API_KEY,
         "Content-Type": "application/json",
@@ -49,16 +57,21 @@ export async function speakText({ text, voiceId, stability = 0.42, similarityBoo
       }),
     });
 
+    _activeFetchController = null;
+
     if (!response.ok) {
       await speakWithBrowserTTS(text);
       return null;
     }
 
+    // Check if stopAllAudio was called while fetching
+    if (controller.signal.aborted) return null;
+
     const blob = await response.blob();
+    if (controller.signal.aborted) return null;
+
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
-
-    // Track globally so stopAllAudio() can kill it from anywhere
     _activeAudio = audio;
 
     audio.addEventListener("ended", () => {
@@ -67,7 +80,9 @@ export async function speakText({ text, voiceId, stability = 0.42, similarityBoo
     }, { once: true });
 
     return audio;
-  } catch {
+  } catch (e) {
+    _activeFetchController = null;
+    if (e.name === "AbortError") return null;
     await speakWithBrowserTTS(text);
     return null;
   }

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { streamFetch } from "../lib/api";
-import { speakText } from "../hooks/useVoiceOutput";
+import { speakText, stopAllAudio } from "../hooks/useVoiceOutput";
 import { useElevenLabsSTT } from "../hooks/useElevenLabsSTT";
 import OrbScene from "./OrbScene";
 
@@ -173,7 +173,7 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
       await sendTurn(spokenText);
     },
     // In timed mode, countdown handles stopping; normal mode waits 5s of silence
-    silenceThresholdMs: timedMode ? 70000 : 5000,
+    silenceThresholdMs: timedMode ? 70000 : 1500,
   });
 
   const handleBegin = useCallback(() => {
@@ -186,6 +186,16 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
     setSessionStarted(true);
     sendTurn("");
   }, [sendTurn]);
+
+  // Stop all audio + mic when component unmounts
+  useEffect(() => {
+    return () => {
+      sessionEndedRef.current = true;
+      stop();
+      stopAllAudio();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (transcriptRef.current) {
