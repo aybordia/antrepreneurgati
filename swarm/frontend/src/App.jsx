@@ -144,7 +144,7 @@ export default function App() {
         <button
           onClick={handleBackToDashboard}
           style={{
-            position: "absolute", left: 20, top: 20, zIndex: 10,
+            position: "fixed", left: 20, top: 20, zIndex: 1000,
             padding: "6px 14px", borderRadius: "8px",
             border: "1px solid rgba(255,255,255,0.1)",
             background: "rgba(255,255,255,0.04)",
@@ -159,8 +159,8 @@ export default function App() {
         </button>
       )}
 
-      {user && screen !== SCREENS.DASHBOARD && (
-        <div style={{ position: "absolute", right: 20, top: 20, zIndex: 10, display: "flex", alignItems: "center", gap: "10px" }}>
+      {user && (
+        <div style={{ position: "fixed", right: 20, top: 20, zIndex: 1000, display: "flex", alignItems: "center", gap: "10px" }}>
           {user.picture && (
             <img src={user.picture} alt="" width={28} height={28} referrerPolicy="no-referrer"
               style={{ borderRadius: "50%", border: "1px solid rgba(255,255,255,0.12)" }} />
