@@ -1,5 +1,17 @@
 const ELEVENLABS_API_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY;
 
+// Module-level tracker — one audio plays at a time across all screens
+let _activeAudio = null;
+
+export function stopAllAudio() {
+  if (_activeAudio) {
+    _activeAudio.pause();
+    _activeAudio.currentTime = 0;
+    _activeAudio = null;
+  }
+  window.speechSynthesis?.cancel();
+}
+
 function speakWithBrowserTTS(text) {
   return new Promise((resolve) => {
     window.speechSynthesis.cancel();
@@ -14,7 +26,10 @@ function speakWithBrowserTTS(text) {
 }
 
 // NOTE: ElevenLabs key is exposed in the browser bundle — acceptable for hackathon demo only.
-export async function speakText({ text, voiceId, stability = 0.6, similarityBoost = 0.75 }) {
+export async function speakText({ text, voiceId, stability = 0.42, similarityBoost = 0.82 }) {
+  // Stop anything currently playing before starting new audio
+  stopAllAudio();
+
   if (!ELEVENLABS_API_KEY || !voiceId) {
     await speakWithBrowserTTS(text);
     return null;
@@ -35,7 +50,6 @@ export async function speakText({ text, voiceId, stability = 0.6, similarityBoos
     });
 
     if (!response.ok) {
-      // ElevenLabs failed — fall back to browser TTS
       await speakWithBrowserTTS(text);
       return null;
     }
@@ -43,10 +57,17 @@ export async function speakText({ text, voiceId, stability = 0.6, similarityBoos
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
-    audio.addEventListener("ended", () => URL.revokeObjectURL(url), { once: true });
+
+    // Track globally so stopAllAudio() can kill it from anywhere
+    _activeAudio = audio;
+
+    audio.addEventListener("ended", () => {
+      if (_activeAudio === audio) _activeAudio = null;
+      URL.revokeObjectURL(url);
+    }, { once: true });
+
     return audio;
   } catch {
-    // Network error or any other issue — fall back to browser TTS
     await speakWithBrowserTTS(text);
     return null;
   }

@@ -8,6 +8,7 @@ import AskSwarm from "./components/AskSwarm";
 import Dashboard from "./components/Dashboard";
 import SignIn from "./components/SignIn";
 import Cursor from "./components/Cursor";
+import { stopAllAudio } from "./hooks/useVoiceOutput";
 
 const SCREENS = {
   DASHBOARD:       "DASHBOARD",
@@ -96,29 +97,34 @@ export default function App() {
     return token;
   }, [token]);
 
-  const handleNewSession = () => setScreen(SCREENS.SITUATION_INPUT);
+  const handleNewSession = () => { stopAllAudio(); setScreen(SCREENS.SITUATION_INPUT); };
 
   const handleLaunch = (sit) => {
+    stopAllAudio();
     setSituation(sit);
     setScreen(SCREENS.MISSION_CONTROL);
   };
 
   const handleBeginSession = (data) => {
+    stopAllAudio();
     setSessionData(data);
     setScreen(SCREENS.VOICE_SESSION);
   };
 
   const handleEndSession = (result) => {
+    stopAllAudio();
     setSessionResult(result);
     setScreen(SCREENS.DEBRIEF);
   };
 
   const handleAskSwarm = (debrief) => {
+    stopAllAudio();
     setDebriefResult(debrief);
     setScreen(SCREENS.ASK_SWARM);
   };
 
   const handleRunAgain = () => {
+    stopAllAudio();
     setSituation((s) => s.replace(" — harder mode", "") + " — harder mode");
     setSessionData(null);
     setSessionResult(null);
@@ -127,11 +133,12 @@ export default function App() {
   };
 
   const handleBackToDashboard = () => {
+    stopAllAudio();
     setScreen(SCREENS.DASHBOARD);
   };
 
   return (
-    <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden", background: "#04040A" }}>
+    <div style={{ position: "relative", width: "100vw", height: "100vh", background: "#04040A" }}>
       <Cursor />
       {user && screen !== SCREENS.DASHBOARD && (
         <button

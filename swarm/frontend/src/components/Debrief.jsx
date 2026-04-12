@@ -232,8 +232,8 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
   }
 
   return (
-    <motion.div className="screen" variants={sv} initial="initial" animate="animate" exit="exit"
-      style={{ background: "#02020A", overflowY: phase === "cards" ? "auto" : "hidden" }}
+    <motion.div className={`screen ${phase === "cards" ? "screen-scroll" : ""}`} variants={sv} initial="initial" animate="animate" exit="exit"
+      style={{ background: "#02020A" }}
     >
       <div className="noise" />
       <div className="ambient" />

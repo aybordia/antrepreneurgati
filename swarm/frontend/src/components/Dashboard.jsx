@@ -294,8 +294,8 @@ export default function Dashboard({ user, onNewSession, getIdToken }) {
   const firstName = user?.given_name || user?.name?.split(" ")[0] || "there";
 
   return (
-    <motion.div className="screen" variants={sv} initial="initial" animate="animate" exit="exit"
-      style={{ background: "var(--bg)", overflowY: "auto" }}
+    <motion.div className="screen screen-scroll" variants={sv} initial="initial" animate="animate" exit="exit"
+      style={{ background: "var(--bg)" }}
     >
       <div className="ambient" />
       <div className="noise" />

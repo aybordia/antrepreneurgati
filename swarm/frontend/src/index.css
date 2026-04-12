@@ -37,11 +37,17 @@ body {
   color: var(--text);
   font-family: var(--ui);
   overflow: hidden;
-  height: 100vh;
-  width: 100vw;
+  height: 100%;
+  width: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   cursor: none;
+}
+
+/* Screens that need scrolling override this on the .screen element directly */
+.screen-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* ─── Custom cursor ─────────────────────────────────────────── */
