@@ -220,13 +220,22 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
   const handleEnd = () => {
     sessionEndedRef.current = true;
     isBusyRef.current = true;
-    if (currentAudio.current) {
-      currentAudio.current.pause();
-      currentAudio.current.src = "";
-      currentAudio.current = null;
+    stop(); // stop mic immediately so no more user input
+
+    const doEnd = () => onEndSession({ history, sessionData, situation });
+
+    if (currentAudio.current && !currentAudio.current.ended && !currentAudio.current.paused) {
+      // Let the current AI sentence finish, then navigate (max 6s wait)
+      const timeout = setTimeout(() => {
+        if (currentAudio.current) { currentAudio.current.pause(); currentAudio.current = null; }
+        doEnd();
+      }, 6000);
+      currentAudio.current.onended = () => { clearTimeout(timeout); doEnd(); };
+      currentAudio.current.onerror = () => { clearTimeout(timeout); doEnd(); };
+    } else {
+      if (currentAudio.current) { currentAudio.current.pause(); currentAudio.current = null; }
+      doEnd();
     }
-    stop();
-    onEndSession({ history, sessionData, situation });
   };
 
   /* ── BEGIN SCREEN ── */

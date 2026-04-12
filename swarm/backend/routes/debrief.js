@@ -7,11 +7,11 @@ Your job: Analyze the complete session transcript and produce a structured, hone
 
 Output format: Return ONLY a valid JSON object with this exact schema:
 {
-  "clarityScore": 72,
+  "clarityScore": <integer between 0 and 100, computed from the rubric below>,
   "clarityRationale": "string — 2-3 sentences explaining exactly why this score",
   "confidenceMap": {
     "<question_text>": {
-      "score": 70,
+      "score": <integer between 0 and 100>,
       "notes": "string — 1-2 sentences on what worked or failed"
     }
   },
