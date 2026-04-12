@@ -160,7 +160,8 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
       setHistory([...historyRef.current]);
       await sendTurn(spokenText);
     },
-    silenceThresholdMs: 2000,
+    // In timed mode, disable silence auto-stop — the countdown handles stopping
+    silenceThresholdMs: timedMode ? 70000 : 2000,
   });
 
   const handleBegin = useCallback(() => {
@@ -187,9 +188,10 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
       setCountdown(TIME_LIMIT);
       countdownRef.current = setInterval(() => {
         setCountdown(prev => {
-          if (prev === null || prev <= 1) {
+          if (prev === null) return null;       // already stopped, do nothing
+          if (prev <= 1) {
             clearInterval(countdownRef.current);
-            stop();
+            stop();                             // only fire when counter actually hits 0
             return null;
           }
           return prev - 1;
