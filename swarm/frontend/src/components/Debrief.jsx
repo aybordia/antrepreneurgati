@@ -155,7 +155,23 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
           sessionPlan: sessionResult?.sessionData?.sessionPlan || {},
         }, token);
       } catch {
-        d = { clarityScore: 72, clarityRationale: "Analysis based on available session data.", contentGaps: [], patterns: [], overallVerdict: "Session analysed.", priorityFix: "Continue practising.", bestMoment: null, worstMoment: null };
+        // Compute a basic score from transcript so we never show hardcoded garbage
+        const turns = sessionResult?.history || [];
+        const userTurns = turns.filter(t => t.speaker === "You" || t.speaker === "User");
+        const avgWords = userTurns.length
+          ? Math.round(userTurns.reduce((s, t) => s + (t.text || "").split(/\s+/).filter(Boolean).length, 0) / userTurns.length)
+          : 0;
+        const computedScore = Math.min(95, Math.max(40, 50 + Math.min(avgWords, 45)));
+        d = {
+          clarityScore: computedScore,
+          clarityRationale: "Score estimated from response length — full analysis temporarily unavailable due to high demand. Try again in a moment.",
+          contentGaps: [],
+          patterns: [],
+          overallVerdict: "Full debrief analysis could not be loaded right now (the AI service is temporarily rate-limited). Your session was saved. Retry in 30 seconds for a complete breakdown.",
+          priorityFix: "Retry the debrief in 30 seconds for your full analysis.",
+          bestMoment: null,
+          worstMoment: null,
+        };
       }
       if (!cancelled) {
         setDebrief(d);

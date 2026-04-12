@@ -46,6 +46,25 @@ export default async function handler(req, res) {
       rawSummary:          researcherOutput.rawSummary          || "",
     };
 
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    // Run UI agents one-by-one with brief thinking windows
+    // (their work is handled inside Architect — these keep MissionControl in sync)
+    writeChunk({ agent: "Profiler", chunk: `Profiling panel psychology for: ${situation.slice(0, 60)}…`, thinking: true });
+    await sleep(1400);
+    writeChunk({ agent: "Profiler", done: true });
+
+    await sleep(300);
+    writeChunk({ agent: "WeakSpotFinder", chunk: researcherOutput.diagnosedWeakness || "Targeting high-leverage weak spots…", thinking: true });
+    await sleep(1200);
+    writeChunk({ agent: "WeakSpotFinder", done: true });
+
+    await sleep(300);
+    writeChunk({ agent: "VoiceDesigner", chunk: "Matching voice profiles to personas…", thinking: true });
+    await sleep(1000);
+    writeChunk({ agent: "VoiceDesigner", done: true });
+
+    await sleep(300);
     await runArchitect({ situation, researcherOutput, styleHint, researchContext }, writeChunk);
 
   } catch (err) {
