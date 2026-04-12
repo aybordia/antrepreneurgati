@@ -4,7 +4,10 @@ import { fileURLToPath } from "url";
 import crypto from "crypto";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.join(__dirname, "../data/users");
+// On Render, use the mounted persistent disk path; fall back to local for dev
+const DATA_DIR = process.env.RENDER
+  ? "/var/data/users"
+  : path.join(__dirname, "../data/users");
 
 function userFile(userId) {
   // Sanitize userId so it's safe as a filename
