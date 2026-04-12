@@ -28,7 +28,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
 
   const { start, stop, isListening, isProcessing, micError } = useElevenLabsSTT({
     onResult: (t) => setSituation(t),
-    silenceThresholdMs: 6000,
+    silenceThresholdMs: Infinity,
   });
 
   useEffect(() => {
