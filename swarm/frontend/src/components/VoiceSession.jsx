@@ -92,7 +92,7 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
       historyRef.current = [...historyRef.current, aiTurn];
       setHistory([...historyRef.current]);
 
-      const audio = await speakText({ text: fullLine, voiceId: resVoiceId });
+      const audio = await speakText({ text: fullLine, voiceId: resVoiceId, stability: 0.38, similarityBoost: 0.85 });
       if (audio && typeof audio.play === "function") {
         currentAudio.current = audio;
         await new Promise(res => {

@@ -110,7 +110,7 @@ export default function AskSwarm({ sessionResult, situation, debrief, onRunAgain
     if (mode === "voice" && fullAnswer && !sessionEndedRef.current) {
       setIsAISpeaking(true);
       try {
-        const audio = await speakText({ text: fullAnswer });
+        const audio = await speakText({ text: fullAnswer, voiceId: "pNInz6obpgDQGcFmaJgB", stability: 0.45, similarityBoost: 0.82 });
         if (audio) {
           currentAudioRef.current = audio;
           await new Promise(res => { audio.onended = res; audio.onerror = res; audio.play().catch(res); });

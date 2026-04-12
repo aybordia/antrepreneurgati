@@ -161,7 +161,7 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
     if (phase !== "briefing" || !debrief) return;
     const script = buildScript(debrief);
     let i = 0;
-    speakText({ text: script, voiceId: ADAM, stability: 0.8, similarityBoost: 0.75 })
+    speakText({ text: script, voiceId: ADAM, stability: 0.42, similarityBoost: 0.82 })
       .then(a => { if (a) { currentAudioRef.current = a; a.play?.(); } })
       .catch(() => {});
     const id = setInterval(() => {
