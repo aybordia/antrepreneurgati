@@ -86,7 +86,7 @@ function Feature({ icon, title, desc, color, delay }) {
   );
 }
 
-export default function SignIn({ googleReady, onCredential }) {
+export default function SignIn({ googleReady, onCredential, onJoinWaitlist, waitlistChecking }) {
   const btnRef = useRef(null);
 
   useEffect(() => {
@@ -301,9 +301,30 @@ export default function SignIn({ googleReady, onCredential }) {
           }} />
 
           {/* Google button */}
-          <div ref={btnRef} style={{ width: "100%" }} />
+          {waitlistChecking ? (
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "center",
+              gap: "10px", padding: "12px 0",
+            }}>
+              <div style={{
+                width: 14, height: 14, borderRadius: "50%",
+                border: "2px solid rgba(123,108,255,0.3)",
+                borderTopColor: "#7B6CFF",
+                animation: "spin 0.7s linear infinite",
+              }} />
+              <span style={{
+                fontFamily: "var(--mono)", fontSize: "11px",
+                color: "var(--muted)", letterSpacing: "0.06em",
+              }}>
+                Checking access…
+              </span>
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            </div>
+          ) : (
+            <div ref={btnRef} style={{ width: "100%" }} />
+          )}
 
-          {!googleReady && (
+          {!googleReady && !waitlistChecking && (
             <div style={{
               fontFamily: "var(--mono)", fontSize: "11px",
               color: "var(--muted)", opacity: 0.4,
@@ -336,6 +357,34 @@ export default function SignIn({ googleReady, onCredential }) {
                 </span>
               </div>
             ))}
+          </div>
+
+          {/* Waitlist CTA */}
+          <div style={{
+            width: "100%", height: "1px",
+            background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)",
+          }} />
+          <div style={{ textAlign: "center" }}>
+            <span style={{
+              fontFamily: "var(--ui)", fontSize: "12px",
+              color: "var(--muted)", opacity: 0.55,
+            }}>
+              Don't have access yet?{" "}
+            </span>
+            <button
+              onClick={onJoinWaitlist}
+              style={{
+                background: "none", border: "none", padding: 0,
+                fontFamily: "var(--ui)", fontSize: "12px",
+                color: "#7B6CFF", cursor: "pointer",
+                textDecoration: "underline", textUnderlineOffset: "3px",
+                opacity: 0.8, transition: "opacity 0.15s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.opacity = "1"}
+              onMouseLeave={e => e.currentTarget.style.opacity = "0.8"}
+            >
+              Join the waitlist
+            </button>
           </div>
         </motion.div>
 
