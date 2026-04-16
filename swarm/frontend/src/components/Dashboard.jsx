@@ -28,6 +28,28 @@ function timeAgo(ms) {
   return new Date(ms).toLocaleDateString();
 }
 
+/* ── Streak calculator ── */
+function calcStreak(sessions) {
+  if (!sessions.length) return 0;
+  const days = new Set(sessions.map(s => {
+    const d = new Date(s.createdAt);
+    return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  }));
+  const today = new Date();
+  const key = d => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  const todayKey = key(today);
+  const yesterday = new Date(today.getTime() - 86400000);
+  const yesterdayKey = key(yesterday);
+  if (!days.has(todayKey) && !days.has(yesterdayKey)) return 0;
+  let streak = 0;
+  let cur = days.has(todayKey) ? new Date(today) : new Date(yesterday);
+  while (days.has(key(cur))) {
+    streak++;
+    cur = new Date(cur.getTime() - 86400000);
+  }
+  return streak;
+}
+
 /* ── Score trend chart ── */
 function TrendGraph({ sessions }) {
   const scored = [...sessions]
@@ -489,6 +511,8 @@ export default function Dashboard({ user, onNewSession, getIdToken }) {
   const avgScore = sessions.length
     ? Math.round(sessions.filter(s => s.clarityScore !== null).reduce((a, s) => a + (s.clarityScore || 0), 0) / Math.max(sessions.filter(s => s.clarityScore !== null).length, 1))
     : null;
+  const streak = calcStreak(sessions);
+  const bestScore = sessions.length ? Math.max(...sessions.filter(s => s.clarityScore != null).map(s => s.clarityScore)) : null;
 
   const firstName = user?.given_name || user?.name?.split(" ")[0] || "there";
 
@@ -556,29 +580,36 @@ export default function Dashboard({ user, onNewSession, getIdToken }) {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.5 }}
-            style={{ display: "flex", gap: "12px" }}
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "10px" }}
           >
             {[
               { label: "Sessions", value: sessions.length, color: "var(--primary)" },
               { label: "Avg Score", value: avgScore ?? "—", color: scoreColor(avgScore) },
-              { label: "Exchanges", value: sessions.reduce((a, s) => a + Math.ceil(s.turnCount / 2), 0), color: "var(--teal)" },
-            ].map(({ label, value, color }) => (
+              { label: "Best Score", value: bestScore ?? "—", color: scoreColor(bestScore) },
+              {
+                label: "Day Streak",
+                value: streak ? `${streak}` : "0",
+                color: streak >= 7 ? "#F5A623" : streak >= 3 ? "#4DDDAA" : "var(--muted)",
+                suffix: streak >= 1 ? (streak >= 30 ? "🏆" : streak >= 14 ? "💎" : streak >= 7 ? "🔥" : "✦") : null,
+              },
+            ].map(({ label, value, color, suffix }) => (
               <div key={label} style={{
-                flex: 1, padding: "16px 18px",
+                padding: "14px 16px",
                 background: "rgba(255,255,255,0.025)",
                 border: "1px solid rgba(255,255,255,0.06)",
                 borderRadius: "14px",
                 backdropFilter: "blur(12px)",
                 position: "relative", overflow: "hidden",
               }}>
-                {/* 3D depth layer */}
                 <div style={{
                   position: "absolute", inset: 0,
                   background: "linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 60%)",
-                  borderRadius: "14px",
-                  pointerEvents: "none",
+                  borderRadius: "14px", pointerEvents: "none",
                 }} />
-                <div style={{ fontFamily: "var(--display)", fontSize: "28px", color, lineHeight: 1, marginBottom: "4px" }}>{value}</div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
+                  <div style={{ fontFamily: "var(--display)", fontSize: "26px", color, lineHeight: 1, marginBottom: "4px" }}>{value}</div>
+                  {suffix && <span style={{ fontSize: "14px", lineHeight: 1 }}>{suffix}</span>}
+                </div>
                 <div style={{ fontFamily: "var(--mono)", fontSize: "9px", color: "var(--muted)", letterSpacing: "0.12em" }}>{label.toUpperCase()}</div>
               </div>
             ))}
