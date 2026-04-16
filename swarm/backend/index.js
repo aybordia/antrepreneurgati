@@ -11,7 +11,6 @@ import askSwarm from "./routes/askSwarm.js";
 import { listSessions, saveSessionRoute, getSessionRoute } from "./routes/sessions.js";
 import feedback from "./routes/feedback.js";
 import { verifyToken } from "./googleAuth.js";
-import { isEmailApproved, approveEmail, revokeEmail, listApproved } from "./waitlistStore.js";
 
 const app = express();
 
@@ -31,45 +30,12 @@ app.use(cors({
     callback(new Error(`CORS blocked: ${origin}`));
   },
   methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "x-admin-secret"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
 app.use(express.json({ limit: "2mb" }));
 
 app.get("/health", (_, res) => res.json({ status: "ok", time: new Date().toISOString() }));
-
-// Public — check if an email is on the approved waitlist (no auth required)
-app.post("/api/waitlist/check", (req, res) => {
-  const { email } = req.body || {};
-  res.json({ approved: isEmailApproved(email) });
-});
-
-// Admin middleware — protected by ADMIN_SECRET env var
-function adminAuth(req, res, next) {
-  const secret = req.headers["x-admin-secret"] || req.body?.adminSecret;
-  if (!secret || secret !== process.env.ADMIN_SECRET) {
-    return res.status(403).json({ error: "Forbidden" });
-  }
-  next();
-}
-
-app.get("/api/admin/emails", adminAuth, (req, res) => {
-  res.json({ emails: listApproved() });
-});
-
-app.post("/api/admin/approve", adminAuth, (req, res) => {
-  const { email } = req.body || {};
-  if (!email?.trim()) return res.status(400).json({ error: "email required" });
-  approveEmail(email);
-  res.json({ ok: true, email: email.trim().toLowerCase(), emails: listApproved() });
-});
-
-app.post("/api/admin/revoke", adminAuth, (req, res) => {
-  const { email } = req.body || {};
-  if (!email?.trim()) return res.status(400).json({ error: "email required" });
-  revokeEmail(email);
-  res.json({ ok: true, emails: listApproved() });
-});
 
 app.post("/api/start-session", verifyToken, startSession);
 app.post("/api/voice-turn", verifyToken, voiceTurn);
@@ -81,7 +47,7 @@ app.post("/api/sessions/save", verifyToken, saveSessionRoute);
 app.get("/api/sessions/:id", verifyToken, getSessionRoute);
 app.post("/api/feedback", verifyToken, feedback);
 
-// Global error handler — prevents raw Express error pages in production
+// Global error handler
 app.use((err, req, res, next) => {
   console.error("[global error]", err.message);
   res.status(err.status || 500).json({ error: err.message || "Internal server error" });

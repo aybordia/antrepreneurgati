@@ -7,13 +7,8 @@ import Debrief from "./components/Debrief";
 import AskSwarm from "./components/AskSwarm";
 import Dashboard from "./components/Dashboard";
 import SignIn from "./components/SignIn";
-import WaitlistPage from "./components/WaitlistPage";
-import WaitlistPending from "./components/WaitlistPending";
-import AdminPage from "./components/AdminPage";
 import Cursor from "./components/Cursor";
 import { stopAllAudio } from "./hooks/useVoiceOutput";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
 
 const SCREENS = {
   DASHBOARD:       "DASHBOARD",
@@ -35,7 +30,7 @@ function decodeJwt(jwt) {
         .join("")
     );
     return JSON.parse(jsonPayload);
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -50,80 +45,38 @@ export default function App() {
   const [debriefResult, setDebriefResult] = useState(null);
   const [timedMode, setTimedMode] = useState(false);
   const [googleReady, setGoogleReady] = useState(false);
-  // "unchecked" | "checking" | "approved" | "pending"
-  const [waitlistStatus, setWaitlistStatus] = useState("unchecked");
-  const [showWaitlistForm, setShowWaitlistForm] = useState(false);
-  const [showAdmin, setShowAdmin] = useState(() => window.location.hash === "#admin");
 
   useEffect(() => {
     const legacyScript = document.querySelector("script[src='https://accounts.google.com/gsi/client']");
-    if (legacyScript) {
-      setGoogleReady(true);
-      return;
-    }
-
+    if (legacyScript) { setGoogleReady(true); return; }
     const script = document.createElement("script");
     script.src = "https://accounts.google.com/gsi/client";
     script.async = true;
     script.defer = true;
     script.onload = () => setGoogleReady(true);
     document.body.appendChild(script);
-
-    return () => {
-      document.body.removeChild(script);
-    };
+    return () => { document.body.removeChild(script); };
   }, []);
 
-  const checkWaitlist = useCallback(async (email) => {
-    try {
-      const res = await fetch(`${API_BASE}/api/waitlist/check`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const data = await res.json();
-      return data.approved === true;
-    } catch {
-      return true; // If check fails, let them through (fail open)
-    }
-  }, []);
-
-  const handleCredentialResponse = useCallback(async (response) => {
+  const handleCredentialResponse = useCallback((response) => {
     if (!response?.credential) return;
     const payload = decodeJwt(response.credential);
     if (!payload) return;
-
-    setWaitlistStatus("checking");
-
-    const approved = await checkWaitlist(payload.email);
-    if (!approved) {
-      // Store token+user but mark as pending — don't grant app access
-      localStorage.setItem("google_id_token", response.credential);
-      setToken(response.credential);
-      setUser(payload);
-      setWaitlistStatus("pending");
-      return;
-    }
-
     localStorage.setItem("google_id_token", response.credential);
     setToken(response.credential);
     setUser(payload);
-    setWaitlistStatus("approved");
-  }, [checkWaitlist]);
+  }, []);
 
-  // Restore session from localStorage on load — re-check waitlist approval
+  // Restore session from localStorage on load
   useEffect(() => {
     if (!token) return;
     const payload = decodeJwt(token);
-    if (!payload) {
+    if (payload) {
+      setUser(payload);
+    } else {
       localStorage.removeItem("google_id_token");
       setToken(null);
-      return;
     }
-    setUser(payload);
-    checkWaitlist(payload.email).then((approved) => {
-      setWaitlistStatus(approved ? "approved" : "pending");
-    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSignOut = () => {
@@ -131,13 +84,9 @@ export default function App() {
     localStorage.removeItem("google_id_token");
     setToken(null);
     setUser(null);
-    setWaitlistStatus("unchecked");
-    setShowWaitlistForm(false);
   };
 
-  const getIdToken = useCallback(async () => {
-    return token;
-  }, [token]);
+  const getIdToken = useCallback(async () => token, [token]);
 
   const handleNewSession = () => { stopAllAudio(); setScreen(SCREENS.SITUATION_INPUT); };
 
@@ -184,12 +133,7 @@ export default function App() {
     <div style={{ position: "relative", width: "100vw", height: "100vh", background: "#04040A" }}>
       <Cursor />
 
-      {/* Hidden admin panel — visit /#admin */}
-      {showAdmin && (
-        <AdminPage onBack={() => { setShowAdmin(false); window.location.hash = ""; }} />
-      )}
-
-      {!showAdmin && user && waitlistStatus === "approved" && screen !== SCREENS.DASHBOARD && (
+      {user && screen !== SCREENS.DASHBOARD && (
         <button
           onClick={handleBackToDashboard}
           style={{
@@ -208,7 +152,7 @@ export default function App() {
         </button>
       )}
 
-      {!showAdmin && user && waitlistStatus === "approved" && (
+      {user && (
         <div style={{ position: "fixed", right: 20, top: 20, zIndex: 1000, display: "flex", alignItems: "center", gap: "10px" }}>
           {user.picture && (
             <img src={user.picture} alt="" width={28} height={28} referrerPolicy="no-referrer"
@@ -234,32 +178,9 @@ export default function App() {
         </div>
       )}
 
-      {/* Waitlist form page — shown before or after sign-in */}
-      {!showAdmin && showWaitlistForm && (
-        <WaitlistPage onBack={() => setShowWaitlistForm(false)} />
-      )}
-
-      {/* Signed-in but not approved — show pending screen */}
-      {!showAdmin && !showWaitlistForm && user && waitlistStatus === "pending" && (
-        <WaitlistPending
-          user={user}
-          onSignOut={handleSignOut}
-          onJoinWaitlist={() => setShowWaitlistForm(true)}
-        />
-      )}
-
-      {/* Not signed in — show sign-in page */}
-      {!showAdmin && !showWaitlistForm && !user && (
-        <SignIn
-          googleReady={googleReady}
-          onCredential={handleCredentialResponse}
-          onJoinWaitlist={() => setShowWaitlistForm(true)}
-          waitlistChecking={waitlistStatus === "checking"}
-        />
-      )}
-
-      {/* Approved user — show app */}
-      {!showAdmin && !showWaitlistForm && user && waitlistStatus === "approved" && (
+      {!user ? (
+        <SignIn googleReady={googleReady} onCredential={handleCredentialResponse} />
+      ) : (
         <AnimatePresence mode="wait">
           {screen === SCREENS.DASHBOARD && (
             <Dashboard key="dashboard" user={user} onNewSession={handleNewSession} getIdToken={getIdToken} />

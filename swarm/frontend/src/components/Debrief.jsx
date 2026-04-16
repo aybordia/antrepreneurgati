@@ -682,6 +682,41 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
           <button className="btn btn-amber" onClick={onRunAgain} style={{ width: "100%" }}>
             Run Again — Harder →
           </button>
+
+          {/* Community waitlist CTA */}
+          <a
+            href="https://form.typeform.com/to/pVmDViYF"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "flex", alignItems: "center", gap: "14px",
+              padding: "16px 20px", borderRadius: "14px",
+              border: "1px solid rgba(123,108,255,0.22)",
+              background: "rgba(123,108,255,0.06)",
+              textDecoration: "none",
+              transition: "all 0.2s",
+              marginTop: "2px",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(123,108,255,0.12)"; e.currentTarget.style.borderColor = "rgba(123,108,255,0.38)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(123,108,255,0.06)"; e.currentTarget.style.borderColor = "rgba(123,108,255,0.22)"; }}
+          >
+            <div style={{
+              width: 38, height: 38, borderRadius: "10px", flexShrink: 0,
+              background: "rgba(123,108,255,0.15)",
+              border: "1px solid rgba(123,108,255,0.3)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "16px",
+            }}>✦</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "#a09aff", letterSpacing: "0.08em", marginBottom: "3px" }}>
+                ENJOYED YOUR SESSION?
+              </div>
+              <div style={{ fontFamily: "var(--ui)", fontSize: "13px", color: "var(--muted)", lineHeight: 1.4 }}>
+                Join our community and be the first to know about new features.
+              </div>
+            </div>
+            <span style={{ fontFamily: "var(--mono)", fontSize: "12px", color: "rgba(160,154,255,0.5)", flexShrink: 0 }}>→</span>
+          </a>
         </motion.div>
 
         {/* Share Card */}

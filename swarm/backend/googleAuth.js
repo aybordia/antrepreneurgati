@@ -1,5 +1,3 @@
-import { isEmailApproved } from "./waitlistStore.js";
-
 function decodeJwtPayload(token) {
   try {
     const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
@@ -42,11 +40,6 @@ export async function verifyToken(req, res, next) {
   const nowSec = Math.floor(Date.now() / 1000);
   if (payload.exp && nowSec > payload.exp + 86400) {
     return res.status(401).json({ error: "Token expired" });
-  }
-
-  // Check waitlist approval
-  if (!isEmailApproved(payload.email)) {
-    return res.status(403).json({ error: "waitlist" });
   }
 
   req.user = payload;
