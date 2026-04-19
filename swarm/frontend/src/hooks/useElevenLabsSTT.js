@@ -134,5 +134,5 @@ export function useElevenLabsSTT({ onResult, onSilence, silenceThresholdMs = 300
     }
   }, [silenceThresholdMs, stop, transcribe]);
 
-  return { start, stop, isListening, isProcessing, micError };
+  return { start, stop, isListening, isProcessing, micError, analyserRef };
 }

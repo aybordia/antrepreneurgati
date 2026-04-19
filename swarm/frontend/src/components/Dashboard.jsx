@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getJSON } from "../lib/api";
 import { getSessions as getLocalSessions } from "../lib/localSessions";
@@ -26,6 +26,178 @@ function timeAgo(ms) {
   if (h < 24) return `${h}h ago`;
   if (d < 30) return `${d}d ago`;
   return new Date(ms).toLocaleDateString();
+}
+
+/* ── Practice heatmap (16-week activity grid) ── */
+function PracticeHeatmap({ sessions }) {
+  const [tooltip, setTooltip] = useState(null);
+  const WEEKS = 16;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Count sessions per calendar day
+  const counts = {};
+  sessions.forEach(s => {
+    const d = new Date(s.createdAt);
+    d.setHours(0, 0, 0, 0);
+    const key = d.getTime();
+    counts[key] = (counts[key] || 0) + 1;
+  });
+
+  // Build WEEKS*7 day grid ending today
+  const days = [];
+  for (let i = WEEKS * 7 - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    days.push({ date: d, count: counts[d.getTime()] || 0 });
+  }
+
+  const maxCount = Math.max(...Object.values(counts), 1);
+
+  // Group into columns (each column = one week, Mon→Sun)
+  const cols = [];
+  for (let w = 0; w < WEEKS; w++) {
+    cols.push(days.slice(w * 7, (w + 1) * 7));
+  }
+
+  const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  // Month labels: track when month changes across column starts
+  const monthLabels = [];
+  cols.forEach((week, wi) => {
+    const first = week[0].date;
+    const prev = wi > 0 ? cols[wi - 1][0].date : null;
+    if (!prev || first.getMonth() !== prev.getMonth()) {
+      monthLabels.push({ wi, label: MONTH_NAMES[first.getMonth()] });
+    }
+  });
+
+  const totalSessions = Object.values(counts).reduce((a, b) => a + b, 0);
+  const activeDays = Object.values(counts).filter(c => c > 0).length;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.15, duration: 0.55 }}
+      style={{
+        background: "rgba(255,255,255,0.022)",
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderRadius: "18px",
+        padding: "20px 22px 16px",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* Background glow */}
+      <div style={{
+        position: "absolute", top: 0, right: 0,
+        width: 200, height: 200,
+        background: "radial-gradient(circle at 80% 20%, rgba(123,108,255,0.07) 0%, transparent 65%)",
+        pointerEvents: "none",
+      }} />
+
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+        <div>
+          <div style={{ fontFamily: "var(--mono)", fontSize: "9px", color: "rgba(106,103,128,0.5)", letterSpacing: "0.18em", marginBottom: "5px" }}>
+            PRACTICE ACTIVITY
+          </div>
+          <div style={{ display: "flex", gap: "16px" }}>
+            <span style={{ fontFamily: "var(--display)", fontSize: "18px", color: "var(--primary)" }}>{activeDays}</span>
+            <span style={{ fontFamily: "var(--mono)", fontSize: "9px", color: "var(--muted)", opacity: 0.5, alignSelf: "flex-end", paddingBottom: "2px", letterSpacing: "0.08em" }}>
+              ACTIVE DAYS · {totalSessions} SESSIONS TOTAL
+            </span>
+          </div>
+        </div>
+        {/* Legend */}
+        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          <span style={{ fontFamily: "var(--mono)", fontSize: "8px", color: "rgba(106,103,128,0.4)", letterSpacing: "0.06em" }}>less</span>
+          {[0, 0.25, 0.5, 0.75, 1].map((v, i) => (
+            <div key={i} style={{
+              width: 10, height: 10, borderRadius: "2px",
+              background: v === 0 ? "rgba(255,255,255,0.04)" : `rgba(123,108,255,${0.2 + v * 0.8})`,
+              boxShadow: v > 0 ? `0 0 ${v * 6}px rgba(123,108,255,${v * 0.35})` : "none",
+            }} />
+          ))}
+          <span style={{ fontFamily: "var(--mono)", fontSize: "8px", color: "rgba(106,103,128,0.4)", letterSpacing: "0.06em" }}>more</span>
+        </div>
+      </div>
+
+      {/* Month labels row */}
+      <div style={{ position: "relative", marginBottom: "4px", height: "12px" }}>
+        {monthLabels.map(({ wi, label }) => (
+          <span key={wi} style={{
+            position: "absolute",
+            left: wi * 15,
+            fontFamily: "var(--mono)", fontSize: "8px",
+            color: "rgba(106,103,128,0.45)", letterSpacing: "0.05em",
+          }}>
+            {label}
+          </span>
+        ))}
+      </div>
+
+      {/* Grid */}
+      <div style={{ display: "flex", gap: "3px", position: "relative" }}>
+        {cols.map((week, wi) => (
+          <div key={wi} style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+            {week.map((day, di) => {
+              const isToday = day.date.getTime() === today.getTime();
+              const intensity = day.count > 0 ? Math.min(1, 0.25 + (day.count / maxCount) * 0.75) : 0;
+              const dateStr = day.date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+              return (
+                <div
+                  key={di}
+                  onMouseEnter={e => setTooltip({ x: e.clientX, y: e.clientY, date: dateStr, count: day.count })}
+                  onMouseLeave={() => setTooltip(null)}
+                  style={{
+                    width: 11, height: 11,
+                    borderRadius: "2px",
+                    background: day.count === 0
+                      ? "rgba(255,255,255,0.04)"
+                      : `rgba(123,108,255,${intensity})`,
+                    border: isToday
+                      ? "1px solid rgba(123,108,255,0.7)"
+                      : "none",
+                    boxShadow: day.count > 0
+                      ? `0 0 ${3 + intensity * 7}px rgba(123,108,255,${intensity * 0.5})`
+                      : "none",
+                    cursor: "default",
+                    transition: "transform 0.1s",
+                  }}
+                  onMouseOver={e => e.currentTarget.style.transform = "scale(1.4)"}
+                  onMouseOut={e => e.currentTarget.style.transform = "scale(1)"}
+                />
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* Tooltip */}
+      {tooltip && (
+        <div style={{
+          position: "fixed",
+          left: tooltip.x + 12, top: tooltip.y - 36,
+          background: "rgba(10,10,18,0.95)",
+          border: "1px solid rgba(255,255,255,0.1)",
+          borderRadius: "8px",
+          padding: "5px 10px",
+          pointerEvents: "none",
+          zIndex: 999,
+          display: "flex", gap: "6px", alignItems: "center",
+        }}>
+          <span style={{ fontFamily: "var(--mono)", fontSize: "10px", color: "var(--muted)" }}>{tooltip.date}</span>
+          <span style={{ width: 1, height: 10, background: "rgba(255,255,255,0.1)" }} />
+          <span style={{ fontFamily: "var(--mono)", fontSize: "10px", color: tooltip.count > 0 ? "var(--primary)" : "var(--muted)" }}>
+            {tooltip.count} {tooltip.count === 1 ? "session" : "sessions"}
+          </span>
+        </div>
+      )}
+    </motion.div>
+  );
 }
 
 /* ── Streak calculator ── */
@@ -615,6 +787,9 @@ export default function Dashboard({ user, onNewSession, getIdToken }) {
             ))}
           </motion.div>
         )}
+
+        {/* Practice heatmap */}
+        {!loading && sessions.length > 0 && <PracticeHeatmap sessions={sessions} />}
 
         {/* Score trend graph */}
         {!loading && <TrendGraph sessions={sessions} />}

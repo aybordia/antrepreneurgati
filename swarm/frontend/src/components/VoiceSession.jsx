@@ -11,32 +11,78 @@ const sv = {
   exit:    { opacity: 0, filter: "blur(10px)", transition: { duration: 0.4 } },
 };
 
-const WAVEFORM_BARS = 28;
+const WAVEFORM_BARS = 32;
 
-function WaveformVisualizer({ active, color = "#7B6CFF" }) {
+function WaveformVisualizer({ active, color = "#7B6CFF", analyserRef = null }) {
+  const barsRef = useRef(Array(WAVEFORM_BARS).fill(4));
+  const canvasRef = useRef(null);
+  const animRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width;
+    const H = canvas.height;
+    const barW = Math.floor(W / WAVEFORM_BARS) - 1;
+
+    const dataArray = analyserRef?.current
+      ? new Uint8Array(analyserRef.current.frequencyBinCount)
+      : null;
+
+    const draw = () => {
+      ctx.clearRect(0, 0, W, H);
+
+      if (active && analyserRef?.current && dataArray) {
+        analyserRef.current.getByteFrequencyData(dataArray);
+        const step = Math.floor(dataArray.length / WAVEFORM_BARS);
+        for (let i = 0; i < WAVEFORM_BARS; i++) {
+          const raw = dataArray[i * step] / 255;
+          // Smooth bars with exponential decay
+          barsRef.current[i] = barsRef.current[i] * 0.75 + raw * 0.25;
+        }
+      } else if (active) {
+        // Fallback: organic idle animation
+        for (let i = 0; i < WAVEFORM_BARS; i++) {
+          const t = Date.now() / 1000;
+          barsRef.current[i] = 0.1 + 0.08 * Math.sin(t * 2.1 + i * 0.5) + 0.05 * Math.cos(t * 1.3 + i * 0.9);
+        }
+      } else {
+        for (let i = 0; i < WAVEFORM_BARS; i++) {
+          barsRef.current[i] = barsRef.current[i] * 0.85;
+        }
+      }
+
+      barsRef.current.forEach((val, i) => {
+        const barH = Math.max(2, val * (H - 4));
+        const x = i * (barW + 1);
+        const y = (H - barH) / 2;
+
+        // Gradient per bar
+        const grad = ctx.createLinearGradient(0, y, 0, y + barH);
+        grad.addColorStop(0, color + "dd");
+        grad.addColorStop(1, color + "44");
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.roundRect(x, y, barW, barH, 2);
+        ctx.fill();
+      });
+
+      animRef.current = requestAnimationFrame(draw);
+    };
+
+    draw();
+    return () => cancelAnimationFrame(animRef.current);
+  }, [active, color, analyserRef]);
+
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "2px", height: "28px" }}>
-      {Array.from({ length: WAVEFORM_BARS }).map((_, i) => {
-        const baseH = 4 + Math.sin(i * 0.8 + 1) * 4 + Math.cos(i * 0.45) * 3;
-        return (
-          <div
-            key={i}
-            style={{
-              width: "2.5px",
-              height: `${baseH}px`,
-              borderRadius: "3px",
-              background: color,
-              animation: active
-                ? `waveBar ${0.65 + (i % 7) * 0.09}s ease-in-out ${(i % 5) * 0.065}s infinite alternate`
-                : "none",
-              opacity: active ? 0.75 : 0.12,
-              transition: "opacity 0.4s",
-              transformOrigin: "bottom",
-            }}
-          />
-        );
-      })}
-    </div>
+    <canvas
+      ref={canvasRef}
+      width={WAVEFORM_BARS * 8}
+      height={36}
+      style={{ display: "block", opacity: active ? 1 : 0.15, transition: "opacity 0.5s" }}
+    />
   );
 }
 
@@ -164,7 +210,7 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionData, getIdToken]);
 
-  const { start, stop, isListening, isProcessing, micError } = useElevenLabsSTT({
+  const { start, stop, isListening, isProcessing, micError, analyserRef } = useElevenLabsSTT({
     onResult: async (spokenText) => {
       if (isAISpeakingRef.current || isBusyRef.current || sessionCompleteRef.current || sessionEndedRef.current || !spokenText?.trim()) return;
       const userTurn = { speaker: "You", text: spokenText, timestamp: Date.now() };
@@ -425,11 +471,28 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
           </motion.div>
         </AnimatePresence>
 
-        {/* Waveform */}
+        {/* AI waveform */}
         <AnimatePresence>
           {isAISpeaking && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <WaveformVisualizer active={isAISpeaking} color={personaColor} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Mic waveform — real frequency data while user is speaking */}
+        <AnimatePresence>
+          {isListening && !isAISpeaking && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}
+            >
+              <WaveformVisualizer active={isListening} color="var(--amber)" analyserRef={analyserRef} />
+              <div style={{ fontFamily: "var(--mono)", fontSize: "9px", color: "var(--amber)", letterSpacing: "0.14em", opacity: 0.7 }}>
+                LISTENING
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

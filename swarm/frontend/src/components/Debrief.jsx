@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { postJSON } from "../lib/api";
 import { speakText, stopAllAudio } from "../hooks/useVoiceOutput";
 import { saveSession } from "../lib/localSessions";
+import Confetti from "./Confetti";
 
 const ADAM = "pNInz6obpgDQGcFmaJgB";
 
@@ -118,6 +119,7 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
   const [showTranscript, setShowTranscript] = useState(false);
   const [showQA, setShowQA] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [confetti, setConfetti] = useState(false);
   const [interviewRating, setInterviewRating] = useState(0);
   const [debriefRating, setDebriefRating] = useState(0);
   const [interviewFeedback, setInterviewFeedback] = useState("");
@@ -196,6 +198,10 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
         setDebrief(d);
         setLoading(false);
         persistSession(d, token, userId);
+        if ((d.clarityScore || 0) >= 75) {
+          setTimeout(() => setConfetti(true), 600);
+          setTimeout(() => setConfetti(false), 5000);
+        }
       }
     };
 
@@ -261,6 +267,7 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
     <motion.div className="screen screen-scroll" variants={sv} initial="initial" animate="animate" exit="exit"
       style={{ background: "#02020A" }}
     >
+      <Confetti active={confetti} />
       <div className="noise" />
       <div className="ambient" />
 
