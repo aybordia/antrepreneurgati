@@ -3,20 +3,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import { streamFetch } from "../lib/api";
 
 const AGENTS = [
-  { name: "Researcher",     color: "#7B6CFF", label: "Researcher",    icon: "◎" },
-  { name: "Profiler",       color: "#4DDDAA", label: "Profiler",       icon: "◉" },
-  { name: "WeakSpotFinder", color: "#c8f064", label: "Weak Spots",     icon: "◈" },
-  { name: "VoiceDesigner",  color: "#FF6B6B", label: "Voice Designer", icon: "◐" },
-  { name: "Architect",      color: "#F5A623", label: "Architect",      icon: "◑" },
+  { name: "Researcher",     color: "#8FB6E8", label: "Researcher",    icon: "◎" },
+  { name: "Profiler",       color: "#74B9A0", label: "Profiler",       icon: "◉" },
+  { name: "WeakSpotFinder", color: "#B39BD8", label: "Focus Areas",    icon: "◈" },
+  { name: "VoiceDesigner",  color: "#D98B8B", label: "Voice Designer", icon: "◐" },
+  { name: "Architect",      color: "#E4A339", label: "Architect",      icon: "◑" },
 ];
 
 const PHASE = {
-  0:   "Initialising swarm...",
+  0:   "Starting up...",
   20:  "Researching your scenario...",
-  40:  "Profiling your panel...",
-  60:  "Targeting weak spots...",
-  80:  "Designing voices...",
-  100: "Session ready.",
+  40:  "Understanding your panel...",
+  60:  "Choosing focus areas...",
+  80:  "Matching voices...",
+  100: "Your panel is ready.",
 };
 
 function phaseLabel(p) {
@@ -188,7 +188,7 @@ function hexToRgb(hex) {
   return `${r},${g},${b}`;
 }
 
-export default function MissionControl({ situation, onBeginSession, getIdToken }) {
+export default function MissionControl({ situation, intent = null, onBeginSession, getIdToken }) {
   const [outputs, setOutputs] = useState({});
   const [done, setDone] = useState({});
   const [sessionData, setSessionData] = useState(null);
@@ -206,7 +206,7 @@ export default function MissionControl({ situation, onBeginSession, getIdToken }
 
       try {
         const token = await getIdToken();
-        await streamFetch("/api/start-session", { situation }, chunk => {
+        await streamFetch("/api/start-session", { situation, intent }, chunk => {
           if (controller.signal.aborted) return;
           if (chunk.heartbeat) return;
           if (chunk.error) { setError(chunk.error); return; }
@@ -235,7 +235,7 @@ export default function MissionControl({ situation, onBeginSession, getIdToken }
 
     start();
     return () => controller.abort();
-  }, [situation, getIdToken]);
+  }, [situation, intent, getIdToken]);
 
   useEffect(() => {
     Object.values(cardRefs.current).forEach(el => { if (el) el.scrollTop = el.scrollHeight; });
@@ -264,8 +264,8 @@ export default function MissionControl({ situation, onBeginSession, getIdToken }
       <div style={{
         position: "fixed", inset: 0, pointerEvents: "none",
         backgroundImage:
-          "linear-gradient(rgba(123,108,255,0.022) 1px, transparent 1px), " +
-          "linear-gradient(90deg, rgba(123,108,255,0.022) 1px, transparent 1px)",
+          "linear-gradient(rgba(255,255,255,0.014) 1px, transparent 1px), " +
+          "linear-gradient(90deg, rgba(255,255,255,0.014) 1px, transparent 1px)",
         backgroundSize: "52px 52px",
       }} />
 
@@ -282,8 +282,8 @@ export default function MissionControl({ situation, onBeginSession, getIdToken }
             <div style={{ fontFamily: "var(--mono)", fontSize: "10px", color: "var(--muted)", letterSpacing: "0.2em", marginBottom: "8px" }}>
               PHASE 2 OF 4
             </div>
-            <h1 style={{ fontFamily: "var(--display)", fontSize: "clamp(22px, 3.5vw, 32px)", fontWeight: 300, lineHeight: 1.2, marginBottom: "6px" }}>
-              Mission Control
+            <h1 style={{ fontFamily: "var(--display)", fontSize: "clamp(22px, 3.5vw, 32px)", fontWeight: 400, lineHeight: 1.2, marginBottom: "6px" }}>
+              Building your panel.
             </h1>
             <div style={{
               fontFamily: "var(--mono)", fontSize: "10px", color: "var(--muted)",
@@ -298,8 +298,8 @@ export default function MissionControl({ situation, onBeginSession, getIdToken }
             animate={{ opacity: 1 }}
             style={{
               display: "flex", alignItems: "center", gap: "8px",
-              background: allDone ? "rgba(200,240,100,0.07)" : "rgba(123,108,255,0.07)",
-              border: `1px solid ${allDone ? "rgba(200,240,100,0.2)" : "rgba(123,108,255,0.2)"}`,
+              background: allDone ? "var(--calm-soft)" : "var(--honey-soft)",
+              border: `1px solid ${allDone ? "rgba(116,185,160,0.3)" : "rgba(228,163,57,0.3)"}`,
               borderRadius: "999px", padding: "7px 16px",
               transition: "all 0.5s",
             }}
@@ -355,8 +355,8 @@ export default function MissionControl({ situation, onBeginSession, getIdToken }
             transition={{ duration: 0.8, ease: "easeOut" }}
             style={{
               height: "100%",
-              background: "linear-gradient(90deg, #7B6CFF, #4DDDAA, #c8f064)",
-              boxShadow: "0 0 8px rgba(123,108,255,0.5)",
+              background: "linear-gradient(90deg, #74B9A0, #E4A339)",
+              boxShadow: "0 0 8px rgba(228,163,57,0.35)",
             }}
           />
         </div>
@@ -403,7 +403,7 @@ export default function MissionControl({ situation, onBeginSession, getIdToken }
               transition={{ duration: 0.7, ease: "easeOut" }}
               style={{
                 height: "100%", borderRadius: "2px",
-                background: "linear-gradient(90deg, #7B6CFF, #4DDDAA, #c8f064)",
+                background: "linear-gradient(90deg, #74B9A0, #E4A339)",
                 backgroundSize: "200% 100%",
                 animation: "gradientShift 3s ease infinite",
               }}
@@ -429,7 +429,7 @@ export default function MissionControl({ situation, onBeginSession, getIdToken }
                 onClick={() => onBeginSession(sessionData)}
                 style={{ width: "100%" }}
               >
-                Begin Session →
+                Meet your panel
               </motion.button>
             )}
           </AnimatePresence>

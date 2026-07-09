@@ -227,7 +227,7 @@ export default function SignIn({ googleReady, onCredential }) {
             marginBottom: "36px", maxWidth: "360px",
           }}
         >
-          Five specialized AI agents study your role, your company, and your background — then interview you live. No fluff. No filler. Just the questions that actually matter.
+          A panel of fictional AI interviewers is built around your exact situation, then interviews you live by voice. Practice on your own terms, with a private debrief afterward.
         </motion.p>
 
         {/* Feature highlights */}
@@ -251,8 +251,8 @@ export default function SignIn({ googleReady, onCredential }) {
           />
           <Feature
             icon="📋"
-            title="Scored debrief"
-            desc="Every session ends with an honest score, your strongest moments, and what to fix next."
+            title="Private, non-scored debrief"
+            desc="Every session ends with your panel's written impressions and your full transcript. Observations, never grades."
             color="#4DDDAA"
             delay={0.68}
           />
@@ -292,7 +292,7 @@ export default function SignIn({ googleReady, onCredential }) {
             }}>
               Sign in with Google to start your first session.
               <br />
-              <span style={{ opacity: 0.65 }}>Your data stays private — Google is only used to verify you.</span>
+              <span style={{ opacity: 0.65 }}>Your data stays private. Google is only used to verify you.</span>
             </div>
           </div>
 

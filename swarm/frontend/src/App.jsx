@@ -7,7 +7,6 @@ import Debrief from "./components/Debrief";
 import AskSwarm from "./components/AskSwarm";
 import Dashboard from "./components/Dashboard";
 import SignIn from "./components/SignIn";
-import Cursor from "./components/Cursor";
 import { stopAllAudio } from "./hooks/useVoiceOutput";
 
 const SCREENS = {
@@ -40,6 +39,7 @@ export default function App() {
   const [token, setToken] = useState(() => localStorage.getItem("google_id_token"));
   const [screen, setScreen] = useState(SCREENS.DASHBOARD);
   const [situation, setSituation] = useState("");
+  const [intent, setIntent] = useState(null);
   const [sessionData, setSessionData] = useState(null);
   const [sessionResult, setSessionResult] = useState(null);
   const [debriefResult, setDebriefResult] = useState(null);
@@ -93,6 +93,7 @@ export default function App() {
   const handleLaunch = (sit, opts = {}) => {
     stopAllAudio();
     setSituation(sit);
+    setIntent(opts.intent || null);
     setTimedMode(opts.timedMode || false);
     setScreen(SCREENS.MISSION_CONTROL);
   };
@@ -117,7 +118,7 @@ export default function App() {
 
   const handleRunAgain = () => {
     stopAllAudio();
-    setSituation((s) => s.replace(" — harder mode", "") + " — harder mode");
+    setSituation((s) => s.replace(", harder this time", "") + ", harder this time");
     setSessionData(null);
     setSessionResult(null);
     setDebriefResult(null);
@@ -130,8 +131,7 @@ export default function App() {
   };
 
   return (
-    <div style={{ position: "relative", width: "100vw", height: "100vh", background: "#04040A" }}>
-      <Cursor />
+    <div style={{ position: "relative", width: "100vw", height: "100vh", background: "var(--ink)" }}>
 
       {user && screen !== SCREENS.DASHBOARD && (
         <button
@@ -186,10 +186,10 @@ export default function App() {
             <Dashboard key="dashboard" user={user} onNewSession={handleNewSession} getIdToken={getIdToken} />
           )}
           {screen === SCREENS.SITUATION_INPUT && (
-            <SituationInput key="input" onLaunch={handleLaunch} initialSituation={situation} onBack={handleBackToDashboard} />
+            <SituationInput key="input" onLaunch={handleLaunch} initialSituation={situation} onBack={handleBackToDashboard} getIdToken={getIdToken} />
           )}
           {screen === SCREENS.MISSION_CONTROL && (
-            <MissionControl key="mission" situation={situation} onBeginSession={handleBeginSession} getIdToken={getIdToken} />
+            <MissionControl key="mission" situation={situation} intent={intent} onBeginSession={handleBeginSession} getIdToken={getIdToken} />
           )}
           {screen === SCREENS.VOICE_SESSION && (
             <VoiceSession key="session" sessionData={sessionData} situation={situation} onEndSession={handleEndSession} getIdToken={getIdToken} timedMode={timedMode} />

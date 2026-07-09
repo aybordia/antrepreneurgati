@@ -1,122 +1,78 @@
-// PROMPT VERSION: 1.0
-import { callLLM, callLLMStream, parseJSON } from "../lib/llm.js";
-import { VOICE_IDS, resolveVoiceId } from "../lib/elevenlabs.js";
+// PROMPT VERSION: 2.0 — fully dynamic sessions: LLM-invented fictional personas
+// (no hardcoded name/title/institution lists) + domain-tagged question bank.
+import { generatePersonas } from "./personaGenerator.js";
+import { composeSessionQuestions } from "../lib/questionBank.js";
+import { parseIntent } from "./intentParser.js";
 
-const SYSTEM_PROMPT = `You are the Session Architect. Design a practice session. Output ONLY valid JSON, no markdown:
-{"agent":"Architect","sessionSummary":"1 sentence","psychologicalProfile":"1 sentence","diagnosedWeakness":"1 sentence","personas":[{"name":"UNIQUE name NOT Alex/Jordan/Morgan","role":"specific role","voiceId":"from VOICE_IDS","color":"#7B6CFF","orbIndex":0,"style":"1 sentence"},{"name":"...","role":"...","voiceId":"...","color":"#F5A623","orbIndex":1,"style":"..."},{"name":"...","role":"...","voiceId":"...","color":"#6ee7b7","orbIndex":2,"style":"..."}],"sessionPlan":{"difficultyProgression":"escalating","totalEstimatedMinutes":5,"questions":[{"text":"topic intent","assignedPersona":"name","intent":"string"},{"text":"...","assignedPersona":"...","intent":"..."},{"text":"...","assignedPersona":"...","intent":"..."},{"text":"...","assignedPersona":"...","intent":"..."}]},"openingLine":"","closingCondition":"After all topics covered"}
+// Assign each question to the persona whose focus matches, balancing load
+function assignQuestions(questions, personas) {
+  const load = new Map(personas.map(p => [p.name, 0]));
+  return questions.map(q => {
+    const candidates = [...personas].sort((a, b) => {
+      const aMatch = a.question_focus === q.type || a.question_focus === "mixed" ? 0 : 1;
+      const bMatch = b.question_focus === q.type || b.question_focus === "mixed" ? 0 : 1;
+      if (aMatch !== bMatch) return aMatch - bMatch;
+      return load.get(a.name) - load.get(b.name);
+    });
+    const chosen = candidates[0];
+    load.set(chosen.name, load.get(chosen.name) + 1);
+    return {
+      text: q.text,
+      type: q.type,
+      domain: q.domain,
+      assignedPersona: chosen.name,
+      intent: q.type === "technical" ? "Domain question" : q.type === "motivational" ? "Motivation" : "Behavioral",
+    };
+  });
+}
 
-Rules: exactly 3 personas, exactly 4 questions escalating in difficulty, voiceId from: ${JSON.stringify(VOICE_IDS)}. JSON only.`;
-
-export async function runArchitect({ situation, researcherOutput, styleHint, researchContext }, writeChunk) {
-  writeChunk({ agent: "Architect", chunk: "Designing your session…", thinking: true });
-
-  const rc = researcherOutput || {};
-  const clip = (s, n = 80) => s && s.length > n ? s.slice(0, n) + "…" : (s || "");
-  const userPrompt = `Situation: "${situation}"
-Patterns: ${clip(rc.interviewerPatterns)}
-Weakness: ${clip(rc.diagnosedWeakness || (rc.keyFindings?.[0]?.insight) || "")}
-Output JSON now.`;
-
-  // Build situation-aware fallback personas so the session feels right
-  // even when the Architect LLM call fails
-  function buildFallbackPersonas(situation) {
-    const s = situation.toLowerCase();
-    if (/mit|harvard|stanford|yale|princeton|college|university|admissions|application/i.test(s)) {
-      return [
-        { name: "Dr. Reeves",    role: "Admissions Officer",  voiceId: VOICE_IDS["Adam"],   color: "#7B6CFF", orbIndex: 0, style: "Thoughtful and intellectually probing." },
-        { name: "Maya Thornton", role: "Alumni Interviewer",  voiceId: VOICE_IDS["Rachel"], color: "#F5A623", orbIndex: 1, style: "Warm but pushes for genuine depth." },
-        { name: "Prof. Okafor",  role: "Faculty Representative", voiceId: VOICE_IDS["Arnold"], color: "#6ee7b7", orbIndex: 2, style: "Challenges assumptions, values precision." },
-      ];
-    }
-    if (/parent|mom|dad|family|home|guardian/i.test(s)) {
-      return [
-        { name: "Your Father",  role: "Parent",        voiceId: VOICE_IDS["Adam"],   color: "#7B6CFF", orbIndex: 0, style: "Direct, protective, hard to convince." },
-        { name: "Your Mother",  role: "Parent",        voiceId: VOICE_IDS["Rachel"], color: "#F5A623", orbIndex: 1, style: "Emotional, invested, wants reassurance." },
-        { name: "Aunt Sandra",  role: "Family Mediator", voiceId: VOICE_IDS["Gigi"],   color: "#6ee7b7", orbIndex: 2, style: "Balanced, asks the hard practical questions." },
-      ];
-    }
-    if (/google|amazon|meta|apple|microsoft|netflix|faang|software|engineer|swe|sde/i.test(s)) {
-      return [
-        { name: "Sarah Chen",    role: "Engineering Manager",  voiceId: VOICE_IDS["Rachel"], color: "#7B6CFF", orbIndex: 0, style: "Systems-focused, expects concrete tradeoffs." },
-        { name: "Dev Patel",     role: "Senior SWE Interviewer", voiceId: VOICE_IDS["Josh"],   color: "#F5A623", orbIndex: 1, style: "Technical and precise, probes edge cases." },
-        { name: "Marcus Webb",   role: "Tech Lead",             voiceId: VOICE_IDS["Arnold"], color: "#6ee7b7", orbIndex: 2, style: "Challenges vague answers with follow-ups." },
-      ];
-    }
-    if (/investor|vc|venture|pitch|startup|founder/i.test(s)) {
-      return [
-        { name: "Natalie Cross",  role: "General Partner",    voiceId: VOICE_IDS["Rachel"], color: "#7B6CFF", orbIndex: 0, style: "Skeptical, pattern-matches quickly." },
-        { name: "James Liu",      role: "Principal",          voiceId: VOICE_IDS["Josh"],   color: "#F5A623", orbIndex: 1, style: "Digs into numbers and defensibility." },
-        { name: "Priya Sharma",   role: "Analyst",            voiceId: VOICE_IDS["Gigi"],   color: "#6ee7b7", orbIndex: 2, style: "Asks the naive question that cuts deepest." },
-      ];
-    }
-    if (/medical|doctor|hospital|clinical|residency|fellowship|nursing/i.test(s)) {
-      return [
-        { name: "Dr. Patel",      role: "Program Director",   voiceId: VOICE_IDS["Adam"],   color: "#7B6CFF", orbIndex: 0, style: "Evaluates clinical reasoning and composure." },
-        { name: "Dr. Williams",   role: "Senior Physician",   voiceId: VOICE_IDS["Arnold"], color: "#F5A623", orbIndex: 1, style: "Scenario-based, tests under pressure." },
-        { name: "Dr. Nakamura",   role: "Department Chair",   voiceId: VOICE_IDS["Rachel"], color: "#6ee7b7", orbIndex: 2, style: "Probes empathy and ethical decision-making." },
-      ];
-    }
-    // Default: general professional interview
-    return [
-      { name: "Elena Vasquez",  role: "Senior Director",    voiceId: VOICE_IDS["Rachel"], color: "#7B6CFF", orbIndex: 0, style: "Direct, evaluates leadership potential." },
-      { name: "Omar Hassan",    role: "Panel Interviewer",  voiceId: VOICE_IDS["Arnold"], color: "#F5A623", orbIndex: 1, style: "Warm but pushes for specifics." },
-      { name: "Tina Marchetti", role: "Domain Specialist",  voiceId: VOICE_IDS["Gigi"],   color: "#6ee7b7", orbIndex: 2, style: "Asks the unexpected, tests adaptability." },
-    ];
-  }
-
-  const fallbackPersonas = buildFallbackPersonas(situation);
-
-  // Build a fallback session using a lite LLM call so questions are always situation-specific.
-  // The "text" field here is a THEME INTENT for judgeOrchestrator, never spoken verbatim.
-  async function buildDynamicFallback() {
+export async function runArchitect({ situation, intent = null, researcherOutput, styleHint, researchContext }, writeChunk) {
+  // Derive structured intent server-side if the client didn't send one
+  if (!intent) {
+    writeChunk({ agent: "Architect", chunk: "Understanding your request…", thinking: true });
     try {
-      const liteRaw = await callLLM({
-        systemPrompt: `Given a situation, output 4 interview topic intents as short phrases. Return ONLY: {"intents":["...","...","...","..."]}`,
-        userPrompt: `Situation: "${situation}"`,
-        maxTokens: 120,
-      });
-      const liteResult = parseJSON(liteRaw);
-      if (liteResult?.intents?.length >= 3) {
-        return liteResult.intents.map((intent, i) => ({
-          text: intent,   // judgeOrchestrator uses this as theme, never reads it aloud
-          assignedPersona: fallbackPersonas[i % fallbackPersonas.length].name,
-          intent,
-          followUpTriggers: [],
-          curveballAfter: i === 3,
-          suggestedFollowUp: "",
-        }));
-      }
-    } catch (e) {
-      console.error("[architect] lite question gen failed:", e.message);
+      intent = await parseIntent({ transcript: situation });
+    } catch {
+      intent = { institution: null, program_type: null, timeframe_days: null, num_interviewers: 3, domain: "general" };
     }
-    // Absolute last resort: abstract themes with no question mark — cannot be read as a script
-    return [
-      { text: "motivation and what is at stake",          assignedPersona: fallbackPersonas[1].name, intent: "Warm-up",        followUpTriggers: [], curveballAfter: false, suggestedFollowUp: "" },
-      { text: "the specific challenge or weak point",     assignedPersona: fallbackPersonas[0].name, intent: "Probe weakness", followUpTriggers: [], curveballAfter: false, suggestedFollowUp: "" },
-      { text: "counter-arguments and self-awareness",     assignedPersona: fallbackPersonas[0].name, intent: "Steel-man",      followUpTriggers: [], curveballAfter: false, suggestedFollowUp: "" },
-      { text: "handling pushback or unexpected pressure", assignedPersona: fallbackPersonas[2].name, intent: "Curveball",      followUpTriggers: [], curveballAfter: true,  suggestedFollowUp: "" },
-      { text: "concrete plan and next steps",             assignedPersona: fallbackPersonas[1].name, intent: "Closing",        followUpTriggers: [], curveballAfter: false, suggestedFollowUp: "" },
-    ];
   }
 
-  const staticQuestions = [
-    { text: "motivation and opening context",            assignedPersona: fallbackPersonas[0].name, intent: "Warm-up" },
-    { text: "the specific challenge or weak point",      assignedPersona: fallbackPersonas[1].name, intent: "Probe" },
-    { text: "handling pushback or unexpected pressure",  assignedPersona: fallbackPersonas[2].name, intent: "Curveball" },
-    { text: "concrete plan and next steps",              assignedPersona: fallbackPersonas[0].name, intent: "Closing" },
-  ];
+  writeChunk({ agent: "Architect", chunk: "Inventing your fictional interview panel…", thinking: true });
+  const personas = await generatePersonas({ intent, situation });
 
-  // Skip LLM entirely — instant. Judge is fully generative, no LLM needed here.
+  writeChunk({ agent: "Architect", chunk: "Composing your question set…", thinking: true });
+  const totalQuestions = Math.max(4, personas.length);
+  let bankQuestions;
+  try {
+    bankQuestions = await composeSessionQuestions({
+      domain: intent?.domain || "general",
+      totalQuestions,
+      intent,
+    });
+  } catch (e) {
+    console.error("[architect] question composition failed:", e.message);
+    bankQuestions = (await composeSessionQuestions({ domain: "general", totalQuestions, intent: null, useLLM: false }));
+  }
+  const questions = assignQuestions(bankQuestions, personas);
+
   writeChunk({ agent: "Architect", chunk: "Session architected.", streamStart: true });
 
+  const rc = researcherOutput || {};
   const sessionData = {
     agent: "Architect",
     situation,
-    sessionSummary: `Practice session for: ${situation}`,
-    personas: fallbackPersonas,
-    sessionPlan: { difficultyProgression: "escalating", totalEstimatedMinutes: 5, questions: staticQuestions },
+    intent,
+    sessionSummary: intent?.institution
+      ? `Practice ${intent.program_type || ""} interview for ${intent.institution} with ${personas.length} simulated interviewer${personas.length > 1 ? "s" : ""}.`
+      : `Practice session for: ${situation}`,
+    personas,
+    sessionPlan: {
+      difficultyProgression: "gentle-start",
+      totalEstimatedMinutes: Math.max(5, questions.length + 1),
+      questions,
+    },
     openingLine: "",
-    closingCondition: "After all topics are covered.",
+    closingCondition: "After all planned questions are covered.",
     researchContext: {
       ...researchContext,
       psychologicalProfile: "",

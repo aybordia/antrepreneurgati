@@ -3,6 +3,30 @@ const ELEVENLABS_API_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY;
 let _activeAudio = null;
 let _activeFetchController = null; // abort in-flight TTS fetches
 
+// Shared analyser so the UI can render a speaking halo from real TTS amplitude
+let _ttsCtx = null;
+let _ttsAnalyser = null;
+
+export function getTTSAnalyser() {
+  return _ttsAnalyser;
+}
+
+function attachAnalyser(audio) {
+  try {
+    if (!_ttsCtx) {
+      _ttsCtx = new AudioContext();
+      _ttsAnalyser = _ttsCtx.createAnalyser();
+      _ttsAnalyser.fftSize = 256;
+      _ttsAnalyser.connect(_ttsCtx.destination);
+    }
+    if (_ttsCtx.state === "suspended") _ttsCtx.resume();
+    const source = _ttsCtx.createMediaElementSource(audio);
+    source.connect(_ttsAnalyser);
+  } catch (e) {
+    console.warn("[tts] analyser unavailable:", e.message);
+  }
+}
+
 export function stopAllAudio() {
   // Abort any in-flight TTS fetch
   if (_activeFetchController) {
@@ -72,6 +96,7 @@ export async function speakText({ text, voiceId, stability = 0.42, similarityBoo
 
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
+    attachAnalyser(audio);
     _activeAudio = audio;
 
     audio.addEventListener("ended", () => {

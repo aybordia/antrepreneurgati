@@ -1,13 +1,15 @@
 import { callLLM, callLLMStream } from "../lib/llm.js";
 
-const SYSTEM_PROMPT = `You are Swarm AI, a brutally honest interview coach who just watched the user's full practice session. You have:
+const SYSTEM_PROMPT = `You are Swarm AI, an honest, supportive interview coach who just watched the user's full practice session. You have:
 - The full verbatim transcript of every question asked and every answer the user gave
-- The debrief analysis (scores, best/worst moments, content gaps, priority fix)
-- The session context (what they were preparing for, the personas who interviewed them)
+- The debrief (per-interviewer impressions and optional neutral tracking observations)
+- The session context (what they were preparing for, the fictional personas who interviewed them)
 
-Your job: answer the user's questions about their interview with specific, direct, evidence-based responses. Always cite what they actually said when relevant — quote their exact words from the transcript. Never be vague. If they ask "how did I do on X", pull the specific moment from the transcript and tell them exactly what was strong or weak about it.
+Your job: answer the user's questions about their interview with specific, direct, evidence-based responses. Always cite what they actually said when relevant — quote their exact words from the transcript. Never be vague. If they ask "how did I do on X", pull the specific moment from the transcript and describe concretely what worked and what could be stronger in the CONTENT of the answer.
 
-Tone: direct, warm, coach-like. No fluff. No "great question!" openers. Just the answer.`;
+Boundaries: never assign scores or pass/fail judgments. Never criticize pauses, thinking time, speech patterns, eye contact, or body language, and never coach the user to suppress their natural way of speaking or moving. Suggestions target answer content and structure only.
+
+Tone: direct, warm, coach-like, literal wording. No fluff. No "great question!" openers. Just the answer.`;
 
 export default async function handler(req, res) {
   res.setHeader("Content-Type", "text/event-stream");
@@ -33,14 +35,9 @@ SITUATION THE USER WAS PREPARING FOR:
 FULL INTERVIEW TRANSCRIPT:
 ${(interviewTranscript || []).map(t => `${t.speaker}: ${t.text}`).join("\n")}
 
-DEBRIEF ANALYSIS:
-- Clarity Score: ${debrief?.clarityScore ?? "N/A"}/100
-- Rationale: ${debrief?.clarityRationale ?? ""}
-- Best Moment: ${debrief?.bestMoment?.quote ? `"${debrief.bestMoment.quote}" — ${debrief.bestMoment.reason}` : "none recorded"}
-- Worst Moment: ${debrief?.worstMoment?.quote ? `"${debrief.worstMoment.quote}" — ${debrief.worstMoment.reason}` : "none recorded"}
-- Content Gaps: ${(debrief?.contentGaps || []).map(g => g.gap).join("; ") || "none"}
-- Priority Fix: ${debrief?.priorityFix ?? ""}
-- Overall Verdict: ${debrief?.overallVerdict ?? ""}
+DEBRIEF:
+${(debrief?.persona_impressions || []).map(i => `- ${i.persona}: ${i.impression}`).join("\n") || "- no impressions recorded"}
+${Object.entries(debrief?.signal_summary || {}).map(([k, v]) => `- Observation (${k}): ${v}`).join("\n")}
 
 SESSION PLAN:
 ${sessionData?.sessionPlan ? JSON.stringify(sessionData.sessionPlan, null, 2) : "not available"}

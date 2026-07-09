@@ -617,7 +617,7 @@ function PastSessionModal({ session, onClose }) {
                 color: "var(--muted)", letterSpacing: "0.12em",
               }}
             >
-              <span>TRANSCRIPT — {session.history.length} TURNS</span>
+              <span>TRANSCRIPT · {session.history.length} TURNS</span>
               <span style={{ opacity: 0.5 }}>{showTranscript ? "▲" : "▼"}</span>
             </button>
             <AnimatePresence>
@@ -847,7 +847,7 @@ export default function Dashboard({ user, onNewSession, getIdToken }) {
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontFamily: "var(--mono)", fontSize: "10px", color: "rgba(106,103,128,0.5)", letterSpacing: "0.18em" }}>
-              {loading ? "LOADING..." : sessions.length > 0 ? `PAST SESSIONS — ${sessions.length}` : "NO SESSIONS YET"}
+              {loading ? "LOADING..." : sessions.length > 0 ? `PAST SESSIONS (${sessions.length})` : "NO SESSIONS YET"}
             </span>
           </div>
 

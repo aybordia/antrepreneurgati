@@ -26,6 +26,7 @@ export default async function handler(req, res) {
     writeChunk({
       persona: result.nextPersona,
       voiceId: result.voiceId,
+      voiceSettings: result.voiceSettings || null,
       chunk: result.line,
       done: true,
       sessionComplete: result.sessionComplete || false,

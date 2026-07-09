@@ -6,11 +6,10 @@ function decodeJwtPayload(token) {
     return null;
   }
 }
-
 export async function verifyToken(req, res, next) {
   const authHeader = req.headers.authorization || "";
   const idToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
-
+  
   if (!idToken) {
     return res.status(401).json({ error: "Unauthorized" });
   }

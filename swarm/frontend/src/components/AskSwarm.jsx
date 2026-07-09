@@ -165,7 +165,7 @@ export default function AskSwarm({ sessionResult, situation, debrief, onRunAgain
             <div style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--muted)", letterSpacing: "0.18em", marginBottom: "10px" }}>PHASE 4 OF 4</div>
             <div style={{ fontFamily: "var(--display)", fontSize: "32px", fontWeight: 400, marginBottom: "10px" }}>Ask Swarm AI</div>
             <div style={{ fontFamily: "var(--ui)", fontSize: "14px", color: "var(--muted)", lineHeight: 1.65 }}>
-              Your full interview is loaded. Ask anything — how you did, what to fix, what to say next time.
+              Your full interview is loaded. Ask anything: how it went, what to build on, what to say next time.
             </div>
           </div>
 
@@ -187,7 +187,7 @@ export default function AskSwarm({ sessionResult, situation, debrief, onRunAgain
               <span style={{ fontSize: "28px" }}>🎤</span>
               <div>
                 <div style={{ fontFamily: "var(--display)", fontSize: "16px", color: "var(--text)", marginBottom: "4px" }}>Voice</div>
-                <div style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--muted)" }}>Speak your questions — Swarm AI talks back</div>
+                <div style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--muted)" }}>Speak your questions. Swarm AI talks back.</div>
               </div>
             </motion.button>
 
@@ -419,7 +419,7 @@ export default function AskSwarm({ sessionResult, situation, debrief, onRunAgain
               >
                 <span style={{ fontSize: "15px" }}>{isListening ? "⏹" : "🎤"}</span>
                 <span style={{ fontFamily: "var(--mono)", fontSize: "11px", color: isListening ? "var(--amber)" : "var(--muted)", letterSpacing: "0.06em" }}>
-                  {isListening ? "Listening — tap to send" : "Tap to speak"}
+                  {isListening ? "Listening. Tap to send." : "Tap to speak"}
                 </span>
               </motion.button>
             )}

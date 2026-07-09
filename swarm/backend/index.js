@@ -10,6 +10,7 @@ import querySession from "./routes/querySession.js";
 import askSwarm from "./routes/askSwarm.js";
 import { listSessions, saveSessionRoute, getSessionRoute } from "./routes/sessions.js";
 import feedback from "./routes/feedback.js";
+import parseIntentRoute from "./routes/parseIntent.js";
 import { verifyToken } from "./googleAuth.js";
 
 const app = express();
@@ -33,10 +34,11 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "6mb" })); // derived tracking signals can be large on long sessions
 
 app.get("/health", (_, res) => res.json({ status: "ok", time: new Date().toISOString() }));
 
+app.post("/api/parse-intent", verifyToken, parseIntentRoute);
 app.post("/api/start-session", verifyToken, startSession);
 app.post("/api/voice-turn", verifyToken, voiceTurn);
 app.post("/api/debrief", verifyToken, debrief);

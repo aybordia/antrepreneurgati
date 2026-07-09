@@ -1,104 +1,113 @@
-// PROMPT VERSION: 4.4 — guarded parsing, persona bounds, fast tokens
+// PROMPT VERSION: 5.0 — walks the composed question plan with assigned personas.
+// Accessibility constraints: one clear literal question at a time; never comments
+// on the candidate's pauses, pacing, speech patterns, or body language.
 import { callLLM, parseJSON } from "../lib/llm.js";
 
 const clip = (s, n = 80) => s && s.length > n ? s.slice(0, n) + "…" : (s || "");
 
+const CONDUCT_RULES = `Conduct rules (always apply):
+- Ask ONE question at a time. Clear, literal, direct wording — no idioms, no trick phrasing, no multi-part questions.
+- NEVER comment on the candidate's pauses, thinking time, pacing, tone of voice, eye contact, or body language. Long pauses are normal — never reference them.
+- React genuinely to the CONTENT of what they said. Brief acknowledgment, then your question.
+- 1-2 sentences max. No filler.`;
+
+function safeReturn(p, line, intent, extras = {}) {
+  return {
+    nextPersona: p?.name || "Interviewer",
+    voiceId: p?.voiceId || null,
+    voiceSettings: p?.voiceSettings || null,
+    line,
+    intent,
+    sessionAdvancing: false,
+    sessionComplete: false,
+    userPerformanceNote: "",
+    ...extras,
+  };
+}
+
 export async function runJudgeOrchestrator({ transcript, sessionContext, history, currentQuestionIndex = 0 }) {
-  // Guard: safe parse regardless of whether sessionContext is string or object
   let parsed;
   try {
     parsed = typeof sessionContext === "string" ? JSON.parse(sessionContext) : sessionContext;
   } catch (e) {
     console.error("[judge] bad sessionContext:", e.message);
-    return { nextPersona: "Interviewer", voiceId: null, line: "Let's continue. Tell me more about your situation.", intent: "Recovery", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "" };
+    return safeReturn(null, "Let's continue. Tell me more about your situation.", "Recovery");
   }
 
-  const { personas = [], sessionPlan, situation = "", researchContext } = parsed;
-  const rc = researchContext || {};
-
-  // Guard: ensure personas array is valid
+  const { personas = [], sessionPlan, situation = "" } = parsed;
   if (!personas.length) {
-    return { nextPersona: "Interviewer", voiceId: null, line: "Walk me through your situation in your own words.", intent: "Recovery", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "" };
+    return safeReturn(null, "Walk me through your situation in your own words.", "Recovery");
   }
 
-  const researchLines = [
-    rc.interviewerPatterns && `STYLE: ${clip(rc.interviewerPatterns, 80)}`,
-    rc.diagnosedWeakness   && `PROBE: ${clip(rc.diagnosedWeakness, 80)}`,
-  ].filter(Boolean).join(" | ");
+  const questions = sessionPlan?.questions || [];
+  const userTurns = history.filter(t => t.speaker === "You" || t.speaker === "User").length;
 
-  const turnCount = history.filter(t => t.speaker && t.text).length;
-  const totalTurns = (sessionPlan?.totalEstimatedMinutes || 5) * 2;
+  // Each planned question gets an ask + one follow-up before advancing
+  const TURNS_PER_QUESTION = 2;
+  const qIndex = Math.min(Math.floor(userTurns / TURNS_PER_QUESTION), Math.max(questions.length - 1, 0));
+  const question = questions[qIndex] || null;
+  const isFollowUp = userTurns % TURNS_PER_QUESTION !== 0 || !question;
+  const advancing = !isFollowUp && userTurns > 0; // this turn opens a new planned question
 
-  // Safe persona index — always in bounds
-  const personaIndex = Math.min(
-    Math.floor((turnCount / Math.max(totalTurns, 1)) * personas.length),
-    personas.length - 1
-  );
-  const p = personas[personaIndex];
+  // Persona: whoever the current question is assigned to
+  const p = personas.find(x => x.name === question?.assignedPersona)
+    || personas[qIndex % personas.length];
 
   // ── Opening turn ────────────────────────────────────────────────────────────
   if (!transcript && history.length === 0) {
+    const firstQ = questions[0];
     try {
       const raw = await callLLM({
-        systemPrompt: `You are ${p.name}, ${p.role}. ${p.style} Situation: "${situation}". ${researchLines}
-Introduce yourself in 1 sentence, then ask ONE sharp specific question. Return ONLY: {"line":"..."}`,
+        systemPrompt: `You are ${p.name}, ${p.role} (a fictional simulated interviewer). Style: ${p.style}
+Situation: "${clip(situation, 120)}"
+${CONDUCT_RULES}
+Introduce yourself briefly (name + role), then ask this planned opening question in your own natural words: "${firstQ?.text || "What brought you here today?"}"
+Return ONLY: {"line":"..."}`,
         userPrompt: situation,
-        maxTokens: 80,
+        maxTokens: 120,
       });
       const result = parseJSON(raw);
-      if (result?.line) return { nextPersona: p.name, voiceId: p.voiceId, line: result.line, intent: "Opening", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "Session started" };
+      if (result?.line) return safeReturn(p, result.line, "Opening", { userPerformanceNote: "Session started" });
     } catch (err) {
       console.error("[judge] opening error:", err.message);
     }
-    return { nextPersona: p.name, voiceId: p.voiceId, line: `Hi, I'm ${p.name} — ${p.role}. Walk me through what you're preparing for.`, intent: "Opening fallback", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "Session started" };
+    return safeReturn(p, `Hi, I'm ${p.name} — ${p.role}. ${firstQ?.text || "To start: what are you preparing for?"}`, "Opening fallback", { userPerformanceNote: "Session started" });
   }
 
-  // ── Session end ─────────────────────────────────────────────────────────────
-  if (turnCount >= totalTurns + 4) {
-    return { nextPersona: p.name, voiceId: p.voiceId, line: "That covers everything I wanted to explore. Thanks for your time.", intent: "End", sessionAdvancing: false, sessionComplete: true, userPerformanceNote: "Session completed" };
+  // ── Session end: all planned questions covered ──────────────────────────────
+  if (questions.length && userTurns >= questions.length * TURNS_PER_QUESTION) {
+    return safeReturn(p, "That covers everything we planned to explore. Thank you — you'll get your full debrief now.", "End", { sessionComplete: true, userPerformanceNote: "Session completed" });
   }
 
   const trimmed = (transcript || "").trim();
-  const isGreeting = !history.length &&
-    trimmed.split(/\s+/).filter(Boolean).length <= 4 &&
-    /^(hi+|hello+|hey+|good\s*(morning|afternoon|evening)|howdy)\b/i.test(trimmed);
-
-  const stage = turnCount < 2 ? "warm" : turnCount >= totalTurns - 2 ? "closing" : "mid";
   const recentHistory = history.slice(-4).map(t => `${t.speaker}: ${t.text}`).join("\n");
 
-  const systemPrompt = `You are ${p.name}, ${p.role}. ${p.style}
-Situation: "${situation}". ${researchLines ? researchLines : ""}
-Turn ${turnCount + 1}/${totalTurns}. Stage: ${stage}.
-Rules: React to their exact words. 1-2 sentences max. No filler. No repeated questions.${isGreeting ? " Introduce yourself then ask first question." : ""}
+  const task = isFollowUp
+    ? `Ask ONE brief follow-up about something specific they just said. Stay on the current topic: "${clip(question?.text, 100)}"`
+    : `Transition naturally, then ask this planned question in your own words: "${question?.text}"${question?.type === "technical" ? " (domain question — keep it concrete and approachable)" : ""}`;
+
+  const systemPrompt = `You are ${p.name}, ${p.role} (a fictional simulated interviewer). Style: ${p.style}
+Situation: "${clip(situation, 120)}"
+${CONDUCT_RULES}
+Task: ${task}
 Return ONLY: {"line":"...","intent":"..."}`;
 
-  const userPrompt = `${recentHistory}\nUser: "${transcript}"`;
-
   try {
-    const raw = await callLLM({ systemPrompt, userPrompt, maxTokens: 100 });
+    const raw = await callLLM({ systemPrompt, userPrompt: `${recentHistory}\nUser: "${transcript}"`, maxTokens: 120 });
     const result = parseJSON(raw);
     if (result?.line) {
       const sentences = result.line.match(/[^.!?]+[.!?]+/g) || [result.line];
-      const line = sentences.slice(0, 2).join(" ").trim();
-      return { nextPersona: p.name, voiceId: p.voiceId, line, intent: result.intent || "Follow-up", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "" };
+      const line = sentences.slice(0, 3).join(" ").trim();
+      return safeReturn(p, line, result.intent || (isFollowUp ? "Follow-up" : "Planned question"), { sessionAdvancing: advancing });
     }
   } catch (err) {
     console.error("[judge] LLM error:", err.message);
-    try {
-      const recoverRaw = await callLLM({
-        systemPrompt: `You are ${p.name}. React to what was said, ask one follow-up. 1 sentence. Return ONLY: {"line":"..."}`,
-        userPrompt: `They said: "${trimmed}"`,
-        maxTokens: 60,
-      });
-      const r = parseJSON(recoverRaw);
-      if (r?.line) return { nextPersona: p.name, voiceId: p.voiceId, line: r.line, intent: "Recovery", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "" };
-    } catch {}
   }
 
+  // Fallback: ask the planned question verbatim — always coherent
+  if (!isFollowUp && question?.text) {
+    return safeReturn(p, question.text, "Planned question (fallback)", { sessionAdvancing: advancing });
+  }
   const words = trimmed.split(/\s+/).slice(0, 5).join(" ");
-  return {
-    nextPersona: p.name, voiceId: p.voiceId,
-    line: words ? `You mentioned "${words}" — say more about that.` : "Tell me more.",
-    intent: "Last resort", sessionAdvancing: false, sessionComplete: false, userPerformanceNote: "",
-  };
+  return safeReturn(p, words ? `You mentioned "${words}" — can you say more about that?` : "Can you tell me more?", "Last resort");
 }

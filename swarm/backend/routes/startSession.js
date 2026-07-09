@@ -18,7 +18,7 @@ export default async function handler(req, res) {
   // Send heartbeat immediately so the frontend knows the connection is open
   writeChunk({ heartbeat: true });
 
-  const { situation } = req.body;
+  const { situation, intent } = req.body;
   if (!situation) {
     writeChunk({ error: "situation is required" });
     return res.end();
@@ -65,7 +65,7 @@ export default async function handler(req, res) {
     writeChunk({ agent: "VoiceDesigner", done: true });
 
     await sleep(300);
-    await runArchitect({ situation, researcherOutput, styleHint, researchContext }, writeChunk);
+    await runArchitect({ situation, intent, researcherOutput, styleHint, researchContext }, writeChunk);
 
   } catch (err) {
     console.error("startSession error:", err);
