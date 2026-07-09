@@ -26,6 +26,19 @@ function shuffled(arr) {
   return a;
 }
 
+// JS-side randomness for names: the LLM must invent a name matching randomly
+// drawn initial letters, so names can't collapse into the model's favorites.
+// Letters only — never a name list.
+const NAME_LETTERS = "ABCDEFGHIJKLMNOPRSTVWZ".split("");
+
+function randomNameConstraints(n) {
+  const firsts = shuffled(NAME_LETTERS);
+  const lasts = shuffled(NAME_LETTERS);
+  return Array.from({ length: n }, (_, i) =>
+    `Persona ${i + 1}: first name starts with "${firsts[i]}", family name starts with "${lasts[i]}"`
+  );
+}
+
 const SYSTEM_PROMPT = `You invent completely original FICTIONAL interviewer personas for a mock-interview simulator.
 Return ONLY valid JSON, no markdown: {"personas":[{"name":"...","title":"...","personality_style":"...","question_focus":"technical|behavioral|motivational|mixed"}]}
 
@@ -63,20 +76,26 @@ export async function generatePersonas({ intent = {}, situation = "" }) {
     situation && `Candidate's own words: "${situation.slice(0, 200)}"`,
   ].filter(Boolean).join("\n");
 
-  // Random seed nudges the model away from repeating the same names across sessions
-  const seed = Math.random().toString(36).slice(2, 8);
-
   let personas = null;
   for (let attempt = 0; attempt < 2 && !personas; attempt++) {
+    // Fresh random constraints per attempt: names differ on every single prompt
+    const nameRules = randomNameConstraints(n).join("\n");
     try {
       const raw = await callLLM({
         systemPrompt: SYSTEM_PROMPT,
-        userPrompt: `${context}\nNumber of personas: ${n}\nVariation seed (use it to pick unexpected, non-default names/styles): ${seed}\nOutput JSON now.`,
+        userPrompt: `${context}
+Number of personas: EXACTLY ${n}.
+Name constraints (mandatory — invent names that fit these random initials, vary cultural origins across the set):
+${nameRules}
+Output JSON now.`,
         maxTokens: 600,
       });
       const parsed = parseJSON(raw);
       if (parsed?.personas?.length) {
-        personas = parsed.personas.slice(0, n).filter(p => p?.name && p?.title);
+        personas = parsed.personas
+          .slice(0, n)
+          .filter(p => p?.name && p?.title)
+          .map(p => ({ ...p, name: String(p.name).replace(/[,;:.\s]+$/g, "").trim() }));
         if (personas.length < n) personas = [...personas, ...fallbackPersonas(n - personas.length)];
       }
     } catch (e) {
