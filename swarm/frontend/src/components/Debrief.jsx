@@ -34,6 +34,7 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
   const [debrief, setDebrief] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [backendOutdated, setBackendOutdated] = useState(false);
   const [savedSessionId, setSavedSessionId] = useState(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
@@ -60,9 +61,30 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
           signalData,
           userSelectedCategories: loadCategoryPrefs(),
         }, token);
-        setDebrief(result);
+
+        if (Array.isArray(result?.persona_impressions)) {
+          setDebrief(result);
+        } else if (result?.overallVerdict || result?.clarityScore !== undefined) {
+          // Older backend version still deployed — adapt its response so
+          // results always show instead of an empty page
+          setBackendOutdated(true);
+          setDebrief({
+            transcript: history.map(t => `${t.speaker}: ${t.text}`).join("\n"),
+            persona_impressions: [
+              result.overallVerdict && { persona: "The panel", impression: result.overallVerdict },
+              result.priorityFix && { persona: "One thing to focus on", impression: result.priorityFix },
+              result.bestMoment?.quote && { persona: "A strong moment", impression: `"${result.bestMoment.quote}" ${result.bestMoment.reason || ""}` },
+            ].filter(Boolean),
+            signal_summary: {},
+            user_selected_categories: [],
+            session_facts: null,
+          });
+        } else {
+          setError("The debrief service returned an unexpected response.");
+        }
       } catch (e) {
         setError(e.message || "Could not build your debrief.");
+        setShowTranscript(true); // never leave the page empty
       }
       setLoading(false);
     })();
@@ -152,9 +174,23 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
 
         {error && (
           <div style={{
-            padding: "14px 18px", borderRadius: 12, background: "rgba(255,95,109,0.07)",
-            border: "1px solid rgba(255,95,109,0.2)", fontFamily: "var(--mono)", fontSize: 12, color: "var(--coral)",
-          }}>{error}</div>
+            padding: "14px 18px", borderRadius: 12, background: "rgba(217,139,139,0.07)",
+            border: "1px solid rgba(217,139,139,0.25)", fontFamily: "var(--ui)", fontSize: 13,
+            color: "var(--alert)", lineHeight: 1.6,
+          }}>
+            {error} Your full transcript is still available below.
+          </div>
+        )}
+
+        {backendOutdated && (
+          <div style={{
+            padding: "14px 18px", borderRadius: 12, background: "var(--honey-soft)",
+            border: "1px solid rgba(228,163,57,0.3)", fontFamily: "var(--ui)", fontSize: 13,
+            color: "var(--honey)", lineHeight: 1.6,
+          }}>
+            The results server is running an older version, so this is a simplified debrief.
+            Redeploy the backend to get per-interviewer impressions and tracking observations.
+          </div>
         )}
 
         {/* Session facts — neutral */}

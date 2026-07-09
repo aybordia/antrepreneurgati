@@ -22,6 +22,9 @@ const LIP_UPPER = 13, LIP_LOWER = 14, FOREHEAD = 10, CHIN = 152;
 export function useMultimodalTracking() {
   // idle | starting | active | denied | unavailable | stopped
   const [status, setStatus] = useState("idle");
+  // Exposed so the UI can show the user their own camera (self-view mirror).
+  // Still never recorded, never uploaded.
+  const [previewStream, setPreviewStream] = useState(null);
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -116,6 +119,7 @@ export function useMultimodalTracking() {
       faceRef.current = face;
       signalsRef.current = [];
       intervalRef.current = setInterval(sampleFrame, SAMPLE_INTERVAL_MS);
+      setPreviewStream(stream);
       setStatus("active");
       return true;
     } catch (e) {
@@ -141,9 +145,10 @@ export function useMultimodalTracking() {
       videoRef.current.remove();
       videoRef.current = null;
     }
+    setPreviewStream(null);
     setStatus(s => (s === "active" || s === "starting" ? "stopped" : s));
     return signalsRef.current;
   }, []);
 
-  return { status, enable, end, isTracking: status === "active" };
+  return { status, enable, end, isTracking: status === "active", previewStream };
 }

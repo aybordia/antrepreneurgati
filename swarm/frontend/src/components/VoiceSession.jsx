@@ -61,6 +61,64 @@ function MicWaveform({ active, analyserRef }) {
   );
 }
 
+/* Self-view mirror — the user's own camera, visible only to them, never recorded */
+function SelfView({ stream }) {
+  const videoRef = useRef(null);
+  const [hidden, setHidden] = useState(false);
+
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [stream, hidden]);
+
+  if (!stream) return null;
+
+  if (hidden) {
+    return (
+      <button className="btn btn-ghost" onClick={() => setHidden(false)}
+        style={{ position: "fixed", bottom: 26, left: 24, zIndex: 20, height: 32, fontSize: 11, padding: "0 12px" }}>
+        Show my camera
+      </button>
+    );
+  }
+
+  return (
+    <div style={{
+      position: "fixed", bottom: 26, left: 24, zIndex: 20,
+      display: "flex", flexDirection: "column", gap: 6,
+    }}>
+      <video
+        ref={videoRef}
+        muted
+        playsInline
+        style={{
+          width: 176, height: 132, objectFit: "cover",
+          borderRadius: 12,
+          border: "1px solid var(--line)",
+          transform: "scaleX(-1)", /* mirror, like looking in a mirror */
+          background: "var(--surface)",
+          boxShadow: "0 8px 24px rgba(6,8,14,0.5)",
+        }}
+      />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <span style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--dim)", letterSpacing: "0.05em" }}>
+          Your camera. Only you see this.
+        </span>
+        <button onClick={() => setHidden(true)}
+          style={{
+            background: "none", border: "none", cursor: "pointer",
+            fontFamily: "var(--mono)", fontSize: 9, color: "var(--dim)",
+            textDecoration: "underline", padding: 0,
+          }}>
+          hide
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const TIME_LIMIT = 60;
 
 function CountdownRing({ seconds, total = TIME_LIMIT }) {
@@ -589,6 +647,9 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
           )}
         </AnimatePresence>
       </div>
+
+      {/* Self-view camera mirror (only when camera tracking is on) */}
+      <SelfView stream={tracking.previewStream} />
 
       {/* End session button */}
       <button className="btn btn-ghost" onClick={() => setShowConfirm(true)}
