@@ -3,7 +3,7 @@
 // at least one completed AI-mode session before peer matching unlocks,
 // to reduce anonymous-abuse risk from fresh accounts.
 import { joinQueue, getStatus, leaveQueue, endMatch, blockUser, fileReport } from "../lib/peerQueue.js";
-import { createPeerRoom, dailyConfigured } from "../lib/daily.js";
+import { createPeerRoom } from "../lib/videoRoom.js";
 import { getSessions } from "../lib/sessionStore.js";
 
 async function checkEligibility(req, res) {
@@ -37,10 +37,6 @@ async function checkEligibility(req, res) {
 export async function peerJoin(req, res) {
   const userId = await checkEligibility(req, res);
   if (!userId) return;
-
-  if (!dailyConfigured()) {
-    return res.status(503).json({ error: "Peer sessions are not configured yet (missing DAILY_API_KEY on the server)." });
-  }
 
   const { handle, mode, topic } = req.body || {};
   const cleanHandle = String(handle || "").trim().slice(0, 24);

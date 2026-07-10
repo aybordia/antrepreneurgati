@@ -15,6 +15,20 @@ const sv = {
 
 const POLL_MS = 2500;
 
+// Load Jitsi's IFrame API once (free public server, no API key needed)
+function loadJitsiApi() {
+  return new Promise((resolve, reject) => {
+    if (window.JitsiMeetExternalAPI) return resolve(window.JitsiMeetExternalAPI);
+    const s = document.createElement("script");
+    s.src = "https://meet.jit.si/external_api.js";
+    s.onload = () => window.JitsiMeetExternalAPI
+      ? resolve(window.JitsiMeetExternalAPI)
+      : reject(new Error("Video service loaded but is unavailable."));
+    s.onerror = () => reject(new Error("Could not load the video call service. Check your connection and try again."));
+    document.head.appendChild(s);
+  });
+}
+
 /* Defined at module level (NOT inside PeerSession): an inline component
    definition gets a new identity every render, which forces React to unmount
    and remount the whole subtree on any state change — destroying the live
@@ -113,9 +127,14 @@ export default function PeerSession({ getIdToken, onExit }) {
   const stopPolling = () => { clearInterval(pollRef.current); pollRef.current = null; };
 
   const cleanupCall = useCallback(() => {
-    if (callFrameRef.current) {
-      try { callFrameRef.current.leave(); } catch { /* already left */ }
-      try { callFrameRef.current.destroy(); } catch { /* already destroyed */ }
+    const call = callFrameRef.current;
+    if (call) {
+      if (call.kind === "jitsi") {
+        try { call.api.dispose(); } catch { /* already disposed */ }
+      } else {
+        try { call.frame.leave(); } catch { /* already left */ }
+        try { call.frame.destroy(); } catch { /* already destroyed */ }
+      }
       callFrameRef.current = null;
     }
     joinedRef.current = false;
@@ -175,23 +194,65 @@ export default function PeerSession({ getIdToken, onExit }) {
   useEffect(() => {
     if (step !== "call" || !match?.room?.url || !callContainerRef.current) return;
 
-    cleanupCall(); // never allow two Daily instances
+    cleanupCall(); // never allow two call instances
+    const displayName = (localStorage.getItem(HANDLE_KEY) || "Practice partner").trim();
 
+    const failBackToSetup = (msg) => {
+      if (unmountedRef.current) return;
+      setError(`${msg} Please try matching again.`);
+      cleanupCall();
+      setStep("setup");
+    };
+
+    // ── Jitsi (default: free, no account/API key) ─────────────────────────────
+    if (match.room.provider !== "daily") {
+      let cancelled = false;
+      loadJitsiApi().then((JitsiMeetExternalAPI) => {
+        if (cancelled || unmountedRef.current || !callContainerRef.current) return;
+        const api = new JitsiMeetExternalAPI("meet.jit.si", {
+          roomName: match.room.name,
+          parentNode: callContainerRef.current,
+          userInfo: { displayName },
+          configOverwrite: {
+            startWithVideoMuted: true, // camera stays opt-in
+            disableDeepLinking: true,
+            prejoinConfig: { enabled: true }, // check your mic/cam before joining — predictability
+          },
+        });
+        callFrameRef.current = { kind: "jitsi", api };
+        api.on("videoConferenceJoined", () => {
+          console.log("[peer] jitsi joined");
+          joinedRef.current = true;
+        });
+        api.on("videoConferenceLeft", () => {
+          console.log("[peer] jitsi left (joined:", joinedRef.current, ")");
+          if (!unmountedRef.current && joinedRef.current) endSession();
+        });
+        api.on("readyToClose", () => {
+          if (!unmountedRef.current && joinedRef.current) endSession();
+        });
+        api.on("errorOccurred", (e) => {
+          console.error("[peer] jitsi error:", e);
+        });
+      }).catch((e) => failBackToSetup(e.message));
+      return () => { cancelled = true; cleanupCall(); };
+    }
+
+    // ── Daily (optional, VIDEO_PROVIDER=daily on the server) ──────────────────
     let frame;
     try {
       frame = DailyIframe.createFrame(callContainerRef.current, {
         showLeaveButton: true,
         showFullscreenButton: true,
-        userName: (localStorage.getItem(HANDLE_KEY) || "Practice partner").trim(),
+        userName: displayName,
         iframeStyle: { width: "100%", height: "100%", border: "0", borderRadius: "14px" },
       });
     } catch (e) {
       console.error("[peer] createFrame failed:", e);
-      setError(`Could not start the video call: ${e?.message || "unknown error"}`);
-      setStep("setup");
+      failBackToSetup(`Could not start the video call: ${e?.message || "unknown error"}.`);
       return;
     }
-    callFrameRef.current = frame;
+    callFrameRef.current = { kind: "daily", frame };
 
     frame.on("joined-meeting", () => {
       console.log("[peer] joined meeting");
@@ -199,25 +260,18 @@ export default function PeerSession({ getIdToken, onExit }) {
     });
     frame.on("error", (e) => {
       console.error("[peer] daily error:", e);
-      if (unmountedRef.current) return;
-      setError(`Video call error: ${e?.errorMsg || e?.error?.msg || "unknown error"}. Please try matching again.`);
-      cleanupCall();
-      setStep("setup");
+      failBackToSetup(`Video call error: ${e?.errorMsg || e?.error?.msg || "unknown error"}.`);
     });
     frame.on("left-meeting", () => {
       console.log("[peer] left meeting (joined:", joinedRef.current, ")");
       if (unmountedRef.current) return;
       // Only a real leave AFTER a successful join ends the session.
-      // A failed join also emits left-meeting — that's an error, not an ending.
       if (joinedRef.current) endSession();
     });
 
     frame.join({ url: match.room.url, startVideoOff: true }).catch((e) => {
       console.error("[peer] join failed:", e);
-      if (unmountedRef.current) return;
-      setError(`Could not join the call: ${e?.errorMsg || e?.message || "unknown error"}. Please try matching again.`);
-      cleanupCall();
-      setStep("setup");
+      failBackToSetup(`Could not join the call: ${e?.errorMsg || e?.message || "unknown error"}.`);
     });
 
     return () => cleanupCall();
@@ -363,9 +417,14 @@ export default function PeerSession({ getIdToken, onExit }) {
     return (
       <Shell wide error={error} notice={notice}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", flexWrap: "wrap", gap: 10 }}>
-          <div style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 14, color: "var(--text-2)" }}>
+          <div style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 14, color: "var(--text-2)", maxWidth: 560 }}>
             You're practicing with <strong style={{ fontWeight: 500, color: ACCENT }}>{match?.partnerHandle || "your partner"}</strong>.
             Camera and mic controls are inside the call. Not recorded.
+            {match?.room?.provider !== "daily" && (
+              <span style={{ display: "block", marginTop: 4, fontSize: 12.5, color: "var(--dim)" }}>
+                If the room says it's waiting for a host: one of you taps "I am the host" and signs in with Google (free, one time).
+              </span>
+            )}
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button className="btn btn-ghost" style={{ height: 34, fontSize: 12 }} onClick={() => setShowReport(true)}>Report</button>
