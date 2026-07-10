@@ -4,6 +4,15 @@ import { postJSON } from "../lib/api";
 import { speakText, stopAllAudio } from "../hooks/useVoiceOutput";
 import { saveSession } from "../lib/localSessions";
 
+function decodeJwtPayload(token) {
+  try {
+    const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(decodeURIComponent(atob(base64).split("").map(
+      c => `%${("00" + c.charCodeAt(0).toString(16)).slice(-2)}`
+    ).join("")));
+  } catch { return null; }
+}
+
 const READER_VOICE = "pNInz6obpgDQGcFmaJgB"; // Adam — neutral debrief reader
 
 const CATEGORY_LABELS = {
@@ -36,6 +45,8 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
   const [error, setError] = useState(null);
   const [backendOutdated, setBackendOutdated] = useState(false);
   const [savedSessionId, setSavedSessionId] = useState(null);
+  const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | saved | failed
+  const savedRef = useRef(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
   // Which tracking categories the user has opted in to see — default: none (hidden)
@@ -94,6 +105,41 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
 
   useEffect(() => () => stopAllAudio(), []);
 
+  // Auto-save the session as soon as the debrief is ready — ending a session
+  // should never require a manual click to not lose the record of it.
+  const persistSession = async () => {
+    if (savedRef.current || !history.length) return;
+    savedRef.current = true;
+    setSaveStatus("saving");
+    try {
+      const token = await getIdToken();
+      const result = await postJSON("/api/sessions/save", { situation, history, debrief, sessionData }, token);
+      setSavedSessionId(result.id);
+      setSaveStatus("saved");
+    } catch (e) {
+      console.error("[debrief] backend save failed, falling back to local:", e);
+      // Fall back to this device's local storage so the session isn't lost,
+      // keyed by the real signed-in user (not a shared placeholder id)
+      try {
+        const token = await getIdToken();
+        const payload = decodeJwtPayload(token);
+        const userId = payload?.sub || "unknown-user";
+        const s = saveSession(userId, { situation, history, debrief, sessionData });
+        setSavedSessionId(s.id);
+        setSaveStatus("saved");
+      } catch (e2) {
+        console.error("[debrief] local save fallback also failed:", e2);
+        savedRef.current = false; // allow retry
+        setSaveStatus("failed");
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (debrief && !loading) persistSession();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debrief, loading]);
+
   const toggleCategory = (cat) => {
     setSelectedCategories(prev => {
       const next = prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat];
@@ -103,10 +149,8 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
   };
 
   const handleSave = () => {
-    if (savedSessionId) return;
-    const userId = "local";
-    const s = saveSession(userId, { situation, history, debrief, sessionData });
-    setSavedSessionId(s.id);
+    if (saveStatus === "saved" || saveStatus === "saving") return;
+    persistSession();
   };
 
   const handleListen = async () => {
@@ -319,9 +363,12 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
           <button className="btn btn-ghost" onClick={onRunAgain} style={{ height: 52, padding: "0 20px", fontSize: 14 }}>
             Practice again
           </button>
-          <button className="btn btn-ghost" onClick={handleSave} disabled={!!savedSessionId}
-            style={{ height: 52, padding: "0 20px", fontSize: 14, opacity: savedSessionId ? 0.5 : 1 }}>
-            {savedSessionId ? "✓ Saved" : "Save session"}
+          <button className="btn btn-ghost" onClick={handleSave} disabled={saveStatus === "saved" || saveStatus === "saving"}
+            style={{ height: 52, padding: "0 20px", fontSize: 14, opacity: saveStatus === "saved" ? 0.6 : 1 }}>
+            {saveStatus === "saved" ? "✓ Saved to your account"
+              : saveStatus === "saving" ? "Saving…"
+              : saveStatus === "failed" ? "Retry save"
+              : "Saving…"}
           </button>
         </motion.div>
       </div>
