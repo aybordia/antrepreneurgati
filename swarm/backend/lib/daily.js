@@ -27,7 +27,8 @@ export async function createPeerRoom() {
         start_video_off: true,   // camera is opt-in, per user, inside the call
         start_audio_off: false,
         enable_screenshare: false,
-        enable_recording: false, // no recording, ever, in v1
+        // recording stays off by design: Daily rooms don't record unless a
+        // recording property is explicitly enabled, and we never enable it
         eject_at_room_exp: true,
       },
     }),

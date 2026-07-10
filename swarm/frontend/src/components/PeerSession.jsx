@@ -15,6 +15,82 @@ const sv = {
 
 const POLL_MS = 2500;
 
+/* Defined at module level (NOT inside PeerSession): an inline component
+   definition gets a new identity every render, which forces React to unmount
+   and remount the whole subtree on any state change — destroying the live
+   video iframe mid-call and breaking input focus. */
+function Shell({ children, wide = false, error, notice }) {
+  return (
+    <motion.div className="screen screen-scroll" variants={sv} initial="initial" animate="animate" exit="exit"
+      style={{ background: "var(--ink)" }}>
+      <div className="noise" />
+      <div style={{
+        position: "relative", zIndex: 1, minHeight: "100%",
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        padding: "80px 24px 48px", maxWidth: wide ? 980 : 560, margin: "0 auto", gap: 20, width: "100%",
+      }}>
+        <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: ACCENT, letterSpacing: "0.16em", alignSelf: "flex-start" }}>
+          PRACTICE WITH A PERSON
+        </div>
+        {children}
+        {error && (
+          <div style={{
+            width: "100%", padding: "12px 16px", borderRadius: 10,
+            background: "rgba(217,139,139,0.07)", border: "1px solid rgba(217,139,139,0.25)",
+            fontFamily: "var(--ui)", fontSize: 13, color: "var(--alert)", lineHeight: 1.6,
+          }}>{error}</div>
+        )}
+        {notice && (
+          <div style={{
+            width: "100%", padding: "12px 16px", borderRadius: 10,
+            background: "var(--calm-soft)", border: "1px solid rgba(116,185,160,0.3)",
+            fontFamily: "var(--ui)", fontSize: 13, color: "var(--calm)", lineHeight: 1.6,
+          }}>{notice}</div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+function ReportModal({ open, reason, onChangeReason, onSubmit, onClose }) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          style={{
+            position: "fixed", inset: 0, background: "rgba(8,10,16,0.85)", zIndex: 100,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+          <div className="card" style={{ background: "var(--surface)", padding: 28, maxWidth: 420, width: "92%", display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: 19 }}>Report this session</div>
+            <textarea
+              value={reason}
+              onChange={e => onChangeReason(e.target.value)}
+              rows={4}
+              placeholder="What happened? A sentence is enough."
+              style={{
+                width: "100%", background: "var(--ink)", border: "1px solid var(--line)",
+                borderRadius: 10, padding: "12px 14px", fontSize: 13.5, fontFamily: "var(--ui)",
+                color: "var(--text)", outline: "none", resize: "none", lineHeight: 1.6,
+              }}
+            />
+            <div style={{ display: "flex", gap: 10 }}>
+              <button className="btn btn-primary" style={{ flex: 1, fontSize: 13 }} onClick={onSubmit}>Send report</button>
+              <button className="btn btn-ghost" style={{ flex: 1, height: 50 }} onClick={onClose}>Cancel</button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+const inputStyle = {
+  width: "100%", background: "var(--surface)", border: "1px solid var(--line)",
+  borderRadius: 10, padding: "14px 16px", fontSize: 14, fontFamily: "var(--ui)",
+  color: "var(--text)", outline: "none",
+};
+
 export default function PeerSession({ getIdToken, onExit }) {
   // agreement | setup | waiting | call | ended
   const [step, setStep] = useState(() =>
@@ -32,6 +108,7 @@ export default function PeerSession({ getIdToken, onExit }) {
   const callFrameRef = useRef(null);
   const callContainerRef = useRef(null);
   const unmountedRef = useRef(false);
+  const joinedRef = useRef(false); // set true only after Daily confirms we joined
 
   const stopPolling = () => { clearInterval(pollRef.current); pollRef.current = null; };
 
@@ -41,6 +118,7 @@ export default function PeerSession({ getIdToken, onExit }) {
       try { callFrameRef.current.destroy(); } catch { /* already destroyed */ }
       callFrameRef.current = null;
     }
+    joinedRef.current = false;
   }, []);
 
   useEffect(() => () => {
@@ -52,6 +130,7 @@ export default function PeerSession({ getIdToken, onExit }) {
   // ── Matching ────────────────────────────────────────────────────────────────
   const joinQueue = async () => {
     setError(null);
+    setNotice(null);
     const cleanHandle = handle.trim();
     if (!cleanHandle) { setError("Choose a display name first. It doesn't have to be your real name."); return; }
     localStorage.setItem(HANDLE_KEY, cleanHandle);
@@ -87,28 +166,63 @@ export default function PeerSession({ getIdToken, onExit }) {
   };
 
   // ── Call lifecycle ──────────────────────────────────────────────────────────
+  const endSession = useCallback(async () => {
+    cleanupCall();
+    try { await postJSON("/api/peer/end", {}, await getIdToken()); } catch { /* best effort */ }
+    if (!unmountedRef.current) setStep("ended");
+  }, [cleanupCall, getIdToken]);
+
   useEffect(() => {
     if (step !== "call" || !match?.room?.url || !callContainerRef.current) return;
-    const frame = DailyIframe.createFrame(callContainerRef.current, {
-      showLeaveButton: true,
-      showFullscreenButton: true,
-      userName: handle.trim() || "Practice partner",
-      iframeStyle: {
-        width: "100%", height: "100%", border: "0", borderRadius: "14px",
-      },
-    });
+
+    cleanupCall(); // never allow two Daily instances
+
+    let frame;
+    try {
+      frame = DailyIframe.createFrame(callContainerRef.current, {
+        showLeaveButton: true,
+        showFullscreenButton: true,
+        userName: (localStorage.getItem(HANDLE_KEY) || "Practice partner").trim(),
+        iframeStyle: { width: "100%", height: "100%", border: "0", borderRadius: "14px" },
+      });
+    } catch (e) {
+      console.error("[peer] createFrame failed:", e);
+      setError(`Could not start the video call: ${e?.message || "unknown error"}`);
+      setStep("setup");
+      return;
+    }
     callFrameRef.current = frame;
-    frame.join({ url: match.room.url, startVideoOff: true });
-    frame.on("left-meeting", () => { if (!unmountedRef.current) endSession(); });
+
+    frame.on("joined-meeting", () => {
+      console.log("[peer] joined meeting");
+      joinedRef.current = true;
+    });
+    frame.on("error", (e) => {
+      console.error("[peer] daily error:", e);
+      if (unmountedRef.current) return;
+      setError(`Video call error: ${e?.errorMsg || e?.error?.msg || "unknown error"}. Please try matching again.`);
+      cleanupCall();
+      setStep("setup");
+    });
+    frame.on("left-meeting", () => {
+      console.log("[peer] left meeting (joined:", joinedRef.current, ")");
+      if (unmountedRef.current) return;
+      // Only a real leave AFTER a successful join ends the session.
+      // A failed join also emits left-meeting — that's an error, not an ending.
+      if (joinedRef.current) endSession();
+    });
+
+    frame.join({ url: match.room.url, startVideoOff: true }).catch((e) => {
+      console.error("[peer] join failed:", e);
+      if (unmountedRef.current) return;
+      setError(`Could not join the call: ${e?.errorMsg || e?.message || "unknown error"}. Please try matching again.`);
+      cleanupCall();
+      setStep("setup");
+    });
+
     return () => cleanupCall();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, match]);
-
-  const endSession = async () => {
-    cleanupCall();
-    try { await postJSON("/api/peer/end", {}, await getIdToken()); } catch { /* best effort */ }
-    setStep("ended");
-  };
 
   const submitReport = async () => {
     if (!reportReason.trim()) return;
@@ -130,42 +244,10 @@ export default function PeerSession({ getIdToken, onExit }) {
     } catch (e) { setError(e.message); }
   };
 
-  // ── Shared chrome ───────────────────────────────────────────────────────────
-  const Shell = ({ children, wide = false }) => (
-    <motion.div className="screen screen-scroll" variants={sv} initial="initial" animate="animate" exit="exit"
-      style={{ background: "var(--ink)" }}>
-      <div className="noise" />
-      <div style={{
-        position: "relative", zIndex: 1, minHeight: "100%",
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        padding: "80px 24px 48px", maxWidth: wide ? 980 : 560, margin: "0 auto", gap: 20, width: "100%",
-      }}>
-        <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: ACCENT, letterSpacing: "0.16em", alignSelf: "flex-start" }}>
-          PRACTICE WITH A PERSON
-        </div>
-        {children}
-        {error && (
-          <div style={{
-            width: "100%", padding: "12px 16px", borderRadius: 10,
-            background: "rgba(217,139,139,0.07)", border: "1px solid rgba(217,139,139,0.25)",
-            fontFamily: "var(--ui)", fontSize: 13, color: "var(--alert)", lineHeight: 1.6,
-          }}>{error}</div>
-        )}
-        {notice && (
-          <div style={{
-            width: "100%", padding: "12px 16px", borderRadius: 10,
-            background: "var(--calm-soft)", border: "1px solid rgba(116,185,160,0.3)",
-            fontFamily: "var(--ui)", fontSize: 13, color: "var(--calm)", lineHeight: 1.6,
-          }}>{notice}</div>
-        )}
-      </div>
-    </motion.div>
-  );
-
   // ── Steps ───────────────────────────────────────────────────────────────────
   if (step === "agreement") {
     return (
-      <Shell>
+      <Shell error={error} notice={notice}>
         <h1 style={{ fontFamily: "var(--display)", fontWeight: 400, fontSize: "clamp(26px, 4vw, 34px)", lineHeight: 1.2 }}>
           Before you practice with a real person.
         </h1>
@@ -196,7 +278,7 @@ export default function PeerSession({ getIdToken, onExit }) {
 
   if (step === "setup") {
     return (
-      <Shell>
+      <Shell error={error} notice={notice}>
         <h1 style={{ fontFamily: "var(--display)", fontWeight: 400, fontSize: "clamp(26px, 4vw, 34px)", lineHeight: 1.2 }}>
           Find a practice partner.
         </h1>
@@ -208,17 +290,8 @@ export default function PeerSession({ getIdToken, onExit }) {
           <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--dim)", letterSpacing: "0.12em" }}>
             DISPLAY NAME (NOT YOUR REAL NAME UNLESS YOU WANT)
           </span>
-          <input
-            value={handle}
-            onChange={e => setHandle(e.target.value)}
-            maxLength={24}
-            placeholder="e.g. QuietFox"
-            style={{
-              width: "100%", background: "var(--surface)", border: "1px solid var(--line)",
-              borderRadius: 10, padding: "14px 16px", fontSize: 14, fontFamily: "var(--ui)",
-              color: "var(--text)", outline: "none",
-            }}
-          />
+          <input value={handle} onChange={e => setHandle(e.target.value)} maxLength={24}
+            placeholder="e.g. QuietFox" style={inputStyle} />
         </label>
 
         <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8 }}>
@@ -245,17 +318,8 @@ export default function PeerSession({ getIdToken, onExit }) {
           <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--dim)", letterSpacing: "0.12em" }}>
             TOPIC (OPTIONAL)
           </span>
-          <input
-            value={topic}
-            onChange={e => setTopic(e.target.value)}
-            maxLength={80}
-            placeholder="e.g. college interviews, favorite games, weekend plans"
-            style={{
-              width: "100%", background: "var(--surface)", border: "1px solid var(--line)",
-              borderRadius: 10, padding: "14px 16px", fontSize: 14, fontFamily: "var(--ui)",
-              color: "var(--text)", outline: "none",
-            }}
-          />
+          <input value={topic} onChange={e => setTopic(e.target.value)} maxLength={80}
+            placeholder="e.g. college interviews, favorite games, weekend plans" style={inputStyle} />
         </label>
 
         <div style={{ display: "flex", gap: 10, width: "100%" }}>
@@ -270,7 +334,7 @@ export default function PeerSession({ getIdToken, onExit }) {
 
   if (step === "waiting") {
     return (
-      <Shell>
+      <Shell error={error} notice={notice}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, width: "100%", padding: "40px 0" }}>
           <motion.div
             animate={{ scale: [1, 1.08, 1], opacity: [0.6, 1, 0.6] }}
@@ -297,7 +361,7 @@ export default function PeerSession({ getIdToken, onExit }) {
 
   if (step === "call") {
     return (
-      <Shell wide>
+      <Shell wide error={error} notice={notice}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", flexWrap: "wrap", gap: 10 }}>
           <div style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 14, color: "var(--text-2)" }}>
             You're practicing with <strong style={{ fontWeight: 500, color: ACCENT }}>{match?.partnerHandle || "your partner"}</strong>.
@@ -315,41 +379,15 @@ export default function PeerSession({ getIdToken, onExit }) {
           background: "var(--surface)", border: "1px solid var(--line)", overflow: "hidden",
         }} />
 
-        <AnimatePresence>
-          {showReport && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              style={{
-                position: "fixed", inset: 0, background: "rgba(8,10,16,0.85)", zIndex: 100,
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-              <div className="card" style={{ background: "var(--surface)", padding: 28, maxWidth: 420, width: "92%", display: "flex", flexDirection: "column", gap: 14 }}>
-                <div style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: 19 }}>Report this session</div>
-                <textarea
-                  value={reportReason}
-                  onChange={e => setReportReason(e.target.value)}
-                  rows={4}
-                  placeholder="What happened? A sentence is enough."
-                  style={{
-                    width: "100%", background: "var(--ink)", border: "1px solid var(--line)",
-                    borderRadius: 10, padding: "12px 14px", fontSize: 13.5, fontFamily: "var(--ui)",
-                    color: "var(--text)", outline: "none", resize: "none", lineHeight: 1.6,
-                  }}
-                />
-                <div style={{ display: "flex", gap: 10 }}>
-                  <button className="btn btn-primary" style={{ flex: 1, fontSize: 13 }} onClick={submitReport}>Send report</button>
-                  <button className="btn btn-ghost" style={{ flex: 1, height: 50 }} onClick={() => setShowReport(false)}>Cancel</button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <ReportModal open={showReport} reason={reportReason} onChangeReason={setReportReason}
+          onSubmit={submitReport} onClose={() => setShowReport(false)} />
       </Shell>
     );
   }
 
   // ended
   return (
-    <Shell>
+    <Shell error={error} notice={notice}>
       <h1 style={{ fontFamily: "var(--display)", fontWeight: 400, fontSize: "clamp(24px, 4vw, 32px)" }}>
         Session ended.
       </h1>
@@ -357,41 +395,15 @@ export default function PeerSession({ getIdToken, onExit }) {
         Nothing was recorded. If anything felt off, you can still report or block your partner from here.
       </p>
       <div style={{ display: "flex", gap: 10, width: "100%", flexWrap: "wrap" }}>
-        <button className="btn btn-primary" style={{ flex: 1, fontSize: 14 }} onClick={() => setStep("setup")}>
+        <button className="btn btn-primary" style={{ flex: 1, fontSize: 14 }} onClick={() => { setError(null); setStep("setup"); }}>
           Find another partner
         </button>
         <button className="btn btn-ghost" style={{ flex: 1, height: 50 }} onClick={() => setShowReport(true)}>Report</button>
         <button className="btn btn-ghost" style={{ flex: 1, height: 50 }} onClick={blockPartner}>Block</button>
         <button className="btn btn-ghost" style={{ flex: 1, height: 50 }} onClick={onExit}>Done</button>
       </div>
-      <AnimatePresence>
-        {showReport && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{
-              position: "fixed", inset: 0, background: "rgba(8,10,16,0.85)", zIndex: 100,
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-            <div className="card" style={{ background: "var(--surface)", padding: 28, maxWidth: 420, width: "92%", display: "flex", flexDirection: "column", gap: 14 }}>
-              <div style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: 19 }}>Report this session</div>
-              <textarea
-                value={reportReason}
-                onChange={e => setReportReason(e.target.value)}
-                rows={4}
-                placeholder="What happened? A sentence is enough."
-                style={{
-                  width: "100%", background: "var(--ink)", border: "1px solid var(--line)",
-                  borderRadius: 10, padding: "12px 14px", fontSize: 13.5, fontFamily: "var(--ui)",
-                  color: "var(--text)", outline: "none", resize: "none", lineHeight: 1.6,
-                }}
-              />
-              <div style={{ display: "flex", gap: 10 }}>
-                <button className="btn btn-primary" style={{ flex: 1, fontSize: 13 }} onClick={submitReport}>Send report</button>
-                <button className="btn btn-ghost" style={{ flex: 1, height: 50 }} onClick={() => setShowReport(false)}>Cancel</button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ReportModal open={showReport} reason={reportReason} onChangeReason={setReportReason}
+        onSubmit={submitReport} onClose={() => setShowReport(false)} />
     </Shell>
   );
 }
