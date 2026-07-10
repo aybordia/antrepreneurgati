@@ -188,7 +188,7 @@ function hexToRgb(hex) {
   return `${r},${g},${b}`;
 }
 
-export default function MissionControl({ situation, intent = null, onBeginSession, getIdToken }) {
+export default function MissionControl({ situation, intent = null, mode = "interview", tone = "neutral", onBeginSession, getIdToken }) {
   const [outputs, setOutputs] = useState({});
   const [done, setDone] = useState({});
   const [sessionData, setSessionData] = useState(null);
@@ -206,7 +206,7 @@ export default function MissionControl({ situation, intent = null, onBeginSessio
 
       try {
         const token = await getIdToken();
-        await streamFetch("/api/start-session", { situation, intent }, chunk => {
+        await streamFetch("/api/start-session", { situation, intent, mode, tone }, chunk => {
           if (controller.signal.aborted) return;
           if (chunk.heartbeat) return;
           if (chunk.error) { setError(chunk.error); return; }
@@ -235,7 +235,7 @@ export default function MissionControl({ situation, intent = null, onBeginSessio
 
     start();
     return () => controller.abort();
-  }, [situation, intent, getIdToken]);
+  }, [situation, intent, mode, tone, getIdToken]);
 
   useEffect(() => {
     Object.values(cardRefs.current).forEach(el => { if (el) el.scrollTop = el.scrollHeight; });
@@ -252,6 +252,53 @@ export default function MissionControl({ situation, intent = null, onBeginSessio
     if (name === "Architect" && doneCount < 4) return "waiting";
     return "idle";
   };
+
+  // ── Conversation mode: one calm setup moment, no agent theater ──────────────
+  if (mode === "conversation") {
+    return (
+      <motion.div className="screen" variants={sv} initial="initial" animate="animate" exit="exit"
+        style={{ background: "var(--ink)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div className="noise" />
+        <div style={{
+          position: "relative", zIndex: 1, display: "flex", flexDirection: "column",
+          alignItems: "center", gap: 22, padding: "0 24px", textAlign: "center", maxWidth: 440,
+        }}>
+          <motion.div
+            animate={sessionData ? { scale: 1, opacity: 1 } : { scale: [1, 1.07, 1], opacity: [0.55, 0.9, 0.55] }}
+            transition={sessionData ? { duration: 0.4 } : { duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
+            style={{
+              width: 72, height: 72, borderRadius: "50%",
+              border: "2px solid var(--calm)", background: "var(--calm-soft)",
+            }}
+          />
+          <div style={{ fontFamily: "var(--display)", fontWeight: 400, fontSize: 24 }}>
+            {sessionData ? "Your conversation partner is ready." : "Setting things up…"}
+          </div>
+          <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 14, color: "var(--dim)", lineHeight: 1.7 }}>
+            {sessionData
+              ? `You'll be chatting with ${sessionData.personas?.[0]?.name || "a friendly partner"} (a fictional AI, not a real person). Take your time, end whenever you like.`
+              : "Just a moment. This is a relaxed space: no question list, no evaluation."}
+          </p>
+          {error && (
+            <div style={{
+              padding: "12px 16px", borderRadius: 10, background: "rgba(217,139,139,0.07)",
+              border: "1px solid rgba(217,139,139,0.25)", fontFamily: "var(--ui)", fontSize: 13, color: "var(--alert)",
+            }}>{error}</div>
+          )}
+          {sessionData && (
+            <motion.button
+              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+              className="btn btn-primary"
+              onClick={() => onBeginSession(sessionData)}
+              style={{ padding: "0 32px", fontSize: 14 }}
+            >
+              Say hello
+            </motion.button>
+          )}
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div className="screen" variants={sv} initial="initial" animate="animate" exit="exit"

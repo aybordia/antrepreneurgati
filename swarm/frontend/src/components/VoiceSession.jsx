@@ -172,6 +172,8 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
   const signalDataRef = useRef(null);
 
   const personas = sessionData?.personas || [];
+  const isConvo = sessionData?.mode === "conversation";
+  const sessionTone = sessionData?.tone || "neutral";
   const totalQuestions = sessionData?.sessionPlan?.questions?.length || 0;
   const activePersona = personas.find(p => p.name === currentPersona) || personas[0];
 
@@ -362,13 +364,22 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
             style={{ textAlign: "center", maxWidth: 560 }}
           >
             <h1 style={{ fontFamily: "var(--display)", fontWeight: 400, fontSize: "clamp(28px, 4.5vw, 40px)", lineHeight: 1.15, marginBottom: 10 }}>
-              Meet your panel.
+              {isConvo ? "Meet your conversation partner." : "Meet your panel."}
             </h1>
             <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 15, color: "var(--dim)", lineHeight: 1.7 }}>
-              {totalQuestions
+              {isConvo
+                ? "A relaxed chat, at your pace. No question list, no evaluation, end whenever you like."
+                : totalQuestions
                 ? `They'll ask ${totalQuestions} planned questions, one at a time. You'll always see which question you're on.`
                 : "They'll ask their questions one at a time."}
             </p>
+            {!isConvo && sessionTone && (
+              <p style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--honey)", letterSpacing: "0.05em", marginTop: 10 }}>
+                Tone: {sessionTone.charAt(0).toUpperCase() + sessionTone.slice(1)}
+                {sessionTone === "challenging" && ". Interviewers may be more direct and less accommodating."}
+                {sessionTone === "supportive" && ". Interviewers will be warm and encouraging."}
+              </p>
+            )}
           </motion.div>
 
           {/* Panel assembly — signature moment */}
@@ -460,8 +471,8 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
 
         {/* Status line */}
         <div style={{ display: "flex", alignItems: "center", gap: 14, alignSelf: "stretch", justifyContent: "space-between" }}>
-          <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--dim)", letterSpacing: "0.16em" }}>
-            LIVE SESSION
+          <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: isConvo ? "var(--calm)" : "var(--dim)", letterSpacing: "0.16em" }}>
+            {isConvo ? "OPEN CONVERSATION · NO EVALUATION" : "LIVE SESSION"}
           </span>
           {tracking.isTracking && (
             <span style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--calm)", letterSpacing: "0.08em", opacity: 0.7 }}>
@@ -492,8 +503,8 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
           </motion.div>
         </AnimatePresence>
 
-        {/* Question rail — always know where you are */}
-        <QuestionRail total={totalQuestions} current={questionNum} complete={sessionComplete} />
+        {/* Question rail — always know where you are (interview mode only) */}
+        {!isConvo && <QuestionRail total={totalQuestions} current={questionNum} complete={sessionComplete} />}
 
         {/* Current spoken line */}
         <AnimatePresence mode="wait">
@@ -654,7 +665,7 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
       {/* End session button */}
       <button className="btn btn-ghost" onClick={() => setShowConfirm(true)}
         style={{ position: "fixed", bottom: 26, right: 24, zIndex: 20, height: 36, fontSize: 12, padding: "0 16px" }}>
-        End session
+        {isConvo ? "End conversation" : "End session"}
       </button>
 
       {/* Session complete overlay */}
@@ -706,13 +717,19 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
               }}
             >
               <div>
-                <div style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: 21, marginBottom: 10 }}>End the session?</div>
+                <div style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: 21, marginBottom: 10 }}>
+                  {isConvo ? "End the conversation?" : "End the session?"}
+                </div>
                 <div style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 14, color: "var(--dim)", lineHeight: 1.7 }}>
-                  You'll get a private debrief: your panel's impressions and your full transcript. No scores.
+                  {isConvo
+                    ? "You'll get a short optional recap and your transcript. No evaluation."
+                    : "You'll get a private debrief: your panel's impressions and your full transcript. No scores."}
                 </div>
               </div>
               <div style={{ display: "flex", gap: 10 }}>
-                <button className="btn btn-primary" onClick={handleEnd} style={{ flex: 1, fontSize: 14 }}>End session</button>
+                <button className="btn btn-primary" onClick={handleEnd} style={{ flex: 1, fontSize: 14 }}>
+                  {isConvo ? "End conversation" : "End session"}
+                </button>
                 <button className="btn btn-ghost" onClick={() => setShowConfirm(false)} style={{ flex: 1, height: 50 }}>Keep going</button>
               </div>
             </motion.div>

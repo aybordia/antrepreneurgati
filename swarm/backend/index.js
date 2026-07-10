@@ -11,6 +11,7 @@ import askSwarm from "./routes/askSwarm.js";
 import { listSessions, saveSessionRoute, getSessionRoute } from "./routes/sessions.js";
 import feedback from "./routes/feedback.js";
 import parseIntentRoute from "./routes/parseIntent.js";
+import { peerJoin, peerStatus, peerCancel, peerEnd, peerReport, peerBlock } from "./routes/peer.js";
 import { verifyToken } from "./googleAuth.js";
 
 const app = express();
@@ -48,6 +49,12 @@ app.get("/api/sessions", verifyToken, listSessions);
 app.post("/api/sessions/save", verifyToken, saveSessionRoute);
 app.get("/api/sessions/:id", verifyToken, getSessionRoute);
 app.post("/api/feedback", verifyToken, feedback);
+app.post("/api/peer/queue", verifyToken, peerJoin);
+app.get("/api/peer/status", verifyToken, peerStatus);
+app.post("/api/peer/cancel", verifyToken, peerCancel);
+app.post("/api/peer/end", verifyToken, peerEnd);
+app.post("/api/peer/report", verifyToken, peerReport);
+app.post("/api/peer/block", verifyToken, peerBlock);
 
 // Global error handler
 app.use((err, req, res, next) => {

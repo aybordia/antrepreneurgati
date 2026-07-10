@@ -50,7 +50,15 @@ Hard rules:
 - question_focus values must be varied across the set (mix of technical/behavioral/motivational/mixed as appropriate to the interview type).
 - Ground the question STYLE (not identity) in generically known patterns for this interview type: e.g., behavioral-heavy for university admissions, one light technical thread for engineering roles.`;
 
-function fallbackPersonas(n) {
+function fallbackPersonas(n, mode = "interview") {
+  if (mode === "conversation") {
+    return [{
+      name: "Your conversation partner",
+      title: "Conversation partner",
+      personality_style: "Relaxed and friendly; follows your lead and keeps the chat easygoing.",
+      question_focus: "mixed",
+    }];
+  }
   // Last-resort generic panel — intentionally institution-agnostic, no invented-name lists
   const styles = [
     "Calm and structured; asks one clear question at a time and waits patiently.",
@@ -67,12 +75,25 @@ function fallbackPersonas(n) {
   }));
 }
 
-export async function generatePersonas({ intent = {}, situation = "" }) {
-  const n = Math.min(Math.max(Number(intent.num_interviewers) || 3, 1), 5);
+// Interview tone presets — set by the user at session setup, default neutral.
+// Even "challenging" keeps the hard conduct rules (never mocks, never comments
+// on pauses or delivery); it changes pressure and warmth, not respect.
+const TONES = {
+  supportive: "All personas are warm, patient, and encouraging. They acknowledge effort, give the candidate room, and phrase questions gently.",
+  neutral: "All personas are professional and even-keeled. Courteous but not effusive; focused on substance.",
+  challenging: "All personas are direct and high-pressure: terse follow-ups, brisk pacing, little small talk, they press hard for specifics and push back on vague answers. Firm but never mocking or hostile.",
+};
+
+export async function generatePersonas({ intent = {}, situation = "", mode = "interview", tone = "neutral" }) {
+  const n = mode === "conversation" ? 1 : Math.min(Math.max(Number(intent.num_interviewers) || 3, 1), 5);
+  const toneRule = TONES[tone] || TONES.neutral;
   const context = [
-    intent.institution && `Institution/company: ${intent.institution}`,
-    intent.program_type && `Program type: ${intent.program_type}`,
-    intent.domain && `Subject domain: ${intent.domain}`,
+    mode === "conversation"
+      ? `Purpose: a relaxed, casual conversation-practice partner (small talk, everyday back-and-forth). NOT an interviewer, NOT evaluative. Invent a friendly, easygoing fictional person (title like "Conversation partner"), with an approachable personality_style and question_focus "mixed".`
+      : `Interview tone selected by the candidate: ${tone}. ${toneRule}`,
+    intent?.institution && `Institution/company: ${intent.institution}`,
+    intent?.program_type && `Program type: ${intent.program_type}`,
+    intent?.domain && `Subject domain: ${intent.domain}`,
     situation && `Candidate's own words: "${situation.slice(0, 200)}"`,
   ].filter(Boolean).join("\n");
 
@@ -96,13 +117,13 @@ Output JSON now.`,
           .slice(0, n)
           .filter(p => p?.name && p?.title)
           .map(p => ({ ...p, name: String(p.name).replace(/[,;:.\s]+$/g, "").trim() }));
-        if (personas.length < n) personas = [...personas, ...fallbackPersonas(n - personas.length)];
+        if (personas.length < n) personas = [...personas, ...fallbackPersonas(n - personas.length, mode)];
       }
     } catch (e) {
       console.error(`[personaGenerator] attempt ${attempt + 1} failed:`, e.message);
     }
   }
-  if (!personas) personas = fallbackPersonas(n);
+  if (!personas) personas = fallbackPersonas(n, mode);
 
   // Map each persona to a distinct ElevenLabs voice + a distinct delivery profile
   const voices = shuffled(Object.values(VOICE_IDS));

@@ -25,11 +25,38 @@ export default async function handler(req, res) {
   } = req.body;
 
   const personas = sessionData?.personas || [];
+  const mode = sessionData?.mode || "interview";
   const userTurns = fullTranscript.filter(t => t.speaker === "You" || t.speaker === "User");
 
   const transcriptText = fullTranscript
     .map(t => `${t.speaker}: ${t.text}`)
     .join("\n");
+
+  // ── Conversation mode: lightweight optional recap, deliberately low-stakes ──
+  if (mode === "conversation") {
+    let recap = "You had a conversation practice session. Your full transcript is below.";
+    if (userTurns.length > 0) {
+      try {
+        const raw = await callLLM({
+          systemPrompt: `You write a short, warm recap of a casual conversation-practice session. 2-3 sentences: what you chatted about and one genuine, friendly note about the conversation. Never a score, grade, or evaluation. Never mention pauses, pacing, or speech patterns. Return ONLY: {"recap":"..."}`,
+          userPrompt: `Transcript:\n${transcriptText.slice(0, 4000)}`,
+          maxTokens: 160,
+        });
+        const parsed = parseJSON(raw);
+        if (parsed?.recap) recap = parsed.recap;
+      } catch (e) {
+        console.error("[debrief] conversation recap failed:", e.message);
+      }
+    }
+    return res.json({
+      mode: "conversation",
+      transcript: transcriptText,
+      persona_impressions: [{ persona: personas[0]?.name || "Your conversation partner", impression: recap }],
+      signal_summary: signalData ? summarizeSignals(signalData, fullTranscript) : {},
+      user_selected_categories: Array.isArray(userSelectedCategories) ? userSelectedCategories : [],
+      session_facts: null,
+    });
+  }
 
   // ── Per-persona impressions (LLM, constructive, non-scored) ────────────────
   let impressions = [];
@@ -74,6 +101,7 @@ Write one impression per panel member. JSON now.`,
   const questionsAsked = fullTranscript.filter(t => t.speaker !== "You" && t.speaker !== "User").length;
 
   res.json({
+    mode: "interview",
     transcript: transcriptText,
     persona_impressions: impressions,
     signal_summary: signalSummary,

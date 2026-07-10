@@ -26,9 +26,9 @@ function assignQuestions(questions, personas) {
   });
 }
 
-export async function runArchitect({ situation, intent = null, researcherOutput, styleHint, researchContext }, writeChunk) {
+export async function runArchitect({ situation, intent = null, mode = "interview", tone = "neutral", researcherOutput, styleHint, researchContext }, writeChunk) {
   // Derive structured intent server-side if the client didn't send one
-  if (!intent) {
+  if (!intent && mode !== "conversation") {
     writeChunk({ agent: "Architect", chunk: "Understanding your request…", thinking: true });
     try {
       intent = await parseIntent({ transcript: situation });
@@ -37,23 +37,31 @@ export async function runArchitect({ situation, intent = null, researcherOutput,
     }
   }
 
-  writeChunk({ agent: "Architect", chunk: "Inventing your fictional interview panel…", thinking: true });
-  const personas = await generatePersonas({ intent, situation });
+  writeChunk({
+    agent: "Architect",
+    chunk: mode === "conversation" ? "Setting up your conversation partner…" : "Inventing your fictional interview panel…",
+    thinking: true,
+  });
+  const personas = await generatePersonas({ intent, situation, mode, tone });
 
-  writeChunk({ agent: "Architect", chunk: "Composing your question set…", thinking: true });
-  const totalQuestions = Math.max(4, personas.length);
-  let bankQuestions;
-  try {
-    bankQuestions = await composeSessionQuestions({
-      domain: intent?.domain || "general",
-      totalQuestions,
-      intent,
-    });
-  } catch (e) {
-    console.error("[architect] question composition failed:", e.message);
-    bankQuestions = (await composeSessionQuestions({ domain: "general", totalQuestions, intent: null, useLLM: false }));
+  // Conversation mode: open-ended, no question bank, no plan to march through
+  let questions = [];
+  if (mode !== "conversation") {
+    writeChunk({ agent: "Architect", chunk: "Composing your question set…", thinking: true });
+    const totalQuestions = Math.max(4, personas.length);
+    let bankQuestions;
+    try {
+      bankQuestions = await composeSessionQuestions({
+        domain: intent?.domain || "general",
+        totalQuestions,
+        intent,
+      });
+    } catch (e) {
+      console.error("[architect] question composition failed:", e.message);
+      bankQuestions = (await composeSessionQuestions({ domain: "general", totalQuestions, intent: null, useLLM: false }));
+    }
+    questions = assignQuestions(bankQuestions, personas);
   }
-  const questions = assignQuestions(bankQuestions, personas);
 
   writeChunk({ agent: "Architect", chunk: "Session architected.", streamStart: true });
 
@@ -62,13 +70,17 @@ export async function runArchitect({ situation, intent = null, researcherOutput,
     agent: "Architect",
     situation,
     intent,
-    sessionSummary: intent?.institution
+    mode,
+    tone: mode === "conversation" ? null : tone,
+    sessionSummary: mode === "conversation"
+      ? `Casual conversation practice: ${situation}`
+      : intent?.institution
       ? `Practice ${intent.program_type || ""} interview for ${intent.institution} with ${personas.length} simulated interviewer${personas.length > 1 ? "s" : ""}.`
       : `Practice session for: ${situation}`,
     personas,
     sessionPlan: {
       difficultyProgression: "gentle-start",
-      totalEstimatedMinutes: Math.max(5, questions.length + 1),
+      totalEstimatedMinutes: mode === "conversation" ? 15 : Math.max(5, questions.length + 1),
       questions,
     },
     openingLine: "",

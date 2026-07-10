@@ -18,7 +18,7 @@ export default async function handler(req, res) {
   // Send heartbeat immediately so the frontend knows the connection is open
   writeChunk({ heartbeat: true });
 
-  const { situation, intent } = req.body;
+  const { situation, intent, mode = "interview", tone = "neutral" } = req.body;
   if (!situation) {
     writeChunk({ error: "situation is required" });
     return res.end();
@@ -35,6 +35,12 @@ export default async function handler(req, res) {
   const keepalive = setInterval(() => writeChunk({ heartbeat: true }), 8000);
 
   try {
+    // Conversation mode: no research, no agent theater — one calm setup step
+    if (mode === "conversation") {
+      await runArchitect({ situation, intent, mode, tone, researcherOutput: null, styleHint: null, researchContext: {} }, writeChunk);
+      return;
+    }
+
     // Only 2 LLM calls: Researcher (Tavily + synthesis) → Architect (designs everything)
     const researcherOutput = await runResearcher({ situation }, writeChunk);
 
@@ -65,7 +71,7 @@ export default async function handler(req, res) {
     writeChunk({ agent: "VoiceDesigner", done: true });
 
     await sleep(300);
-    await runArchitect({ situation, intent, researcherOutput, styleHint, researchContext }, writeChunk);
+    await runArchitect({ situation, intent, mode, tone, researcherOutput, styleHint, researchContext }, writeChunk);
 
   } catch (err) {
     console.error("startSession error:", err);

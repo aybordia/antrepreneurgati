@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence } from "framer-motion";
 import SituationInput from "./components/SituationInput";
+import ModeSelect from "./components/ModeSelect";
+import PeerSession from "./components/PeerSession";
 import MissionControl from "./components/MissionControl";
 import VoiceSession from "./components/VoiceSession";
 import Debrief from "./components/Debrief";
@@ -11,6 +13,8 @@ import { stopAllAudio } from "./hooks/useVoiceOutput";
 
 const SCREENS = {
   DASHBOARD:       "DASHBOARD",
+  MODE_SELECT:     "MODE_SELECT",
+  PEER:            "PEER",
   SITUATION_INPUT: "SITUATION_INPUT",
   MISSION_CONTROL: "MISSION_CONTROL",
   VOICE_SESSION:   "VOICE_SESSION",
@@ -40,6 +44,8 @@ export default function App() {
   const [screen, setScreen] = useState(SCREENS.DASHBOARD);
   const [situation, setSituation] = useState("");
   const [intent, setIntent] = useState(null);
+  const [mode, setMode] = useState("interview");      // interview | conversation
+  const [tone, setTone] = useState("neutral");        // supportive | neutral | challenging
   const [sessionData, setSessionData] = useState(null);
   const [sessionResult, setSessionResult] = useState(null);
   const [debriefResult, setDebriefResult] = useState(null);
@@ -88,12 +94,21 @@ export default function App() {
 
   const getIdToken = useCallback(async () => token, [token]);
 
-  const handleNewSession = () => { stopAllAudio(); setScreen(SCREENS.SITUATION_INPUT); };
+  const handleNewSession = () => { stopAllAudio(); setScreen(SCREENS.MODE_SELECT); };
+
+  const handleModeSelect = (selected) => {
+    stopAllAudio();
+    if (selected === "peer") { setScreen(SCREENS.PEER); return; }
+    setMode(selected);
+    setTone("neutral"); // never default a new session into the harshest setting
+    setScreen(SCREENS.SITUATION_INPUT);
+  };
 
   const handleLaunch = (sit, opts = {}) => {
     stopAllAudio();
     setSituation(sit);
     setIntent(opts.intent || null);
+    setTone(opts.tone || "neutral");
     setTimedMode(opts.timedMode || false);
     setScreen(SCREENS.MISSION_CONTROL);
   };
@@ -185,11 +200,17 @@ export default function App() {
           {screen === SCREENS.DASHBOARD && (
             <Dashboard key="dashboard" user={user} onNewSession={handleNewSession} getIdToken={getIdToken} />
           )}
+          {screen === SCREENS.MODE_SELECT && (
+            <ModeSelect key="mode" onSelect={handleModeSelect} onBack={handleBackToDashboard} />
+          )}
+          {screen === SCREENS.PEER && (
+            <PeerSession key="peer" getIdToken={getIdToken} onExit={handleBackToDashboard} />
+          )}
           {screen === SCREENS.SITUATION_INPUT && (
-            <SituationInput key="input" onLaunch={handleLaunch} initialSituation={situation} onBack={handleBackToDashboard} getIdToken={getIdToken} />
+            <SituationInput key="input" mode={mode} onLaunch={handleLaunch} initialSituation={situation} onBack={() => setScreen(SCREENS.MODE_SELECT)} getIdToken={getIdToken} />
           )}
           {screen === SCREENS.MISSION_CONTROL && (
-            <MissionControl key="mission" situation={situation} intent={intent} onBeginSession={handleBeginSession} getIdToken={getIdToken} />
+            <MissionControl key="mission" situation={situation} intent={intent} mode={mode} tone={tone} onBeginSession={handleBeginSession} getIdToken={getIdToken} />
           )}
           {screen === SCREENS.VOICE_SESSION && (
             <VoiceSession key="session" sessionData={sessionData} situation={situation} onEndSession={handleEndSession} getIdToken={getIdToken} timedMode={timedMode} />

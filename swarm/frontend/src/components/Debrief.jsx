@@ -47,6 +47,7 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
   const sessionData = sessionResult?.sessionData || null;
   const signalData = sessionResult?.signalData || null;
   const personas = sessionData?.personas || [];
+  const isConvo = sessionData?.mode === "conversation";
 
   useEffect(() => {
     if (fetchedRef.current) return;
@@ -160,15 +161,16 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
 
         {/* Header */}
         <motion.div {...fadeUp(0)}>
-          <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--muted)", letterSpacing: "0.2em", marginBottom: 12 }}>
-            PRIVATE DEBRIEF
+          <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: isConvo ? "var(--calm)" : "var(--muted)", letterSpacing: "0.2em", marginBottom: 12 }}>
+            {isConvo ? "OPTIONAL RECAP" : "PRIVATE DEBRIEF"}
           </div>
           <h1 style={{ fontFamily: "var(--display)", fontSize: "clamp(30px, 5vw, 44px)", fontWeight: 300, lineHeight: 1.15, marginBottom: 10 }}>
-            How the session went.
+            {isConvo ? "Nice chat." : "How the session went."}
           </h1>
           <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 14, color: "var(--muted)", lineHeight: 1.7, maxWidth: 520 }}>
-            These are observations and optional suggestions, not a score, and they're only for you.
-            Everything here is about what you said, on your terms.
+            {isConvo
+              ? "Here's a short recap and your transcript, just for you. Nothing here is a score or an evaluation."
+              : "These are observations and optional suggestions, not a score, and they're only for you. Everything here is about what you said, on your terms."}
           </p>
         </motion.div>
 
@@ -206,7 +208,7 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
         <motion.div {...fadeUp(0.14)} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--muted)", letterSpacing: "0.16em" }}>
-              PANEL IMPRESSIONS
+              {isConvo ? "A SHORT RECAP" : "PANEL IMPRESSIONS"}
             </div>
             <button className="btn btn-ghost" onClick={handleListen} style={{ height: 30, fontSize: 11, padding: "0 14px" }}>
               {isSpeaking ? "■ Stop" : "▸ Listen"}
