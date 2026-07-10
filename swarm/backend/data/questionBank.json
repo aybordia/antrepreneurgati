@@ -1,0 +1,44 @@
+{
+  "questions": [
+    { "domain": "cs", "type": "technical", "difficulty": "light", "text": "Walk me through a project you've built — what did it do, and what was the hardest technical decision you made?" },
+    { "domain": "cs", "type": "technical", "difficulty": "light", "text": "How would you explain what an algorithm is to someone who has never programmed?" },
+    { "domain": "cs", "type": "technical", "difficulty": "medium", "text": "If a program you wrote suddenly got 100 times more users, what would you check first and why?" },
+    { "domain": "cs", "type": "technical", "difficulty": "medium", "text": "Tell me about a bug that took you a long time to find. How did you eventually track it down?" },
+    { "domain": "cs", "type": "behavioral", "text": "Tell me about a time you worked on code with someone else. How did you divide the work?" },
+
+    { "domain": "engineering", "type": "technical", "difficulty": "light", "text": "Describe something you've designed or built with your hands or with software tools. What constraints did you have to work within?" },
+    { "domain": "engineering", "type": "technical", "difficulty": "medium", "text": "If a design you were confident in failed during testing, how would you go about finding out why?" },
+    { "domain": "engineering", "type": "technical", "difficulty": "medium", "text": "Talk me through the trade-offs you'd consider when choosing between a simple solution and a more robust one." },
+    { "domain": "engineering", "type": "behavioral", "text": "Tell me about a time a project didn't go as planned. What did you change?" },
+
+    { "domain": "bio", "type": "technical", "difficulty": "light", "text": "Tell me about a biology topic or experiment that genuinely fascinated you. What made it interesting?" },
+    { "domain": "bio", "type": "technical", "difficulty": "medium", "text": "If you ran an experiment and got a result opposite to what you predicted, what would you do next?" },
+    { "domain": "bio", "type": "technical", "difficulty": "medium", "text": "How would you explain a scientific concept you know well to someone with no science background? Pick one and try it." },
+    { "domain": "bio", "type": "behavioral", "text": "Describe a time you had to be very careful and precise in your work. How did you keep track of the details?" },
+
+    { "domain": "medical", "type": "technical", "difficulty": "light", "text": "What experiences have you had with healthcare — as a volunteer, patient, or observer — that shaped how you think about medicine?" },
+    { "domain": "medical", "type": "technical", "difficulty": "medium", "text": "A patient disagrees with a treatment their doctor recommends. What considerations matter in that situation?" },
+    { "domain": "medical", "type": "technical", "difficulty": "medium", "text": "Tell me about an ethical dilemma — real or hypothetical — and how you would reason through it." },
+    { "domain": "medical", "type": "behavioral", "text": "Describe a time you supported someone who was struggling. What did you do, and what did you learn?" },
+
+    { "domain": "business", "type": "technical", "difficulty": "light", "text": "Tell me about a product or company you find interesting. What do you think makes it work?" },
+    { "domain": "business", "type": "technical", "difficulty": "medium", "text": "If you had to decide whether a new idea was worth pursuing, what information would you gather first?" },
+    { "domain": "business", "type": "technical", "difficulty": "medium", "text": "Describe a time you had to persuade someone. What was your approach?" },
+    { "domain": "business", "type": "behavioral", "text": "Tell me about a goal you set for yourself and how you tracked your progress toward it." },
+
+    { "domain": "humanities", "type": "technical", "difficulty": "light", "text": "Tell me about a book, idea, or piece of work that changed how you think. What changed?" },
+    { "domain": "humanities", "type": "technical", "difficulty": "medium", "text": "Pick an argument you've encountered that you disagree with. Can you steel-man it — present its strongest version — before explaining your view?" },
+    { "domain": "humanities", "type": "technical", "difficulty": "medium", "text": "How do you decide whether a source or claim is trustworthy?" },
+    { "domain": "humanities", "type": "behavioral", "text": "Describe a piece of writing or research you're proud of. What was your process?" },
+
+    { "domain": "general", "type": "motivational", "text": "What got you interested in this field in the first place?" },
+    { "domain": "general", "type": "motivational", "text": "Why this program in particular — what are you hoping to find here that you couldn't find elsewhere?" },
+    { "domain": "general", "type": "motivational", "text": "Where do you hope to be five years from now, and how does this step fit into that?" },
+    { "domain": "general", "type": "behavioral", "text": "Tell me about a project or activity you've put real time into. What kept you coming back to it?" },
+    { "domain": "general", "type": "behavioral", "text": "Describe a time something didn't go the way you wanted. What did you do afterward?" },
+    { "domain": "general", "type": "behavioral", "text": "Tell me about something you taught yourself. How did you go about learning it?" },
+    { "domain": "general", "type": "behavioral", "text": "What's something you've changed your mind about? What changed it?" },
+    { "domain": "general", "type": "behavioral", "text": "Tell me about a time you worked with people who thought differently from you." },
+    { "domain": "general", "type": "motivational", "text": "Outside of your main field, what do you spend your time on, and why?" }
+  ]
+}
