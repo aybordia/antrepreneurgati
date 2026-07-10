@@ -56,14 +56,21 @@ export async function composeSessionQuestions({ domain = "general", totalQuestio
 
   const generalPool = BANK.filter(q => q.domain === "general");
   const motivational = pick(generalPool.filter(q => q.type === "motivational"), 1);
-  const behavioralNeeded = totalQuestions - technical.length - motivational.length;
+
+  // One deliberately underspecified question per session: practicing
+  // clarification-seeking is an evidence-supported interview skill
+  // (asking "which do you mean?" is the ideal response, and is welcomed).
+  const clarification = pick(generalPool.filter(q => q.type === "clarification"), 1);
+
+  const behavioralNeeded = totalQuestions - technical.length - motivational.length - clarification.length;
   const behavioral = pick(generalPool.filter(q => q.type === "behavioral"), Math.max(behavioralNeeded, 0));
 
-  // Order: motivational warm-up → behavioral → technical → behavioral close
+  // Order: motivational warm-up → behavioral → technical → clarification → behavioral close
   const ordered = [
     ...motivational,
     ...behavioral.slice(0, 1),
     ...technical,
+    ...clarification,
     ...behavioral.slice(1),
   ].slice(0, totalQuestions);
 

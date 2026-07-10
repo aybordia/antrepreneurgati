@@ -46,6 +46,7 @@ export default function App() {
   const [intent, setIntent] = useState(null);
   const [mode, setMode] = useState("interview");      // interview | conversation
   const [tone, setTone] = useState("neutral");        // supportive | neutral | challenging
+  const [supportLevel, setSupportLevel] = useState("guided"); // guided | standard | realistic
   const [sessionData, setSessionData] = useState(null);
   const [sessionResult, setSessionResult] = useState(null);
   const [debriefResult, setDebriefResult] = useState(null);
@@ -109,6 +110,7 @@ export default function App() {
     setSituation(sit);
     setIntent(opts.intent || null);
     setTone(opts.tone || "neutral");
+    setSupportLevel(opts.supportLevel || "guided");
     setTimedMode(opts.timedMode || false);
     setScreen(SCREENS.MISSION_CONTROL);
   };
@@ -210,7 +212,7 @@ export default function App() {
             <SituationInput key="input" mode={mode} onLaunch={handleLaunch} initialSituation={situation} onBack={() => setScreen(SCREENS.MODE_SELECT)} getIdToken={getIdToken} />
           )}
           {screen === SCREENS.MISSION_CONTROL && (
-            <MissionControl key="mission" situation={situation} intent={intent} mode={mode} tone={tone} onBeginSession={handleBeginSession} getIdToken={getIdToken} />
+            <MissionControl key="mission" situation={situation} intent={intent} mode={mode} tone={tone} supportLevel={supportLevel} onBeginSession={handleBeginSession} getIdToken={getIdToken} />
           )}
           {screen === SCREENS.VOICE_SESSION && (
             <VoiceSession key="session" sessionData={sessionData} situation={situation} onEndSession={handleEndSession} getIdToken={getIdToken} timedMode={timedMode} />

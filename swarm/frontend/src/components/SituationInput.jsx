@@ -28,6 +28,12 @@ const TONES = [
   { key: "challenging", label: "Challenging", desc: "Interviewers may be more direct and less accommodating, with brisk follow-ups." },
 ];
 
+const SUPPORT_LEVELS = [
+  { key: "guided", label: "Guided", desc: "Questions stay visible on screen with what a full answer usually includes. One part at a time, and asking for clarification is always welcomed. Based on adapted-interview research." },
+  { key: "standard", label: "Standard", desc: "Questions stay visible on screen, without the extra breakdown." },
+  { key: "realistic", label: "Realistic", desc: "Spoken questions only, natural follow-ups. For practicing transfer to real interviews once Guided feels comfortable." },
+];
+
 const sv = {
   initial: { opacity: 0, scale: 0.99, filter: "blur(10px)" },
   animate: { opacity: 1, scale: 1, filter: "blur(0px)", transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] } },
@@ -39,6 +45,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
   const examples = isConvo ? CONVO_EXAMPLES : EXAMPLES;
   const [situation, setSituation] = useState(initialSituation);
   const [tone, setTone] = useState("neutral");
+  const [supportLevel, setSupportLevel] = useState("guided"); // research-backed default: start supported, fade later
   const [resumeContext, setResumeContext] = useState("");
   const [showContext, setShowContext] = useState(false);
   const [timedMode, setTimedMode] = useState(false);
@@ -127,7 +134,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
       console.error("[intent] parse failed. Launching without structured intent:", e);
     }
     setLaunchPhase("launching");
-    onLaunch(finalText, { timedMode, intent, tone });
+    onLaunch(finalText, { timedMode, intent, tone, supportLevel });
   };
 
   const intentChips = previewIntent ? [
@@ -333,6 +340,33 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* Support level — Maras/Bath adapted-interview accommodations */}
+            {!isConvo && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--dim)", letterSpacing: "0.12em" }}>
+                  SUPPORT LEVEL
+                </span>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {SUPPORT_LEVELS.map(s => (
+                    <button key={s.key} onClick={() => setSupportLevel(s.key)} aria-pressed={supportLevel === s.key}
+                      style={{
+                        padding: "8px 16px", borderRadius: 999, cursor: "pointer",
+                        background: supportLevel === s.key ? "var(--calm-soft)" : "transparent",
+                        border: `1px solid ${supportLevel === s.key ? "rgba(116,185,160,0.5)" : "var(--line)"}`,
+                        fontFamily: "var(--ui)", fontSize: 13,
+                        color: supportLevel === s.key ? "var(--calm)" : "var(--dim)",
+                        transition: "all 0.2s",
+                      }}>
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+                <span style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 12.5, color: "var(--dim)", lineHeight: 1.6 }}>
+                  {SUPPORT_LEVELS.find(s => s.key === supportLevel)?.desc}
+                </span>
+              </div>
+            )}
 
             {/* Interview tone — stored per session, clearly shown before start */}
             {!isConvo && (

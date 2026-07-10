@@ -27,6 +27,7 @@ export default async function handler(req, res) {
       persona: result.nextPersona,
       voiceId: result.voiceId,
       voiceSettings: result.voiceSettings || null,
+      question: result.question || null,
       chunk: result.line,
       done: true,
       sessionComplete: result.sessionComplete || false,

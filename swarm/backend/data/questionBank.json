@@ -39,6 +39,10 @@
     { "domain": "general", "type": "behavioral", "text": "Tell me about something you taught yourself. How did you go about learning it?" },
     { "domain": "general", "type": "behavioral", "text": "What's something you've changed your mind about? What changed it?" },
     { "domain": "general", "type": "behavioral", "text": "Tell me about a time you worked with people who thought differently from you." },
-    { "domain": "general", "type": "motivational", "text": "Outside of your main field, what do you spend your time on, and why?" }
+    { "domain": "general", "type": "motivational", "text": "Outside of your main field, what do you spend your time on, and why?" },
+
+    { "domain": "general", "type": "clarification", "text": "Tell me about your experience with the relevant systems.", "note": "Deliberately underspecified: 'systems' is ambiguous. Asking which systems are meant is an ideal response." },
+    { "domain": "general", "type": "clarification", "text": "How do you usually handle pressure?", "note": "Deliberately broad: time pressure, social pressure, and workload are all valid readings. Asking which kind is meant is an ideal response." },
+    { "domain": "general", "type": "clarification", "text": "Walk me through how you would prepare the materials we discussed.", "note": "Deliberately underspecified: no materials were discussed. Asking what materials are meant is an ideal response." }
   ]
 }

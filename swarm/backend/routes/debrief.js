@@ -13,7 +13,58 @@ Rules for every impression:
 - 2-4 sentences: what stood out in the CONTENT of the candidate's answers (specific — quote or reference actual things they said), then at most one optional, concrete suggestion.
 - Constructive and private. NEVER a score, grade, ranking, or pass/fail judgment.
 - NEVER comment on pauses, thinking time, pacing, speech patterns, tone of voice, eye contact, or body language. Content only.
-- Never suggest the candidate act more "normal", hide their personality, or perform differently as a person. Suggestions target answer content and structure only (e.g. "add the concrete example you mentioned earlier").`;
+- If the candidate asked a clarifying question at any point, mention it positively: asking for clarification is a strong interview skill.
+- Never suggest the candidate act more "normal", hide their personality, suppress movement or stimming, change their voice, or perform differently as a person. Suggestions target answer content and structure only (e.g. "add the concrete example you mentioned earlier").`;
+
+// Research-grounded per-dimension analysis (pragmatic-communication +
+// adapted-interview literature): separate dimensions, never collapsed into
+// one judgment, so the user knows exactly WHAT to work on and what's already strong.
+const OBSERVATIONS_PROMPT = `You analyze a mock-interview transcript across specific communication dimensions for a private, non-scored debrief. This tool serves autistic users; differences are not deficits, and only functional communication gaps matter.
+Return ONLY valid JSON, fields in this exact order:
+{"focus":"...","self_advocacy":["...","..."],"observations":[{"dimension":"...","observation":"...","suggestion":"..."}]}
+
+Dimensions to cover (skip any with nothing meaningful to say; 3-5 total):
+- "Answer relevance" — did answers address what was asked?
+- "Completeness" — did answers include situation, their own role, the action they took, and the outcome? Name which elements were present and which were missing.
+- "Concrete examples" — did claims come with a specific example? Reference their actual words.
+- "Listener context" — did they introduce people/projects before referring to them, or assume knowledge the interviewer didn't have?
+- "Clarification" — did they ask when a question was ambiguous? (One question was deliberately ambiguous.) If they asked: praise it explicitly. If not: note gently that asking is allowed and effective.
+
+Rules:
+- Every observation is about the CANDIDATE (the "You" speaker in the transcript) — never about the interviewer or the questions themselves.
+- Each observation: 1-2 sentences, descriptive and specific, citing what they actually said. Strengths count as observations too.
+- Each suggestion: optional, one concrete sentence about answer content/structure only.
+- "focus": ONE sentence naming the single highest-leverage thing to practice next, phrased as an invitation.
+- "self_advocacy": 2-3 exact sentences the user could say in a REAL interview to request reasonable accommodations (e.g. "Could you break that question into parts?", "I'd like a moment to think about that.", "Could I see the questions in writing?"). Pick ones that match what actually helped or was hard in THIS transcript.
+- NEVER a score or grade. NEVER mention pauses, pacing, voice, eye contact, movement, or body language.`;
+
+// Descriptive pacing note from turn timestamps. Relative comparisons only
+// (absolute values include speech playback and transcription overhead), and
+// framed so that taking time is normal — never "answer faster".
+function describePacing(fullTranscript) {
+  const gaps = [];
+  for (let i = 1; i < fullTranscript.length; i++) {
+    const prev = fullTranscript[i - 1];
+    const cur = fullTranscript[i];
+    const isUserTurn = cur.speaker === "You" || cur.speaker === "User";
+    const prevIsAI = prev.speaker !== "You" && prev.speaker !== "User";
+    if (isUserTurn && prevIsAI && Number.isFinite(cur.timestamp) && Number.isFinite(prev.timestamp)) {
+      const gap = (cur.timestamp - prev.timestamp) / 1000;
+      if (gap > 0 && gap < 600) gaps.push({ gap, questionText: prev.text || "" });
+    }
+  }
+  if (gaps.length < 2) return null;
+
+  const sorted = [...gaps].sort((a, b) => a.gap - b.gap);
+  const median = sorted[Math.floor(sorted.length / 2)].gap;
+  const longest = sorted[sorted.length - 1];
+
+  let s = "You gave yourself a fairly even amount of thinking time across questions.";
+  if (longest.gap > median * 2) {
+    s = `You took noticeably more time on one question ("${longest.questionText.slice(0, 80)}${longest.questionText.length > 80 ? "…" : ""}") than on the others.`;
+  }
+  return `${s} Taking time to think is normal and works in real interviews too — saying "let me think about that for a moment" is always OK.`;
+}
 
 export default async function handler(req, res) {
   const {
@@ -94,8 +145,47 @@ Write one impression per panel member. JSON now.`,
     }];
   }
 
+  // ── Per-dimension communication observations + self-advocacy scripts ───────
+  let communicationObservations = [];
+  let focus = null;
+  let selfAdvocacy = [];
+  if (userTurns.length > 0) {
+    for (let attempt = 0; attempt < 2 && !communicationObservations.length; attempt++) {
+      try {
+        const raw = await callLLM({
+          systemPrompt: OBSERVATIONS_PROMPT,
+          userPrompt: `Interview context: "${situation.slice(0, 200)}"
+Support level used: ${sessionData?.supportLevel || "standard"}
+Planned questions (types noted): ${(sessionData?.sessionPlan?.questions || []).map(q => `[${q.type}] ${q.text}`).join(" | ").slice(0, 800)}
+
+Transcript:
+${transcriptText.slice(0, 5500)}
+
+JSON now.`,
+          maxTokens: 1000,
+        });
+        const parsed = parseJSON(raw);
+        if (Array.isArray(parsed?.observations)) {
+          communicationObservations = parsed.observations
+            .filter(o => o?.dimension && o?.observation)
+            .slice(0, 5);
+        }
+        if (parsed?.focus) focus = String(parsed.focus);
+        if (Array.isArray(parsed?.self_advocacy)) {
+          selfAdvocacy = parsed.self_advocacy.filter(s => typeof s === "string").slice(0, 3);
+        }
+      } catch (e) {
+        console.error(`[debrief] observations attempt ${attempt + 1} failed:`, e.message);
+      }
+    }
+  }
+
   // ── Neutral signal summaries (only if tracking data was shared) ─────────────
   const signalSummary = signalData ? summarizeSignals(signalData, fullTranscript) : {};
+
+  // ── Pacing: descriptive thinking-time observation, opt-in and never graded ──
+  const pacing = describePacing(fullTranscript);
+  if (pacing) signalSummary.pacing = pacing;
 
   // ── Conversation facts (neutral, descriptive — not graded) ─────────────────
   const questionsAsked = fullTranscript.filter(t => t.speaker !== "You" && t.speaker !== "User").length;
@@ -104,6 +194,9 @@ Write one impression per panel member. JSON now.`,
     mode: "interview",
     transcript: transcriptText,
     persona_impressions: impressions,
+    communication_observations: communicationObservations,
+    focus,
+    self_advocacy: selfAdvocacy,
     signal_summary: signalSummary,
     user_selected_categories: Array.isArray(userSelectedCategories) ? userSelectedCategories : [],
     session_facts: {

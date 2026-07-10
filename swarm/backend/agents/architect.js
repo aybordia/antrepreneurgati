@@ -3,6 +3,7 @@
 import { generatePersonas } from "./personaGenerator.js";
 import { composeSessionQuestions } from "../lib/questionBank.js";
 import { parseIntent } from "./intentParser.js";
+import { callLLM, parseJSON } from "../lib/llm.js";
 
 // Assign each question to the persona whose focus matches, balancing load
 function assignQuestions(questions, personas) {
@@ -20,13 +21,44 @@ function assignQuestions(questions, personas) {
       text: q.text,
       type: q.type,
       domain: q.domain,
+      note: q.note || null,
       assignedPersona: chosen.name,
-      intent: q.type === "technical" ? "Domain question" : q.type === "motivational" ? "Motivation" : "Behavioral",
+      intent: q.type === "technical" ? "Domain question"
+        : q.type === "motivational" ? "Motivation"
+        : q.type === "clarification" ? "Clarification opportunity"
+        : "Behavioral",
     };
   });
 }
 
-export async function runArchitect({ situation, intent = null, mode = "interview", tone = "neutral", researcherOutput, styleHint, researchContext }, writeChunk) {
+// Guided support: make the hidden expectations of each question explicit
+// (Maras/Bath adapted-interview research: interviews measure the ability to
+// infer what answer is wanted; stating it removes that hidden demand).
+async function addExplicitParts(questions, intent) {
+  try {
+    const raw = await callLLMForParts(questions, intent);
+    const parsed = parseJSON(raw);
+    if (parsed?.parts?.length === questions.length) {
+      return questions.map((q, i) => ({
+        ...q,
+        parts: Array.isArray(parsed.parts[i]) ? parsed.parts[i].slice(0, 4).map(String) : null,
+      }));
+    }
+  } catch (e) {
+    console.error("[architect] parts generation failed:", e.message);
+  }
+  return questions; // scaffold is an enhancement, never a blocker
+}
+
+function callLLMForParts(questions, intent) {
+  return callLLM({
+    systemPrompt: `For each interview question, list the 2-4 things an interviewer implicitly expects the answer to include, as short literal phrases the candidate can see on screen. Plain, concrete wording. For deliberately ambiguous questions, one part must be "It's OK to ask which meaning they intend". Return ONLY: {"parts":[["...","..."],["..."]]} with exactly one array per question, in order.`,
+    userPrompt: `Context: ${intent?.program_type || "interview"} at ${intent?.institution || "an organization"}.\nQuestions:\n${questions.map((q, i) => `${i + 1}. ${q.text}${q.note ? ` (${q.note})` : ""}`).join("\n")}`,
+    maxTokens: 500,
+  });
+}
+
+export async function runArchitect({ situation, intent = null, mode = "interview", tone = "neutral", supportLevel = "guided", researcherOutput, styleHint, researchContext }, writeChunk) {
   // Derive structured intent server-side if the client didn't send one
   if (!intent && mode !== "conversation") {
     writeChunk({ agent: "Architect", chunk: "Understanding your request…", thinking: true });
@@ -61,6 +93,12 @@ export async function runArchitect({ situation, intent = null, mode = "interview
       bankQuestions = (await composeSessionQuestions({ domain: "general", totalQuestions, intent: null, useLLM: false }));
     }
     questions = assignQuestions(bankQuestions, personas);
+
+    // Guided support level: attach the explicit expectations for each question
+    if (supportLevel === "guided") {
+      writeChunk({ agent: "Architect", chunk: "Making the hidden expectations of each question explicit…", thinking: true });
+      questions = await addExplicitParts(questions, intent);
+    }
   }
 
   writeChunk({ agent: "Architect", chunk: "Session architected.", streamStart: true });
@@ -72,6 +110,7 @@ export async function runArchitect({ situation, intent = null, mode = "interview
     intent,
     mode,
     tone: mode === "conversation" ? null : tone,
+    supportLevel: mode === "conversation" ? null : supportLevel,
     sessionSummary: mode === "conversation"
       ? `Casual conversation practice: ${situation}`
       : intent?.institution

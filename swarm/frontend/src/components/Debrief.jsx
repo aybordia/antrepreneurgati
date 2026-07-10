@@ -19,6 +19,7 @@ const CATEGORY_LABELS = {
   posture: "Posture",
   head_tilt: "Head tilt",
   mouth_movement: "Speaking movement",
+  pacing: "Thinking time",
 };
 
 const CATEGORY_PREF_KEY = "swarm_signal_categories";
@@ -248,6 +249,63 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
           </motion.div>
         )}
 
+        {/* Communication observations — per-dimension, descriptive, never collapsed */}
+        {(debrief?.communication_observations || []).length > 0 && (
+          <motion.div {...fadeUp(0.12)} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--muted)", letterSpacing: "0.16em" }}>
+              COMMUNICATION OBSERVATIONS
+            </div>
+            <div className="card" style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+              {debrief.communication_observations.map((obs, i) => (
+                <div key={i}>
+                  <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--calm)", letterSpacing: "0.1em", marginBottom: 4 }}>
+                    {(obs.dimension || "").toUpperCase()}
+                  </div>
+                  <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 13.5, lineHeight: 1.7, color: "var(--text-2)" }}>
+                    {obs.observation}
+                    {obs.suggestion && (
+                      <span style={{ color: "var(--dim)" }}> {obs.suggestion}</span>
+                    )}
+                  </p>
+                </div>
+              ))}
+              {debrief.focus && (
+                <div style={{ borderTop: "1px solid var(--line)", paddingTop: 14 }}>
+                  <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--honey)", letterSpacing: "0.1em", marginBottom: 4 }}>
+                    IF YOU PRACTICE ONE THING NEXT
+                  </div>
+                  <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 13.5, lineHeight: 1.7, color: "var(--text-2)" }}>
+                    {debrief.focus}
+                  </p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Self-advocacy scripts — accommodations you can request in real interviews */}
+        {(debrief?.self_advocacy || []).length > 0 && (
+          <motion.div {...fadeUp(0.16)} className="card" style={{ padding: "20px 24px", borderTop: "2px solid var(--calm)" }}>
+            <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--calm)", letterSpacing: "0.16em", marginBottom: 8 }}>
+              THINGS YOU CAN SAY IN A REAL INTERVIEW
+            </div>
+            <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 12.5, color: "var(--dim)", lineHeight: 1.6, marginBottom: 12 }}>
+              Asking for reasonable accommodations is normal and effective. Based on this session, these might help you:
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {debrief.self_advocacy.map((line, i) => (
+                <div key={i} style={{
+                  padding: "10px 14px", borderRadius: 10,
+                  background: "var(--calm-soft)", border: "1px solid rgba(116,185,160,0.2)",
+                  fontFamily: "var(--ui)", fontWeight: 300, fontSize: 13.5, lineHeight: 1.6, color: "var(--text)",
+                }}>
+                  "{line}"
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
         {/* Persona impressions */}
         <motion.div {...fadeUp(0.14)} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -282,8 +340,8 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
               PRIVATE TRACKING OBSERVATIONS
             </div>
             <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 13, color: "var(--muted)", lineHeight: 1.7, marginBottom: 14 }}>
-              Your camera tracked these signals during the session, processed entirely on your device. No video was stored.
-              They're hidden by default. Choose what you'd like to see; these are neutral descriptions of change over time, not judgments.
+              Optional observations from this session (camera signals were processed entirely on your device; no video was stored).
+              They're hidden by default. Choose what you'd like to see; these are neutral descriptions, not judgments — differences are not deficits.
             </p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
               {availableSignals.map(cat => {

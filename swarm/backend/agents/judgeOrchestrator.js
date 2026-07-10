@@ -8,8 +8,18 @@ const clip = (s, n = 80) => s && s.length > n ? s.slice(0, n) + "…" : (s || ""
 const CONDUCT_RULES = `Conduct rules (always apply):
 - Ask ONE question at a time. Clear, literal, direct wording — no idioms, no trick phrasing, no multi-part questions.
 - NEVER comment on the candidate's pauses, thinking time, pacing, tone of voice, eye contact, or body language. Long pauses are normal — never reference them.
+- If the candidate asks a clarifying question, that is a GOOD interview skill: answer their clarification helpfully and specifically, then restate your question more precisely. Never treat it as evasion.
 - React genuinely to the CONTENT of what they said. Brief acknowledgment, then your question.
 - 1-2 sentences max. No filler.`;
+
+const SUPPORT_RULES = {
+  guided: `Support level: GUIDED (accommodation mode, research-based).
+- If the planned question has multiple expected components, ask about ONE component at a time rather than all at once.
+- If their answer covered the topic but skipped an expected component, your follow-up asks plainly for that specific component (e.g. "What did you do next?" or "Can you give one specific example?").
+- Be explicit about what kind of answer you're looking for — no hidden expectations.`,
+  standard: `Support level: STANDARD. Ask questions plainly; follow-ups may ask for a concrete example when one is missing.`,
+  realistic: `Support level: REALISTIC (transfer practice). Ask questions the way a real interviewer would, with natural unscaffolded follow-ups. All conduct rules above still apply.`,
+};
 
 function safeReturn(p, line, intent, extras = {}) {
   return {
@@ -34,7 +44,7 @@ export async function runJudgeOrchestrator({ transcript, sessionContext, history
     return safeReturn(null, "Let's continue. Tell me more about your situation.", "Recovery");
   }
 
-  const { personas = [], sessionPlan, situation = "", mode = "interview", tone = "neutral" } = parsed;
+  const { personas = [], sessionPlan, situation = "", mode = "interview", tone = "neutral", supportLevel = "guided" } = parsed;
   if (!personas.length) {
     return safeReturn(null, "Walk me through your situation in your own words.", "Recovery");
   }
@@ -50,6 +60,7 @@ export async function runJudgeOrchestrator({ transcript, sessionContext, history
     challenging: "Your tone: direct and brisk. Terse follow-ups, no small talk, push for specifics, politely push back on vague answers. Firm but never mocking.",
   };
   const toneLine = TONE_LINES[tone] || TONE_LINES.neutral;
+  const supportRule = SUPPORT_RULES[supportLevel] || SUPPORT_RULES.guided;
 
   const questions = sessionPlan?.questions || [];
   const userTurns = history.filter(t => t.speaker === "You" || t.speaker === "User").length;
@@ -65,6 +76,15 @@ export async function runJudgeOrchestrator({ transcript, sessionContext, history
   const p = personas.find(x => x.name === question?.assignedPersona)
     || personas[qIndex % personas.length];
 
+  // Sent to the UI so the current question (and, in guided mode, its explicit
+  // expectations) stays visible on screen while the candidate answers
+  const questionMeta = question ? {
+    text: question.text,
+    parts: question.parts || null,
+    type: question.type,
+    index: qIndex,
+  } : null;
+
   // ── Opening turn ────────────────────────────────────────────────────────────
   if (!transcript && history.length === 0) {
     const firstQ = questions[0];
@@ -72,19 +92,20 @@ export async function runJudgeOrchestrator({ transcript, sessionContext, history
       const raw = await callLLM({
         systemPrompt: `You are ${p.name}, ${p.role} (a fictional simulated interviewer). Style: ${p.style}
 ${toneLine}
+${supportRule}
 Situation: "${clip(situation, 120)}"
 ${CONDUCT_RULES}
-Introduce yourself briefly (name + role), then ask this planned opening question in your own natural words: "${firstQ?.text || "What brought you here today?"}"
+Introduce yourself briefly (name + role)${supportLevel === "guided" ? ", tell them they can ask you to clarify or repeat any question at any time," : ""} then ask this planned opening question in your own natural words: "${firstQ?.text || "What brought you here today?"}"
 Return ONLY: {"line":"..."}`,
         userPrompt: situation,
-        maxTokens: 120,
+        maxTokens: 140,
       });
       const result = parseJSON(raw);
-      if (result?.line) return safeReturn(p, result.line, "Opening", { userPerformanceNote: "Session started" });
+      if (result?.line) return safeReturn(p, result.line, "Opening", { userPerformanceNote: "Session started", question: { text: firstQ?.text, parts: firstQ?.parts || null, type: firstQ?.type, index: 0 } });
     } catch (err) {
       console.error("[judge] opening error:", err.message);
     }
-    return safeReturn(p, `Hi, I'm ${p.name} — ${p.role}. ${firstQ?.text || "To start: what are you preparing for?"}`, "Opening fallback", { userPerformanceNote: "Session started" });
+    return safeReturn(p, `Hi, I'm ${p.name} — ${p.role}. ${supportLevel === "guided" ? "You can ask me to clarify or repeat any question at any time. " : ""}${firstQ?.text || "To start: what are you preparing for?"}`, "Opening fallback", { userPerformanceNote: "Session started", question: { text: firstQ?.text, parts: firstQ?.parts || null, type: firstQ?.type, index: 0 } });
   }
 
   // ── Session end: all planned questions covered ──────────────────────────────
@@ -95,12 +116,20 @@ Return ONLY: {"line":"..."}`,
   const trimmed = (transcript || "").trim();
   const recentHistory = history.slice(-4).map(t => `${t.speaker}: ${t.text}`).join("\n");
 
+  const partsHint = question?.parts?.length
+    ? `\nThe expected components of a full answer to this question are: ${question.parts.join("; ")}.`
+    : "";
+  const clarificationHint = question?.type === "clarification" && question?.note
+    ? `\nNote about this question: ${question.note}`
+    : "";
+
   const task = isFollowUp
-    ? `Ask ONE brief follow-up about something specific they just said. Stay on the current topic: "${clip(question?.text, 100)}"`
-    : `Transition naturally, then ask this planned question in your own words: "${question?.text}"${question?.type === "technical" ? " (domain question — keep it concrete and approachable)" : ""}`;
+    ? `Ask ONE brief follow-up about something specific they just said. Stay on the current topic: "${clip(question?.text, 100)}"${partsHint}`
+    : `Transition naturally, then ask this planned question in your own words${question?.type === "clarification" ? " (keep its ambiguity intact — do not clarify unless asked)" : ""}: "${question?.text}"${question?.type === "technical" ? " (domain question — keep it concrete and approachable)" : ""}${clarificationHint}`;
 
   const systemPrompt = `You are ${p.name}, ${p.role} (a fictional simulated interviewer). Style: ${p.style}
 ${toneLine}
+${supportRule}
 Situation: "${clip(situation, 120)}"
 ${CONDUCT_RULES}
 Task: ${task}
@@ -112,7 +141,7 @@ Return ONLY: {"line":"...","intent":"..."}`;
     if (result?.line) {
       const sentences = result.line.match(/[^.!?]+[.!?]+/g) || [result.line];
       const line = sentences.slice(0, 3).join(" ").trim();
-      return safeReturn(p, line, result.intent || (isFollowUp ? "Follow-up" : "Planned question"), { sessionAdvancing: advancing });
+      return safeReturn(p, line, result.intent || (isFollowUp ? "Follow-up" : "Planned question"), { sessionAdvancing: advancing, question: questionMeta });
     }
   } catch (err) {
     console.error("[judge] LLM error:", err.message);
@@ -120,7 +149,7 @@ Return ONLY: {"line":"...","intent":"..."}`;
 
   // Fallback: ask the planned question verbatim — always coherent
   if (!isFollowUp && question?.text) {
-    return safeReturn(p, question.text, "Planned question (fallback)", { sessionAdvancing: advancing });
+    return safeReturn(p, question.text, "Planned question (fallback)", { sessionAdvancing: advancing, question: questionMeta });
   }
   const words = trimmed.split(/\s+/).slice(0, 5).join(" ");
   return safeReturn(p, words ? `You mentioned "${words}" — can you say more about that?` : "Can you tell me more?", "Last resort");

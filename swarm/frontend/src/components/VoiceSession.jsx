@@ -153,6 +153,7 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
   const [sessionStarted, setSessionStarted] = useState(false);
   const [countdown, setCountdown] = useState(null);
   const [questionNum, setQuestionNum] = useState(0);
+  const [currentQuestion, setCurrentQuestion] = useState(null); // { text, parts, type, index }
 
   const countdownRef = useRef(null);
   const transcriptRef = useRef(null);
@@ -174,6 +175,10 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
   const personas = sessionData?.personas || [];
   const isConvo = sessionData?.mode === "conversation";
   const sessionTone = sessionData?.tone || "neutral";
+  const supportLevel = sessionData?.supportLevel || "guided";
+  // Visible written questions are a research-backed accommodation (Bath);
+  // "realistic" mode fades this scaffold for transfer practice
+  const showQuestionCard = !isConvo && supportLevel !== "realistic";
   const totalQuestions = sessionData?.sessionPlan?.questions?.length || 0;
   const activePersona = personas.find(p => p.name === currentPersona) || personas[0];
 
@@ -199,6 +204,7 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
         if (chunk.error) { console.error("voice-turn error:", chunk.error); return; }
         if (chunk.chunk) { fullLine += chunk.chunk; setDisplayLine(fullLine); }
         if (chunk.persona) { resPersona = chunk.persona; resVoiceId = chunk.voiceId; resVoiceSettings = chunk.voiceSettings; setCurrentPersona(chunk.persona); }
+        if (chunk.question) setCurrentQuestion(chunk.question);
         if (chunk.done) {
           if (chunk.sessionAdvancing) {
             questionIndexRef.current += 1;
@@ -380,6 +386,14 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
                 {sessionTone === "supportive" && ". Interviewers will be warm and encouraging."}
               </p>
             )}
+            {!isConvo && (
+              <p style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--calm)", letterSpacing: "0.05em", marginTop: 4 }}>
+                Support: {supportLevel.charAt(0).toUpperCase() + supportLevel.slice(1)}
+                {supportLevel === "guided" && ". Questions stay on screen with what a full answer includes, and you can always ask for clarification."}
+                {supportLevel === "standard" && ". Questions stay visible on screen."}
+                {supportLevel === "realistic" && ". Spoken questions only, like a real interview."}
+              </p>
+            )}
           </motion.div>
 
           {/* Panel assembly — signature moment */}
@@ -505,6 +519,50 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
 
         {/* Question rail — always know where you are (interview mode only) */}
         {!isConvo && <QuestionRail total={totalQuestions} current={questionNum} complete={sessionComplete} />}
+
+        {/* Persistent written question — stays visible while you think and answer */}
+        <AnimatePresence mode="wait">
+          {showQuestionCard && currentQuestion?.text && !sessionComplete && (
+            <motion.div
+              key={`q-${currentQuestion.index}`}
+              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.35 }}
+              style={{
+                width: "100%", padding: "14px 18px",
+                background: "var(--raised)",
+                border: "1px solid var(--line)",
+                borderRadius: "var(--radius)",
+              }}
+            >
+              <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--dim)", letterSpacing: "0.14em", marginBottom: 6 }}>
+                CURRENT QUESTION
+              </div>
+              <div style={{ fontFamily: "var(--ui)", fontWeight: 400, fontSize: 14.5, lineHeight: 1.6, color: "var(--text)" }}>
+                {currentQuestion.text}
+              </div>
+              {supportLevel === "guided" && currentQuestion.parts?.length > 0 && (
+                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 5 }}>
+                  <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--calm)", letterSpacing: "0.12em" }}>
+                    A FULL ANSWER USUALLY INCLUDES
+                  </div>
+                  {currentQuestion.parts.map((part, i) => (
+                    <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                      <span aria-hidden style={{ color: "var(--calm)", fontSize: 12, lineHeight: 1.6 }}>·</span>
+                      <span style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.6 }}>
+                        {part}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {supportLevel === "guided" && (
+                <div style={{ marginTop: 8, fontFamily: "var(--mono)", fontSize: 9.5, color: "var(--dim)", opacity: 0.8 }}>
+                  Unsure what they mean? Asking them to clarify is always OK.
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Current spoken line */}
         <AnimatePresence mode="wait">

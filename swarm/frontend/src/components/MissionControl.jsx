@@ -188,7 +188,7 @@ function hexToRgb(hex) {
   return `${r},${g},${b}`;
 }
 
-export default function MissionControl({ situation, intent = null, mode = "interview", tone = "neutral", onBeginSession, getIdToken }) {
+export default function MissionControl({ situation, intent = null, mode = "interview", tone = "neutral", supportLevel = "guided", onBeginSession, getIdToken }) {
   const [outputs, setOutputs] = useState({});
   const [done, setDone] = useState({});
   const [sessionData, setSessionData] = useState(null);
@@ -206,7 +206,7 @@ export default function MissionControl({ situation, intent = null, mode = "inter
 
       try {
         const token = await getIdToken();
-        await streamFetch("/api/start-session", { situation, intent, mode, tone }, chunk => {
+        await streamFetch("/api/start-session", { situation, intent, mode, tone, supportLevel }, chunk => {
           if (controller.signal.aborted) return;
           if (chunk.heartbeat) return;
           if (chunk.error) { setError(chunk.error); return; }
@@ -235,7 +235,7 @@ export default function MissionControl({ situation, intent = null, mode = "inter
 
     start();
     return () => controller.abort();
-  }, [situation, intent, mode, tone, getIdToken]);
+  }, [situation, intent, mode, tone, supportLevel, getIdToken]);
 
   useEffect(() => {
     Object.values(cardRefs.current).forEach(el => { if (el) el.scrollTop = el.scrollHeight; });
