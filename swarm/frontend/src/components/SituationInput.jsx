@@ -167,7 +167,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                 width: 8, height: 8, borderRadius: "50%",
                 background: "var(--honey)",
               }} />
-              <span style={{ fontFamily: "var(--mono)", fontSize: 11, letterSpacing: "0.35em", color: "var(--dim)", textTransform: "uppercase" }}>
+              <span style={{ fontFamily: "var(--mono)", fontSize: 13.5, letterSpacing: "0.35em", color: "var(--dim)", textTransform: "uppercase" }}>
                 Swarm AI {isConvo ? "· Conversation" : "· Interview"}
               </span>
             </div>
@@ -178,14 +178,14 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                 transition={{ delay: 0.1, duration: 0.6 }}
                 style={{
                   fontFamily: "var(--display)", fontWeight: 400,
-                  fontSize: "clamp(32px, 5vw, 48px)", lineHeight: 1.12, marginBottom: 12,
+                  fontSize: "clamp(36px, 5.5vw, 54px)", lineHeight: 1.12, marginBottom: 12,
                 }}
               >
                 {isConvo ? <>What would you<br />like to talk about?</> : <>Tell us about<br />your interview.</>}
               </motion.h1>
               <motion.p
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }}
-                style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 15, color: "var(--dim)", lineHeight: 1.7, maxWidth: 460 }}
+                style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 17.5, color: "var(--dim)", lineHeight: 1.7, maxWidth: 460 }}
               >
                 {isConvo
                   ? "Anything at all. This is relaxed practice with one friendly AI partner: no questions to get through, no evaluation, end whenever you like."
@@ -217,7 +217,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                   border: `1px solid ${isListening ? "rgba(116,185,160,0.5)" : canLaunch ? "rgba(228,163,57,0.4)" : "var(--line)"}`,
                   borderRadius: "var(--radius)",
                   padding: "18px 64px 18px 20px",
-                  fontSize: 15,
+                  fontSize: 17.5,
                   fontFamily: "var(--ui)",
                   fontWeight: 300,
                   color: "var(--text)",
@@ -237,7 +237,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                   width: 42, height: 42, borderRadius: "50%",
                   border: `1px solid ${isListening ? "rgba(116,185,160,0.55)" : "var(--line)"}`,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 15, cursor: "pointer",
+                  fontSize: 17.5, cursor: "pointer",
                   background: isListening ? "var(--calm-soft)" : "var(--raised)",
                   color: isListening ? "var(--calm)" : "var(--dim)",
                   animation: isListening ? "micRing 1.2s ease-out infinite" : "none",
@@ -264,7 +264,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                     }}
                   >
                     <span className="dot" style={{ background: "var(--calm)", width: 5, height: 5 }} />
-                    <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--calm)", letterSpacing: "0.05em" }}>
+                    <span style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--calm)", letterSpacing: "0.05em" }}>
                       {isListening ? "LISTENING" : "TRANSCRIBING"}
                     </span>
                   </motion.div>
@@ -277,7 +277,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
               {intentChips.length > 0 && launchPhase !== "idle" && (
                 <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                   style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--dim)", letterSpacing: "0.1em" }}>
+                  <span style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--dim)", letterSpacing: "0.1em" }}>
                     WE UNDERSTOOD:
                   </span>
                   {intentChips.map((c, i) => (
@@ -297,26 +297,26 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                   className="card"
                   style={{ padding: "16px 18px", borderColor: "rgba(228,163,57,0.35)", display: "flex", flexDirection: "column", gap: 10 }}
                 >
-                  <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--honey)", letterSpacing: "0.12em" }}>
+                  <div style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--honey)", letterSpacing: "0.12em" }}>
                     ONE QUICK QUESTION
                   </div>
-                  <div style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 14, color: "var(--text)", lineHeight: 1.65 }}>
+                  <div style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 16.5, color: "var(--text)", lineHeight: 1.65 }}>
                     {clarifyQuestion}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     {isListening && (
-                      <span style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--mono)", fontSize: 10, color: "var(--calm)", letterSpacing: "0.06em" }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--calm)", letterSpacing: "0.06em" }}>
                         <span className="dot" style={{ background: "var(--calm)", width: 5, height: 5 }} />
                         LISTENING. TAP THE MIC WHEN DONE.
                       </span>
                     )}
                     {isProcessing && (
-                      <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--honey)", letterSpacing: "0.06em" }}>
+                      <span style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--honey)", letterSpacing: "0.06em" }}>
                         TRANSCRIBING…
                       </span>
                     )}
                     <button className="btn btn-ghost" onClick={skipClarify}
-                      style={{ height: 28, fontSize: 11, padding: "0 12px", marginLeft: "auto" }}>
+                      style={{ height: 28, fontSize: 13.5, padding: "0 12px", marginLeft: "auto" }}>
                       Skip
                     </button>
                   </div>
@@ -332,7 +332,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                     padding: "12px 16px", borderRadius: 12,
                     background: "rgba(217,139,139,0.07)",
                     border: "1px solid rgba(217,139,139,0.25)",
-                    fontFamily: "var(--mono)", fontSize: 11,
+                    fontFamily: "var(--mono)", fontSize: 13.5,
                     color: "var(--alert)", lineHeight: 1.55,
                   }}
                 >
@@ -344,7 +344,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
             {/* Support level — Maras/Bath adapted-interview accommodations */}
             {!isConvo && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--dim)", letterSpacing: "0.12em" }}>
+                <span style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--dim)", letterSpacing: "0.12em" }}>
                   SUPPORT LEVEL
                 </span>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -354,7 +354,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                         padding: "8px 16px", borderRadius: 999, cursor: "pointer",
                         background: supportLevel === s.key ? "var(--calm-soft)" : "transparent",
                         border: `1px solid ${supportLevel === s.key ? "rgba(116,185,160,0.5)" : "var(--line)"}`,
-                        fontFamily: "var(--ui)", fontSize: 13,
+                        fontFamily: "var(--ui)", fontSize: 15.5,
                         color: supportLevel === s.key ? "var(--calm)" : "var(--dim)",
                         transition: "all 0.2s",
                       }}>
@@ -362,7 +362,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                     </button>
                   ))}
                 </div>
-                <span style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 12.5, color: "var(--dim)", lineHeight: 1.6 }}>
+                <span style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 15, color: "var(--dim)", lineHeight: 1.6 }}>
                   {SUPPORT_LEVELS.find(s => s.key === supportLevel)?.desc}
                 </span>
               </div>
@@ -371,7 +371,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
             {/* Interview tone — stored per session, clearly shown before start */}
             {!isConvo && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--dim)", letterSpacing: "0.12em" }}>
+                <span style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--dim)", letterSpacing: "0.12em" }}>
                   INTERVIEWER TONE
                 </span>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -381,7 +381,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                         padding: "8px 16px", borderRadius: 999, cursor: "pointer",
                         background: tone === t.key ? "var(--honey-soft)" : "transparent",
                         border: `1px solid ${tone === t.key ? "rgba(228,163,57,0.45)" : "var(--line)"}`,
-                        fontFamily: "var(--ui)", fontSize: 13,
+                        fontFamily: "var(--ui)", fontSize: 15.5,
                         color: tone === t.key ? "var(--honey)" : "var(--dim)",
                         transition: "all 0.2s",
                       }}>
@@ -389,7 +389,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                     </button>
                   ))}
                 </div>
-                <span style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 12.5, color: "var(--dim)", lineHeight: 1.6 }}>
+                <span style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 15, color: "var(--dim)", lineHeight: 1.6 }}>
                   You selected: <strong style={{ fontWeight: 500, color: "var(--text-2)" }}>{TONES.find(t => t.key === tone)?.label}</strong>. {TONES.find(t => t.key === tone)?.desc}
                 </span>
               </div>
@@ -404,7 +404,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                 style={{
                   display: "flex", alignItems: "center", gap: 8,
                   background: "none", border: "none", cursor: "pointer",
-                  fontFamily: "var(--mono)", fontSize: 11,
+                  fontFamily: "var(--mono)", fontSize: 13.5,
                   color: showContext ? "var(--honey)" : "var(--dim)",
                   letterSpacing: "0.08em",
                   transition: "color 0.2s", padding: "4px 0",
@@ -420,7 +420,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                   padding: "6px 14px", borderRadius: 999, cursor: "pointer",
                   background: timedMode ? "var(--honey-soft)" : "transparent",
                   border: `1px solid ${timedMode ? "rgba(228,163,57,0.45)" : "var(--line)"}`,
-                  fontFamily: "var(--mono)", fontSize: 10,
+                  fontFamily: "var(--mono)", fontSize: 12.5,
                   color: timedMode ? "var(--honey)" : "var(--dim)",
                   letterSpacing: "0.08em",
                   transition: "all 0.22s",
@@ -452,7 +452,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                       border: "1px solid var(--line)",
                       borderRadius: "var(--radius)",
                       padding: "16px 18px",
-                      fontSize: 13,
+                      fontSize: 15.5,
                       fontFamily: "var(--ui)",
                       fontWeight: 300,
                       color: "var(--text-2)",
@@ -473,7 +473,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
               className={`btn ${canLaunch ? "btn-primary" : "btn-ghost"}`}
               onClick={handleLaunch}
               disabled={!canLaunch && launchPhase === "idle"}
-              style={{ width: "100%", maxWidth: 400, height: 52, fontSize: 15 }}
+              style={{ width: "100%", maxWidth: 400, height: 52, fontSize: 17.5 }}
             >
               {canLaunch ? (isConvo ? "Start the conversation" : "Build my panel")
                 : launchPhase === "parsing" ? "Understanding your request…"
@@ -484,7 +484,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
 
             {/* Examples */}
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--dim)", letterSpacing: "0.14em", opacity: 0.7 }}>
+              <div style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--dim)", letterSpacing: "0.14em", opacity: 0.7 }}>
                 EXAMPLES
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -497,7 +497,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                       border: `1px solid ${i === exIdx ? "rgba(228,163,57,0.35)" : "var(--line)"}`,
                       borderRadius: 999, cursor: "pointer",
                       padding: "6px 14px",
-                      fontFamily: "var(--mono)", fontSize: 10,
+                      fontFamily: "var(--mono)", fontSize: 12.5,
                       color: i === exIdx ? "var(--honey)" : "var(--dim)",
                       letterSpacing: "0.05em",
                       transition: "all 0.35s ease",
@@ -512,7 +512,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                 style={{
                   background: "none", border: "none", cursor: "pointer", textAlign: "left",
                   fontFamily: "var(--ui)", fontWeight: 300,
-                  fontSize: 13, color: "var(--dim)", lineHeight: 1.6, padding: 0, opacity: 0.75,
+                  fontSize: 15.5, color: "var(--dim)", lineHeight: 1.6, padding: 0, opacity: 0.75,
                 }}
               >
                 "{examples[exIdx].label}"

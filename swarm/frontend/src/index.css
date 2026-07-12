@@ -51,10 +51,15 @@ body {
   background: var(--ink);
   color: var(--text);
   font-family: var(--ui);
+  font-size: 17px; /* large, readable base — a deliberate accessibility choice */
+  line-height: 1.65;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
 
 .screen-scroll {
   overflow-y: auto;
@@ -78,7 +83,8 @@ body {
   background-size: 180px 180px;
 }
 
-/* Soft ambient ground — one warm pool of light, still by default */
+/* Soft ambient ground — one warm pool of light plus a faint, completely
+   static honeycomb texture (the swarm's own motif; no motion, no noise) */
 .ambient {
   position: fixed;
   inset: 0;
@@ -86,7 +92,9 @@ body {
   z-index: 0;
   background:
     radial-gradient(ellipse 65% 50% at 22% 78%, rgba(228,163,57,0.05) 0%, transparent 65%),
-    radial-gradient(ellipse 50% 45% at 82% 12%, rgba(116,185,160,0.04) 0%, transparent 60%);
+    radial-gradient(ellipse 50% 45% at 82% 12%, rgba(116,185,160,0.04) 0%, transparent 60%),
+    url("data:image/svg+xml,%3Csvg width='56' height='98' viewBox='0 0 56 98' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23E4A339' stroke-opacity='0.045' stroke-width='1'%3E%3Cpath d='M28 17L0 33v32l28 16 28-16V33z'/%3E%3Cpath d='M28 0v17M0 65L0 33M56 65V33M28 81v17M0 65l28 16M56 65L28 81'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: auto, auto, 56px 98px;
 }
 
 /* ─── Cards ─────────────────────────────────────────────────── */
@@ -106,13 +114,13 @@ body {
 /* ─── Buttons ───────────────────────────────────────────────── */
 .btn {
   display: inline-flex; align-items: center; justify-content: center;
-  height: 50px;
+  height: 56px;
   border-radius: 10px;
   border: none;
   cursor: pointer;
   font-family: var(--ui);
   font-weight: 500;
-  font-size: 15px;
+  font-size: 17px;
   letter-spacing: 0.01em;
   transition: transform 0.18s var(--ease-spring), box-shadow 0.2s ease, background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
   white-space: nowrap;
@@ -136,8 +144,8 @@ body {
   background: transparent;
   border: 1px solid var(--line);
   color: var(--dim);
-  height: 40px;
-  font-size: 13px;
+  height: 46px;
+  font-size: 15px;
   border-radius: 10px;
 }
 .btn-ghost:hover {
@@ -219,8 +227,8 @@ body {
 /* ─── Tag pill ──────────────────────────────────────────────── */
 .tag {
   display: inline-flex; align-items: center;
-  padding: 4px 12px; border-radius: 999px;
-  font-family: var(--mono); font-size: 11px; letter-spacing: 0.05em;
+  padding: 6px 14px; border-radius: 999px;
+  font-family: var(--mono); font-size: 13px; letter-spacing: 0.05em;
   border: 1px solid var(--line);
   background: rgba(255,255,255,0.02);
   color: var(--dim);

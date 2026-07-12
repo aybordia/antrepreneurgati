@@ -40,6 +40,66 @@ const fadeUp = (delay = 0) => ({
   transition: { duration: 0.55, delay, ease: [0.16, 1, 0.3, 1] },
 });
 
+const SCORE_DIMENSIONS = {
+  relevance: "Relevance",
+  completeness: "Completeness",
+  specificity: "Concrete examples",
+  organization: "Organization",
+  clarification: "Clarification",
+};
+
+/* Overall ring + per-dimension bars: the number always comes with its "why" */
+function ScorePanel({ scores, overall }) {
+  if (!scores || overall == null) return null;
+  const r = 52;
+  const circ = 2 * Math.PI * r;
+  return (
+    <div className="card" style={{ padding: "26px 28px", display: "flex", gap: 30, flexWrap: "wrap", alignItems: "center", borderTop: "2px solid var(--honey)" }}>
+      <div style={{ position: "relative", width: 130, height: 130, flexShrink: 0 }}>
+        <svg width="130" height="130" style={{ transform: "rotate(-90deg)" }} aria-hidden>
+          <circle cx="65" cy="65" r={r} fill="none" stroke="var(--line)" strokeWidth="6" />
+          <motion.circle cx="65" cy="65" r={r} fill="none"
+            stroke="var(--honey)" strokeWidth="6" strokeLinecap="round"
+            strokeDasharray={circ}
+            initial={{ strokeDashoffset: circ }}
+            animate={{ strokeDashoffset: circ * (1 - overall / 100) }}
+            transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+          />
+        </svg>
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: 40, lineHeight: 1, color: "var(--honey)" }}>{overall}</span>
+          <span style={{ fontFamily: "var(--mono)", fontSize: 13, color: "var(--dim)", letterSpacing: "0.08em", marginTop: 4 }}>OVERALL</span>
+        </div>
+      </div>
+      <div style={{ flex: 1, minWidth: 260, display: "flex", flexDirection: "column", gap: 12 }}>
+        {Object.entries(SCORE_DIMENSIONS).map(([key, label]) => (
+          scores[key] != null && (
+            <div key={key} style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <span style={{ fontFamily: "var(--ui)", fontWeight: 400, fontSize: 17, color: "var(--text-2)", width: 180, flexShrink: 0 }}>
+                {label}
+              </span>
+              <div style={{ flex: 1, height: 8, borderRadius: 4, background: "var(--line)", overflow: "hidden" }}>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${scores[key]}%` }}
+                  transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.35 }}
+                  style={{ height: "100%", borderRadius: 4, background: "var(--calm)" }}
+                />
+              </div>
+              <span style={{ fontFamily: "var(--mono)", fontSize: 16, color: "var(--calm)", width: 38, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                {scores[key]}
+              </span>
+            </div>
+          )
+        ))}
+        <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 15.5, color: "var(--dim)", lineHeight: 1.6, marginTop: 4 }}>
+          These score the content of your answers in this session, never you as a person, and never how you spoke, moved, or paused.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwarm, getIdToken }) {
   const [debrief, setDebrief] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -185,7 +245,7 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
         <div className="noise" />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
           <div className="orb" style={{ width: 72, height: 72, background: "radial-gradient(circle at 35% 35%, #9B8DFF, #4A3DB8)", color: "#7B6CFF" }} />
-          <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--muted)", letterSpacing: "0.18em" }}>
+          <div style={{ fontFamily: "var(--mono)", fontSize: 13.5, color: "var(--muted)", letterSpacing: "0.18em" }}>
             YOUR PANEL IS WRITING THEIR IMPRESSIONS…
           </div>
         </div>
@@ -206,23 +266,23 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
 
         {/* Header */}
         <motion.div {...fadeUp(0)}>
-          <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: isConvo ? "var(--calm)" : "var(--muted)", letterSpacing: "0.2em", marginBottom: 12 }}>
+          <div style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: isConvo ? "var(--calm)" : "var(--muted)", letterSpacing: "0.2em", marginBottom: 12 }}>
             {isConvo ? "OPTIONAL RECAP" : "PRIVATE DEBRIEF"}
           </div>
-          <h1 style={{ fontFamily: "var(--display)", fontSize: "clamp(30px, 5vw, 44px)", fontWeight: 300, lineHeight: 1.15, marginBottom: 10 }}>
+          <h1 style={{ fontFamily: "var(--display)", fontSize: "clamp(34px, 5.5vw, 50px)", fontWeight: 300, lineHeight: 1.15, marginBottom: 10 }}>
             {isConvo ? "Nice chat." : "How the session went."}
           </h1>
-          <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 14, color: "var(--muted)", lineHeight: 1.7, maxWidth: 520 }}>
+          <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 16.5, color: "var(--muted)", lineHeight: 1.7, maxWidth: 520 }}>
             {isConvo
               ? "Here's a short recap and your transcript, just for you. Nothing here is a score or an evaluation."
-              : "These are observations and optional suggestions, not a score, and they're only for you. Everything here is about what you said, on your terms."}
+              : "Everything here is private and only for you. Scores and observations measure the content of your answers, never you as a person."}
           </p>
         </motion.div>
 
         {error && (
           <div style={{
             padding: "14px 18px", borderRadius: 12, background: "rgba(217,139,139,0.07)",
-            border: "1px solid rgba(217,139,139,0.25)", fontFamily: "var(--ui)", fontSize: 13,
+            border: "1px solid rgba(217,139,139,0.25)", fontFamily: "var(--ui)", fontSize: 15.5,
             color: "var(--alert)", lineHeight: 1.6,
           }}>
             {error} Your full transcript is still available below.
@@ -232,7 +292,7 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
         {backendOutdated && (
           <div style={{
             padding: "14px 18px", borderRadius: 12, background: "var(--honey-soft)",
-            border: "1px solid rgba(228,163,57,0.3)", fontFamily: "var(--ui)", fontSize: 13,
+            border: "1px solid rgba(228,163,57,0.3)", fontFamily: "var(--ui)", fontSize: 15.5,
             color: "var(--honey)", lineHeight: 1.6,
           }}>
             The results server is running an older version, so this is a simplified debrief.
@@ -249,19 +309,26 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
           </motion.div>
         )}
 
+        {/* Answer-content scores — overall + the per-dimension "why" */}
+        {debrief?.scores && debrief?.clarityScore != null && (
+          <motion.div {...fadeUp(0.1)}>
+            <ScorePanel scores={debrief.scores} overall={debrief.clarityScore} />
+          </motion.div>
+        )}
+
         {/* Communication observations — per-dimension, descriptive, never collapsed */}
         {(debrief?.communication_observations || []).length > 0 && (
           <motion.div {...fadeUp(0.12)} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--muted)", letterSpacing: "0.16em" }}>
+            <div style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--muted)", letterSpacing: "0.16em" }}>
               COMMUNICATION OBSERVATIONS
             </div>
             <div className="card" style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
               {debrief.communication_observations.map((obs, i) => (
                 <div key={i}>
-                  <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--calm)", letterSpacing: "0.1em", marginBottom: 4 }}>
+                  <div style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--calm)", letterSpacing: "0.1em", marginBottom: 4 }}>
                     {(obs.dimension || "").toUpperCase()}
                   </div>
-                  <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 13.5, lineHeight: 1.7, color: "var(--text-2)" }}>
+                  <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 16, lineHeight: 1.7, color: "var(--text-2)" }}>
                     {obs.observation}
                     {obs.suggestion && (
                       <span style={{ color: "var(--dim)" }}> {obs.suggestion}</span>
@@ -271,10 +338,10 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
               ))}
               {debrief.focus && (
                 <div style={{ borderTop: "1px solid var(--line)", paddingTop: 14 }}>
-                  <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--honey)", letterSpacing: "0.1em", marginBottom: 4 }}>
+                  <div style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--honey)", letterSpacing: "0.1em", marginBottom: 4 }}>
                     IF YOU PRACTICE ONE THING NEXT
                   </div>
-                  <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 13.5, lineHeight: 1.7, color: "var(--text-2)" }}>
+                  <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 16, lineHeight: 1.7, color: "var(--text-2)" }}>
                     {debrief.focus}
                   </p>
                 </div>
@@ -286,10 +353,10 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
         {/* Self-advocacy scripts — accommodations you can request in real interviews */}
         {(debrief?.self_advocacy || []).length > 0 && (
           <motion.div {...fadeUp(0.16)} className="card" style={{ padding: "20px 24px", borderTop: "2px solid var(--calm)" }}>
-            <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--calm)", letterSpacing: "0.16em", marginBottom: 8 }}>
+            <div style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--calm)", letterSpacing: "0.16em", marginBottom: 8 }}>
               THINGS YOU CAN SAY IN A REAL INTERVIEW
             </div>
-            <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 12.5, color: "var(--dim)", lineHeight: 1.6, marginBottom: 12 }}>
+            <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 15, color: "var(--dim)", lineHeight: 1.6, marginBottom: 12 }}>
               Asking for reasonable accommodations is normal and effective. Based on this session, these might help you:
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -297,7 +364,7 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
                 <div key={i} style={{
                   padding: "10px 14px", borderRadius: 10,
                   background: "var(--calm-soft)", border: "1px solid rgba(116,185,160,0.2)",
-                  fontFamily: "var(--ui)", fontWeight: 300, fontSize: 13.5, lineHeight: 1.6, color: "var(--text)",
+                  fontFamily: "var(--ui)", fontWeight: 300, fontSize: 16, lineHeight: 1.6, color: "var(--text)",
                 }}>
                   "{line}"
                 </div>
@@ -309,24 +376,24 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
         {/* Persona impressions */}
         <motion.div {...fadeUp(0.14)} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--muted)", letterSpacing: "0.16em" }}>
+            <div style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--muted)", letterSpacing: "0.16em" }}>
               {isConvo ? "A SHORT RECAP" : "PANEL IMPRESSIONS"}
             </div>
-            <button className="btn btn-ghost" onClick={handleListen} style={{ height: 30, fontSize: 11, padding: "0 14px" }}>
+            <button className="btn btn-ghost" onClick={handleListen} style={{ height: 30, fontSize: 13.5, padding: "0 14px" }}>
               {isSpeaking ? "■ Stop" : "▸ Listen"}
             </button>
           </div>
           {(debrief?.persona_impressions || []).map((imp, i) => (
             <motion.div key={i} {...fadeUp(0.18 + i * 0.06)} className="card" style={{ padding: "22px 24px" }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
-                <span style={{ fontFamily: "var(--display)", fontSize: 18, color: personaColor(imp.persona) }}>
+                <span style={{ fontFamily: "var(--display)", fontSize: 21, color: personaColor(imp.persona) }}>
                   {imp.persona}
                 </span>
-                <span style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--muted)", letterSpacing: "0.06em" }}>
+                <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--muted)", letterSpacing: "0.06em" }}>
                   Simulated interviewer. Fictional, not a real person.
                 </span>
               </div>
-              <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 14, lineHeight: 1.75, color: "var(--text-2)" }}>
+              <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 16.5, lineHeight: 1.75, color: "var(--text-2)" }}>
                 {imp.impression}
               </p>
             </motion.div>
@@ -336,10 +403,10 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
         {/* Tracking observations — opt-in, default hidden */}
         {availableSignals.length > 0 && (
           <motion.div {...fadeUp(0.3)} className="card" style={{ padding: "22px 24px" }}>
-            <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--muted)", letterSpacing: "0.16em", marginBottom: 8 }}>
+            <div style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--muted)", letterSpacing: "0.16em", marginBottom: 8 }}>
               PRIVATE TRACKING OBSERVATIONS
             </div>
-            <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 13, color: "var(--muted)", lineHeight: 1.7, marginBottom: 14 }}>
+            <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 15.5, color: "var(--muted)", lineHeight: 1.7, marginBottom: 14 }}>
               Optional observations from this session (camera signals were processed entirely on your device; no video was stored).
               They're hidden by default. Choose what you'd like to see; these are neutral descriptions, not judgments — differences are not deficits.
             </p>
@@ -353,7 +420,7 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
                       padding: "7px 14px", borderRadius: 999,
                       background: on ? "rgba(123,108,255,0.12)" : "rgba(255,255,255,0.03)",
                       border: `1px solid ${on ? "rgba(123,108,255,0.45)" : "rgba(255,255,255,0.08)"}`,
-                      fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.08em",
+                      fontFamily: "var(--mono)", fontSize: 12.5, letterSpacing: "0.08em",
                       color: on ? "var(--primary)" : "var(--muted)", transition: "all 0.2s",
                     }}>
                     {on ? "✓ " : "+ "}{CATEGORY_LABELS[cat] || cat}
@@ -367,10 +434,10 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
                   initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
                   style={{ overflow: "hidden" }}>
                   <div style={{ paddingTop: 14 }}>
-                    <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--teal)", letterSpacing: "0.1em", marginBottom: 4 }}>
+                    <div style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--teal)", letterSpacing: "0.1em", marginBottom: 4 }}>
                       {(CATEGORY_LABELS[cat] || cat).toUpperCase()}
                     </div>
-                    <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 14, lineHeight: 1.7, color: "var(--text-2)" }}>
+                    <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 16.5, lineHeight: 1.7, color: "var(--text-2)" }}>
                       {debrief.signal_summary[cat]}
                     </p>
                   </div>
@@ -382,7 +449,7 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
 
         {/* Transcript */}
         <motion.div {...fadeUp(0.36)}>
-          <button className="btn btn-ghost" onClick={() => setShowTranscript(v => !v)} style={{ fontSize: 12 }}>
+          <button className="btn btn-ghost" onClick={() => setShowTranscript(v => !v)} style={{ fontSize: 14.5 }}>
             {showTranscript ? "Hide full transcript" : "Read full transcript"}
           </button>
           <AnimatePresence>
@@ -396,12 +463,12 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
                     return (
                       <div key={i}>
                         <div style={{
-                          fontFamily: "var(--mono)", fontSize: 9, letterSpacing: "0.12em",
+                          fontFamily: "var(--mono)", fontSize: 12, letterSpacing: "0.12em",
                           color: isUser ? "var(--amber)" : personaColor(turn.speaker), marginBottom: 3,
                         }}>
                           {turn.speaker.toUpperCase()}
                         </div>
-                        <div style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 13, lineHeight: 1.7, color: "var(--text-2)" }}>
+                        <div style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 15.5, lineHeight: 1.7, color: "var(--text-2)" }}>
                           {turn.text}
                         </div>
                       </div>
@@ -418,11 +485,11 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
           <button className="btn btn-primary" onClick={() => onAskSwarm(debrief)} style={{ padding: "0 24px" }}>
             Ask the Swarm about this session →
           </button>
-          <button className="btn btn-ghost" onClick={onRunAgain} style={{ height: 52, padding: "0 20px", fontSize: 14 }}>
+          <button className="btn btn-ghost" onClick={onRunAgain} style={{ height: 52, padding: "0 20px", fontSize: 16.5 }}>
             Practice again
           </button>
           <button className="btn btn-ghost" onClick={handleSave} disabled={saveStatus === "saved" || saveStatus === "saving"}
-            style={{ height: 52, padding: "0 20px", fontSize: 14, opacity: saveStatus === "saved" ? 0.6 : 1 }}>
+            style={{ height: 52, padding: "0 20px", fontSize: 16.5, opacity: saveStatus === "saved" ? 0.6 : 1 }}>
             {saveStatus === "saved" ? "✓ Saved to your account"
               : saveStatus === "saving" ? "Saving…"
               : saveStatus === "failed" ? "Retry save"

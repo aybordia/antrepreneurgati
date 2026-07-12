@@ -64,19 +64,19 @@ function Feature({ icon, title, desc, color, delay }) {
         background: `${color}18`,
         border: `1px solid ${color}30`,
         display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: "16px",
+        fontSize: "18px",
       }}>
         {icon}
       </div>
       <div>
         <div style={{
-          fontFamily: "var(--ui)", fontWeight: 500, fontSize: "13px",
+          fontFamily: "var(--ui)", fontWeight: 500, fontSize: "15.5px",
           color: "var(--text)", marginBottom: "3px", letterSpacing: "0.01em",
         }}>
           {title}
         </div>
         <div style={{
-          fontFamily: "var(--ui)", fontWeight: 300, fontSize: "12px",
+          fontFamily: "var(--ui)", fontWeight: 300, fontSize: "14.5px",
           color: "var(--muted)", lineHeight: 1.55,
         }}>
           {desc}
@@ -174,7 +174,7 @@ export default function SignIn({ googleReady, onCredential }) {
               background: "linear-gradient(to bottom, transparent, rgba(255,255,255,0.2), transparent)",
             }} />
             <span style={{
-              fontFamily: "var(--mono)", fontSize: "11px",
+              fontFamily: "var(--mono)", fontSize: "13.5px",
               letterSpacing: "0.45em", color: "var(--muted)",
               textTransform: "uppercase",
             }}>
@@ -222,7 +222,7 @@ export default function SignIn({ googleReady, onCredential }) {
           transition={{ delay: 0.42, duration: 0.7 }}
           style={{
             fontFamily: "var(--ui)", fontWeight: 300,
-            fontSize: "15px", color: "var(--muted)",
+            fontSize: "17.5px", color: "var(--muted)",
             lineHeight: 1.75, textAlign: "center",
             marginBottom: "36px", maxWidth: "360px",
           }}
@@ -280,14 +280,14 @@ export default function SignIn({ googleReady, onCredential }) {
           {/* Card headline */}
           <div style={{ textAlign: "center" }}>
             <div style={{
-              fontFamily: "var(--display)", fontSize: "21px",
+              fontFamily: "var(--display)", fontSize: "24px",
               fontWeight: 300, letterSpacing: "0.01em",
               marginBottom: "7px", color: "var(--text)",
             }}>
               Ready to be challenged?
             </div>
             <div style={{
-              fontFamily: "var(--ui)", fontSize: "13px",
+              fontFamily: "var(--ui)", fontSize: "15.5px",
               color: "var(--muted)", lineHeight: 1.65,
             }}>
               Sign in with Google to start your first session.
@@ -307,7 +307,7 @@ export default function SignIn({ googleReady, onCredential }) {
 
           {!googleReady && (
             <div style={{
-              fontFamily: "var(--mono)", fontSize: "11px",
+              fontFamily: "var(--mono)", fontSize: "13.5px",
               color: "var(--muted)", opacity: 0.4,
               letterSpacing: "0.06em",
             }}>
@@ -328,9 +328,9 @@ export default function SignIn({ googleReady, onCredential }) {
               <div key={label} style={{
                 display: "flex", alignItems: "center", gap: "5px",
               }}>
-                <span style={{ fontSize: "11px", opacity: 0.55 }}>{icon}</span>
+                <span style={{ fontSize: "13.5px", opacity: 0.55 }}>{icon}</span>
                 <span style={{
-                  fontFamily: "var(--mono)", fontSize: "10px",
+                  fontFamily: "var(--mono)", fontSize: "12.5px",
                   color: "var(--muted)", opacity: 0.45,
                   letterSpacing: "0.06em",
                 }}>
@@ -360,16 +360,16 @@ export default function SignIn({ googleReady, onCredential }) {
             onMouseEnter={e => { e.currentTarget.style.background = "rgba(123,108,255,0.13)"; e.currentTarget.style.borderColor = "rgba(123,108,255,0.4)"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "rgba(123,108,255,0.07)"; e.currentTarget.style.borderColor = "rgba(123,108,255,0.25)"; }}
           >
-            <span style={{ fontSize: "13px" }}>✦</span>
+            <span style={{ fontSize: "15.5px" }}>✦</span>
             <div style={{ textAlign: "left" }}>
-              <div style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "#a09aff", letterSpacing: "0.06em" }}>
+              <div style={{ fontFamily: "var(--mono)", fontSize: "13.5px", color: "#a09aff", letterSpacing: "0.06em" }}>
                 JOIN OUR COMMUNITY
               </div>
-              <div style={{ fontFamily: "var(--ui)", fontSize: "11px", color: "var(--muted)", opacity: 0.6, marginTop: "1px" }}>
+              <div style={{ fontFamily: "var(--ui)", fontSize: "13.5px", color: "var(--muted)", opacity: 0.6, marginTop: "1px" }}>
                 Stay in the loop as we build
               </div>
             </div>
-            <span style={{ marginLeft: "auto", fontFamily: "var(--mono)", fontSize: "11px", color: "rgba(160,154,255,0.5)" }}>→</span>
+            <span style={{ marginLeft: "auto", fontFamily: "var(--mono)", fontSize: "13.5px", color: "rgba(160,154,255,0.5)" }}>→</span>
           </a>
         </motion.div>
 

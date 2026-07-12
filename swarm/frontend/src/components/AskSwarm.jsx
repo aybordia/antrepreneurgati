@@ -162,9 +162,9 @@ export default function AskSwarm({ sessionResult, situation, debrief, onRunAgain
           maxWidth: "420px", width: "100%", padding: "0 24px", textAlign: "center",
         }}>
           <div>
-            <div style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--muted)", letterSpacing: "0.18em", marginBottom: "10px" }}>PHASE 4 OF 4</div>
-            <div style={{ fontFamily: "var(--display)", fontSize: "32px", fontWeight: 400, marginBottom: "10px" }}>Ask Swarm AI</div>
-            <div style={{ fontFamily: "var(--ui)", fontSize: "14px", color: "var(--muted)", lineHeight: 1.65 }}>
+            <div style={{ fontFamily: "var(--mono)", fontSize: "13.5px", color: "var(--muted)", letterSpacing: "0.18em", marginBottom: "10px" }}>PHASE 4 OF 4</div>
+            <div style={{ fontFamily: "var(--display)", fontSize: "35px", fontWeight: 400, marginBottom: "10px" }}>Ask Swarm AI</div>
+            <div style={{ fontFamily: "var(--ui)", fontSize: "16.5px", color: "var(--muted)", lineHeight: 1.65 }}>
               Your full interview is loaded. Ask anything: how it went, what to build on, what to say next time.
             </div>
           </div>
@@ -184,10 +184,10 @@ export default function AskSwarm({ sessionResult, situation, debrief, onRunAgain
               onMouseEnter={e => e.currentTarget.style.background = "rgba(123,108,255,0.18)"}
               onMouseLeave={e => e.currentTarget.style.background = "rgba(123,108,255,0.1)"}
             >
-              <span style={{ fontSize: "28px" }}>🎤</span>
+              <span style={{ fontSize: "31px" }}>🎤</span>
               <div>
-                <div style={{ fontFamily: "var(--display)", fontSize: "16px", color: "var(--text)", marginBottom: "4px" }}>Voice</div>
-                <div style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--muted)" }}>Speak your questions. Swarm AI talks back.</div>
+                <div style={{ fontFamily: "var(--display)", fontSize: "18px", color: "var(--text)", marginBottom: "4px" }}>Voice</div>
+                <div style={{ fontFamily: "var(--mono)", fontSize: "13.5px", color: "var(--muted)" }}>Speak your questions. Swarm AI talks back.</div>
               </div>
             </motion.button>
 
@@ -205,10 +205,10 @@ export default function AskSwarm({ sessionResult, situation, debrief, onRunAgain
               onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.07)"}
               onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.04)"}
             >
-              <span style={{ fontSize: "28px" }}>⌨️</span>
+              <span style={{ fontSize: "31px" }}>⌨️</span>
               <div>
-                <div style={{ fontFamily: "var(--display)", fontSize: "16px", color: "var(--text)", marginBottom: "4px" }}>Text</div>
-                <div style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--muted)" }}>Type your questions, read the answers</div>
+                <div style={{ fontFamily: "var(--display)", fontSize: "18px", color: "var(--text)", marginBottom: "4px" }}>Text</div>
+                <div style={{ fontFamily: "var(--mono)", fontSize: "13.5px", color: "var(--muted)" }}>Type your questions, read the answers</div>
               </div>
             </motion.button>
           </div>
@@ -237,11 +237,11 @@ export default function AskSwarm({ sessionResult, situation, debrief, onRunAgain
         display: "flex", justifyContent: "space-between", alignItems: "flex-start",
       }}>
         <div>
-          <div style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--muted)", letterSpacing: "0.18em", marginBottom: "6px" }}>PHASE 4 OF 4</div>
-          <div style={{ fontFamily: "var(--display)", fontSize: "26px", fontWeight: 400 }}>Ask Swarm AI</div>
+          <div style={{ fontFamily: "var(--mono)", fontSize: "13.5px", color: "var(--muted)", letterSpacing: "0.18em", marginBottom: "6px" }}>PHASE 4 OF 4</div>
+          <div style={{ fontFamily: "var(--display)", fontSize: "29px", fontWeight: 400 }}>Ask Swarm AI</div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "6px" }}>
             <span style={{
-              fontFamily: "var(--mono)", fontSize: "10px", letterSpacing: "0.08em",
+              fontFamily: "var(--mono)", fontSize: "12.5px", letterSpacing: "0.08em",
               color: mode === "voice" ? "var(--primary)" : "var(--muted)",
               background: mode === "voice" ? "rgba(123,108,255,0.12)" : "rgba(255,255,255,0.05)",
               border: `1px solid ${mode === "voice" ? "rgba(123,108,255,0.3)" : "rgba(255,255,255,0.08)"}`,
@@ -252,7 +252,7 @@ export default function AskSwarm({ sessionResult, situation, debrief, onRunAgain
             <button
               onClick={() => { stop(); setMode(null); }}
               style={{
-                fontFamily: "var(--mono)", fontSize: "10px", color: "var(--muted)",
+                fontFamily: "var(--mono)", fontSize: "12.5px", color: "var(--muted)",
                 background: "none", border: "none", cursor: "pointer", padding: "3px 6px",
                 textDecoration: "underline", textUnderlineOffset: "2px",
               }}
@@ -268,7 +268,7 @@ export default function AskSwarm({ sessionResult, situation, debrief, onRunAgain
             border: "1px solid rgba(255,255,255,0.09)",
             background: "rgba(255,255,255,0.04)",
             color: "var(--muted)", cursor: "pointer",
-            fontFamily: "var(--mono)", fontSize: "11px",
+            fontFamily: "var(--mono)", fontSize: "13.5px",
             flexShrink: 0, marginTop: "4px",
             transition: "all 0.18s",
           }}
@@ -292,7 +292,7 @@ export default function AskSwarm({ sessionResult, situation, debrief, onRunAgain
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
             style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "4px" }}
           >
-            <div style={{ fontFamily: "var(--mono)", fontSize: "10px", color: "rgba(139,138,155,0.45)", letterSpacing: "0.1em" }}>SUGGESTED</div>
+            <div style={{ fontFamily: "var(--mono)", fontSize: "12.5px", color: "rgba(139,138,155,0.45)", letterSpacing: "0.1em" }}>SUGGESTED</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
               {SUGGESTIONS.map((s, i) => (
                 <motion.button key={i}
@@ -303,7 +303,7 @@ export default function AskSwarm({ sessionResult, situation, debrief, onRunAgain
                   style={{
                     background: "rgba(123,108,255,0.07)", border: "1px solid rgba(123,108,255,0.18)",
                     borderRadius: "8px", padding: "8px 14px", cursor: "pointer",
-                    fontFamily: "var(--mono)", fontSize: "11px", color: "var(--primary)",
+                    fontFamily: "var(--mono)", fontSize: "13.5px", color: "var(--primary)",
                     letterSpacing: "0.03em", transition: "all 0.18s",
                   }}
                   onMouseEnter={e => e.currentTarget.style.background = "rgba(123,108,255,0.14)"}
@@ -355,7 +355,7 @@ export default function AskSwarm({ sessionResult, situation, debrief, onRunAgain
             <div style={{
               width: "100%", padding: "10px 14px", borderRadius: "10px",
               background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)",
-              fontFamily: "var(--mono)", fontSize: "11px", color: "var(--coral)",
+              fontFamily: "var(--mono)", fontSize: "13.5px", color: "var(--coral)",
             }}>
               {micError}
             </div>
@@ -372,7 +372,7 @@ export default function AskSwarm({ sessionResult, situation, debrief, onRunAgain
                 }}
               >
                 <span className="dot" style={{ background: "var(--primary)", width: "6px", height: "6px" }} />
-                <span style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--primary)", letterSpacing: "0.06em" }}>
+                <span style={{ fontFamily: "var(--mono)", fontSize: "13.5px", color: "var(--primary)", letterSpacing: "0.06em" }}>
                   Swarm AI speaking…
                 </span>
               </motion.div>
@@ -386,7 +386,7 @@ export default function AskSwarm({ sessionResult, situation, debrief, onRunAgain
                 }}
               >
                 <span className="dot" style={{ background: "var(--success)", width: "6px", height: "6px" }} />
-                <span style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--success)", letterSpacing: "0.06em" }}>
+                <span style={{ fontFamily: "var(--mono)", fontSize: "13.5px", color: "var(--success)", letterSpacing: "0.06em" }}>
                   Thinking…
                 </span>
               </motion.div>
@@ -400,7 +400,7 @@ export default function AskSwarm({ sessionResult, situation, debrief, onRunAgain
                 }}
               >
                 <span className="dot" style={{ background: "var(--amber)", width: "6px", height: "6px" }} />
-                <span style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--amber)", letterSpacing: "0.06em" }}>
+                <span style={{ fontFamily: "var(--mono)", fontSize: "13.5px", color: "var(--amber)", letterSpacing: "0.06em" }}>
                   Transcribing…
                 </span>
               </motion.div>
@@ -417,8 +417,8 @@ export default function AskSwarm({ sessionResult, situation, debrief, onRunAgain
                   animation: isListening ? "micRing 1.1s ease-out infinite" : "none",
                 }}
               >
-                <span style={{ fontSize: "15px" }}>{isListening ? "⏹" : "🎤"}</span>
-                <span style={{ fontFamily: "var(--mono)", fontSize: "11px", color: isListening ? "var(--amber)" : "var(--muted)", letterSpacing: "0.06em" }}>
+                <span style={{ fontSize: "17.5px" }}>{isListening ? "⏹" : "🎤"}</span>
+                <span style={{ fontFamily: "var(--mono)", fontSize: "13.5px", color: isListening ? "var(--amber)" : "var(--muted)", letterSpacing: "0.06em" }}>
                   {isListening ? "Listening. Tap to send." : "Tap to speak"}
                 </span>
               </motion.button>
@@ -445,7 +445,7 @@ export default function AskSwarm({ sessionResult, situation, debrief, onRunAgain
                 background: "rgba(255,255,255,0.04)",
                 border: `1px solid ${input.trim() ? "rgba(123,108,255,0.45)" : "rgba(255,255,255,0.09)"}`,
                 borderRadius: "12px", padding: "16px 56px 16px 18px",
-                fontSize: "14px", fontFamily: "var(--ui)", color: "var(--text)", outline: "none",
+                fontSize: "16.5px", fontFamily: "var(--ui)", color: "var(--text)", outline: "none",
                 boxShadow: input.trim() ? "0 0 0 3px rgba(123,108,255,0.09)" : "none",
                 transition: "border-color 0.2s, box-shadow 0.2s",
                 opacity: isStreaming ? 0.5 : 1,
@@ -458,7 +458,7 @@ export default function AskSwarm({ sessionResult, situation, debrief, onRunAgain
                 background: input.trim() && !isStreaming ? "rgba(123,108,255,0.85)" : "rgba(255,255,255,0.05)",
                 color: "white", cursor: input.trim() && !isStreaming ? "pointer" : "default",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "16px", transition: "all 0.18s",
+                fontSize: "18px", transition: "all 0.18s",
                 opacity: input.trim() && !isStreaming ? 1 : 0.35,
               }}
             >↑</button>

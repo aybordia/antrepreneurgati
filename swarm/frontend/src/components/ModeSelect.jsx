@@ -47,10 +47,10 @@ export default function ModeSelect({ onSelect, onBack }) {
       }}>
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }}
           style={{ textAlign: "center", maxWidth: 520 }}>
-          <h1 style={{ fontFamily: "var(--display)", fontWeight: 400, fontSize: "clamp(28px, 4.5vw, 40px)", lineHeight: 1.15, marginBottom: 10 }}>
+          <h1 style={{ fontFamily: "var(--display)", fontWeight: 400, fontSize: "clamp(32px, 5vw, 46px)", lineHeight: 1.15, marginBottom: 10 }}>
             How do you want to practice today?
           </h1>
-          <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 14.5, color: "var(--dim)", lineHeight: 1.7 }}>
+          <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 17, color: "var(--dim)", lineHeight: 1.7 }}>
             Three different spaces. You can switch any time.
           </p>
         </motion.div>
@@ -79,18 +79,18 @@ export default function ModeSelect({ onSelect, onBack }) {
                 minHeight: 190,
               }}
             >
-              <span style={{ fontFamily: "var(--mono)", fontSize: 9.5, color: m.accent, letterSpacing: "0.14em" }}>
+              <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: m.accent, letterSpacing: "0.14em" }}>
                 {m.label}
               </span>
-              <span style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: 19, color: "var(--text)" }}>
+              <span style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: 22, color: "var(--text)" }}>
                 {m.title}
               </span>
-              <span style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 13, color: "var(--dim)", lineHeight: 1.65 }}>
+              <span style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 15.5, color: "var(--dim)", lineHeight: 1.65 }}>
                 {m.body}
               </span>
               <span style={{
                 marginTop: "auto", paddingTop: 8,
-                fontFamily: "var(--mono)", fontSize: 11, color: m.accent, letterSpacing: "0.05em",
+                fontFamily: "var(--mono)", fontSize: 13.5, color: m.accent, letterSpacing: "0.05em",
               }}>
                 Choose →
               </span>
@@ -98,7 +98,7 @@ export default function ModeSelect({ onSelect, onBack }) {
           ))}
         </div>
 
-        <button className="btn btn-ghost" onClick={onBack} style={{ fontSize: 12 }}>
+        <button className="btn btn-ghost" onClick={onBack} style={{ fontSize: 14.5 }}>
           Back to dashboard
         </button>
       </div>

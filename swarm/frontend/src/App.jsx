@@ -159,7 +159,7 @@ export default function App() {
             border: "1px solid rgba(255,255,255,0.1)",
             background: "rgba(255,255,255,0.04)",
             color: "var(--muted)", cursor: "pointer",
-            fontFamily: "var(--mono)", fontSize: "11px",
+            fontFamily: "var(--mono)", fontSize: "13.5px",
             letterSpacing: "0.04em", transition: "all 0.18s",
           }}
           onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; e.currentTarget.style.color = "var(--text)"; }}
@@ -175,7 +175,7 @@ export default function App() {
             <img src={user.picture} alt="" width={28} height={28} referrerPolicy="no-referrer"
               style={{ borderRadius: "50%", border: "1px solid rgba(255,255,255,0.12)" }} />
           )}
-          <span style={{ color: "var(--muted)", fontFamily: "var(--mono)", fontSize: "11px", letterSpacing: "0.03em" }}>
+          <span style={{ color: "var(--muted)", fontFamily: "var(--mono)", fontSize: "13.5px", letterSpacing: "0.03em" }}>
             {user.name || user.email}
           </span>
           <button onClick={handleSignOut}
@@ -184,7 +184,7 @@ export default function App() {
               border: "1px solid rgba(255,255,255,0.1)",
               background: "rgba(255,255,255,0.04)",
               color: "var(--muted)", cursor: "pointer",
-              fontFamily: "var(--mono)", fontSize: "11px",
+              fontFamily: "var(--mono)", fontSize: "13.5px",
               transition: "all 0.18s",
             }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; e.currentTarget.style.color = "var(--text)"; }}

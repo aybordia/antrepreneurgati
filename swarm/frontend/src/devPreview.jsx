@@ -30,6 +30,18 @@ const MOCK_HISTORY = [
 
 const MOCK_DEBRIEF = {
   transcript: MOCK_HISTORY.map(t => `${t.speaker}: ${t.text}`).join("\n"),
+  scores: { relevance: 92, completeness: 61, specificity: 74, organization: 83, clarification: 88 },
+  clarityScore: 80,
+  focus: "Practice adding the outcome of each story: what changed because of what you did.",
+  self_advocacy: [
+    "Could you break that question into parts?",
+    "I'd like a moment to think about that.",
+  ],
+  communication_observations: [
+    { dimension: "Relevance", observation: "Every answer addressed the question that was asked, including the follow-up about Stanford specifically.", suggestion: "" },
+    { dimension: "Completeness", observation: "Your clinic story included the situation and your role, but not what happened as a result.", suggestion: "Try ending stories with the outcome." },
+    { dimension: "Clarification", observation: "You asked which systems were meant before answering. That is a strong interview skill.", suggestion: "" },
+  ],
   persona_impressions: [
     { persona: "Dr. Kalinda Naidoo", impression: "Your free-clinic example was the strongest moment of the session. The detail about listening being half the treatment made your motivation concrete rather than abstract. If you bring one more specific patient story next time, that theme will carry even further." },
     { persona: "Amala Chandrasekar", impression: "I liked that you named the scholarly concentration program specifically. You clearly know why this school. Consider adding what you would research first; it makes the answer feel like a plan rather than a wish." },

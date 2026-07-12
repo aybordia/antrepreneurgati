@@ -101,12 +101,12 @@ function PracticeHeatmap({ sessions }) {
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
         <div>
-          <div style={{ fontFamily: "var(--mono)", fontSize: "9px", color: "rgba(106,103,128,0.5)", letterSpacing: "0.18em", marginBottom: "5px" }}>
+          <div style={{ fontFamily: "var(--mono)", fontSize: "12px", color: "rgba(106,103,128,0.5)", letterSpacing: "0.18em", marginBottom: "5px" }}>
             PRACTICE ACTIVITY
           </div>
           <div style={{ display: "flex", gap: "16px" }}>
-            <span style={{ fontFamily: "var(--display)", fontSize: "18px", color: "var(--primary)" }}>{activeDays}</span>
-            <span style={{ fontFamily: "var(--mono)", fontSize: "9px", color: "var(--muted)", opacity: 0.5, alignSelf: "flex-end", paddingBottom: "2px", letterSpacing: "0.08em" }}>
+            <span style={{ fontFamily: "var(--display)", fontSize: "21px", color: "var(--primary)" }}>{activeDays}</span>
+            <span style={{ fontFamily: "var(--mono)", fontSize: "12px", color: "var(--muted)", opacity: 0.5, alignSelf: "flex-end", paddingBottom: "2px", letterSpacing: "0.08em" }}>
               ACTIVE DAYS · {totalSessions} SESSIONS TOTAL
             </span>
           </div>
@@ -189,9 +189,9 @@ function PracticeHeatmap({ sessions }) {
           zIndex: 999,
           display: "flex", gap: "6px", alignItems: "center",
         }}>
-          <span style={{ fontFamily: "var(--mono)", fontSize: "10px", color: "var(--muted)" }}>{tooltip.date}</span>
+          <span style={{ fontFamily: "var(--mono)", fontSize: "12.5px", color: "var(--muted)" }}>{tooltip.date}</span>
           <span style={{ width: 1, height: 10, background: "rgba(255,255,255,0.1)" }} />
-          <span style={{ fontFamily: "var(--mono)", fontSize: "10px", color: tooltip.count > 0 ? "var(--primary)" : "var(--muted)" }}>
+          <span style={{ fontFamily: "var(--mono)", fontSize: "12.5px", color: tooltip.count > 0 ? "var(--primary)" : "var(--muted)" }}>
             {tooltip.count} {tooltip.count === 1 ? "session" : "sessions"}
           </span>
         </div>
@@ -289,16 +289,16 @@ function TrendGraph({ sessions }) {
       }}>
         <div>
           <div style={{
-            fontFamily: "var(--mono)", fontSize: "9px",
+            fontFamily: "var(--mono)", fontSize: "12px",
             color: "rgba(106,103,128,0.5)", letterSpacing: "0.18em", marginBottom: "5px",
           }}>
             SCORE PROGRESSION
           </div>
           <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
-            <span style={{ fontFamily: "var(--display)", fontSize: "24px", color: scoreColor(latest), lineHeight: 1 }}>
+            <span style={{ fontFamily: "var(--display)", fontSize: "27px", color: scoreColor(latest), lineHeight: 1 }}>
               {latest}
             </span>
-            <span style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--muted)", opacity: 0.5 }}>/100</span>
+            <span style={{ fontFamily: "var(--mono)", fontSize: "13.5px", color: "var(--muted)", opacity: 0.5 }}>/100</span>
           </div>
         </div>
         <motion.div
@@ -313,7 +313,7 @@ function TrendGraph({ sessions }) {
           }}
         >
           <span style={{
-            fontFamily: "var(--mono)", fontSize: "12px", letterSpacing: "0.04em",
+            fontFamily: "var(--mono)", fontSize: "14.5px", letterSpacing: "0.04em",
             color: delta >= 0 ? "var(--success)" : "var(--coral)",
           }}>
             {delta > 0 ? "↑" : delta < 0 ? "↓" : "→"} {Math.abs(delta)} pts
@@ -455,7 +455,7 @@ function SessionCard({ session, onView, index }) {
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
             <span style={{
-              fontFamily: "var(--display)", fontSize: "14px",
+              fontFamily: "var(--display)", fontSize: "16.5px",
               color, lineHeight: 1, transform: "rotate(90deg)",
             }}>{session.clarityScore}</span>
           </div>
@@ -464,7 +464,7 @@ function SessionCard({ session, onView, index }) {
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
-          fontFamily: "var(--ui)", fontSize: "14px", color: "var(--text)",
+          fontFamily: "var(--ui)", fontSize: "16.5px", color: "var(--text)",
           lineHeight: 1.5, marginBottom: "6px",
           overflow: "hidden", display: "-webkit-box",
           WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
@@ -472,18 +472,18 @@ function SessionCard({ session, onView, index }) {
           {session.situation}
         </div>
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          <span style={{ fontFamily: "var(--mono)", fontSize: "10px", color: "var(--muted)", letterSpacing: "0.05em" }}>
+          <span style={{ fontFamily: "var(--mono)", fontSize: "12.5px", color: "var(--muted)", letterSpacing: "0.05em" }}>
             {timeAgo(session.createdAt)}
           </span>
           <span style={{ width: 2, height: 2, borderRadius: "50%", background: "var(--muted)", opacity: 0.4 }} />
-          <span style={{ fontFamily: "var(--mono)", fontSize: "10px", color: "var(--muted)", letterSpacing: "0.05em" }}>
+          <span style={{ fontFamily: "var(--mono)", fontSize: "12.5px", color: "var(--muted)", letterSpacing: "0.05em" }}>
             {Math.ceil(session.turnCount / 2)} exchanges
           </span>
         </div>
         {session.overallVerdict && (
           <div style={{
             marginTop: "10px",
-            fontFamily: "var(--mono)", fontSize: "11px", color: "rgba(106,103,128,0.7)",
+            fontFamily: "var(--mono)", fontSize: "13.5px", color: "rgba(106,103,128,0.7)",
             lineHeight: 1.55, overflow: "hidden", display: "-webkit-box",
             WebkitLineClamp: 1, WebkitBoxOrient: "vertical",
           }}>
@@ -493,7 +493,7 @@ function SessionCard({ session, onView, index }) {
       </div>
 
       <div style={{
-        fontFamily: "var(--mono)", fontSize: "10px", color: "var(--primary)",
+        fontFamily: "var(--mono)", fontSize: "12.5px", color: "var(--primary)",
         letterSpacing: "0.05em", flexShrink: 0,
         opacity: hovered ? 1 : 0.5, transition: "opacity 0.2s",
       }}>
@@ -538,7 +538,7 @@ function PastSessionModal({ session, onClose }) {
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "var(--mono)", fontSize: "10px", color: "var(--muted)", letterSpacing: "0.15em", marginBottom: "10px" }}>
+            <div style={{ fontFamily: "var(--mono)", fontSize: "12.5px", color: "var(--muted)", letterSpacing: "0.15em", marginBottom: "10px" }}>
               {new Date(session.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
             </div>
             <div style={{ fontFamily: "var(--display)", fontSize: "20px", color: "var(--text)", lineHeight: 1.4 }}>
@@ -550,10 +550,10 @@ function PastSessionModal({ session, onClose }) {
               <div style={{ position: "relative", width: 90, height: 90 }}>
                 <MiniRing score={d.clarityScore} color={color} size={90} />
                 <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ fontFamily: "var(--display)", fontSize: "28px", color, lineHeight: 1, transform: "rotate(90deg)" }}>{d.clarityScore}</span>
+                  <span style={{ fontFamily: "var(--display)", fontSize: "31px", color, lineHeight: 1, transform: "rotate(90deg)" }}>{d.clarityScore}</span>
                 </div>
               </div>
-              <div style={{ fontFamily: "var(--mono)", fontSize: "9px", color: "var(--muted)", letterSpacing: "0.12em", marginTop: "4px" }}>CLARITY</div>
+              <div style={{ fontFamily: "var(--mono)", fontSize: "12px", color: "var(--muted)", letterSpacing: "0.12em", marginTop: "4px" }}>CLARITY</div>
             </div>
           )}
         </div>
@@ -561,35 +561,35 @@ function PastSessionModal({ session, onClose }) {
         <div style={{ height: "1px", background: "rgba(255,255,255,0.05)" }} />
 
         {d?.clarityRationale && (
-          <div style={{ fontFamily: "var(--ui)", fontSize: "14px", color: "var(--muted)", lineHeight: 1.7 }}>
+          <div style={{ fontFamily: "var(--ui)", fontSize: "16.5px", color: "var(--muted)", lineHeight: 1.7 }}>
             {d.clarityRationale}
           </div>
         )}
 
         {d?.bestMoment?.quote && (
           <div style={{ padding: "18px 20px", borderRadius: "14px", background: "rgba(200,240,100,0.04)", borderLeft: "2px solid var(--success)" }}>
-            <div style={{ fontFamily: "var(--mono)", fontSize: "10px", color: "var(--success)", letterSpacing: "0.14em", marginBottom: "10px" }}>STRONGEST MOMENT</div>
-            <div style={{ fontFamily: "var(--display)", fontStyle: "italic", fontSize: "15px", lineHeight: 1.7, marginBottom: "8px" }}>"{d.bestMoment.quote}"</div>
-            <div style={{ fontFamily: "var(--ui)", fontSize: "13px", color: "var(--muted)", lineHeight: 1.6 }}>{d.bestMoment.reason}</div>
+            <div style={{ fontFamily: "var(--mono)", fontSize: "12.5px", color: "var(--success)", letterSpacing: "0.14em", marginBottom: "10px" }}>STRONGEST MOMENT</div>
+            <div style={{ fontFamily: "var(--display)", fontStyle: "italic", fontSize: "17.5px", lineHeight: 1.7, marginBottom: "8px" }}>"{d.bestMoment.quote}"</div>
+            <div style={{ fontFamily: "var(--ui)", fontSize: "15.5px", color: "var(--muted)", lineHeight: 1.6 }}>{d.bestMoment.reason}</div>
           </div>
         )}
 
         {d?.worstMoment?.quote && (
           <div style={{ padding: "18px 20px", borderRadius: "14px", background: "rgba(255,107,107,0.04)", borderLeft: "2px solid var(--coral)" }}>
-            <div style={{ fontFamily: "var(--mono)", fontSize: "10px", color: "var(--coral)", letterSpacing: "0.14em", marginBottom: "10px" }}>CRITICAL STUMBLE</div>
-            <div style={{ fontFamily: "var(--display)", fontStyle: "italic", fontSize: "15px", lineHeight: 1.7, marginBottom: "8px" }}>"{d.worstMoment.quote}"</div>
-            <div style={{ fontFamily: "var(--ui)", fontSize: "13px", color: "var(--muted)", lineHeight: 1.6 }}>{d.worstMoment.reason}</div>
+            <div style={{ fontFamily: "var(--mono)", fontSize: "12.5px", color: "var(--coral)", letterSpacing: "0.14em", marginBottom: "10px" }}>CRITICAL STUMBLE</div>
+            <div style={{ fontFamily: "var(--display)", fontStyle: "italic", fontSize: "17.5px", lineHeight: 1.7, marginBottom: "8px" }}>"{d.worstMoment.quote}"</div>
+            <div style={{ fontFamily: "var(--ui)", fontSize: "15.5px", color: "var(--muted)", lineHeight: 1.6 }}>{d.worstMoment.reason}</div>
           </div>
         )}
 
         {d?.contentGaps?.length > 0 && (
           <div style={{ padding: "18px 20px", borderRadius: "14px", background: "rgba(245,166,35,0.04)", borderLeft: "2px solid var(--amber)" }}>
-            <div style={{ fontFamily: "var(--mono)", fontSize: "10px", color: "var(--amber)", letterSpacing: "0.14em", marginBottom: "12px" }}>CONTENT GAPS</div>
+            <div style={{ fontFamily: "var(--mono)", fontSize: "12.5px", color: "var(--amber)", letterSpacing: "0.14em", marginBottom: "12px" }}>CONTENT GAPS</div>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {d.contentGaps.slice(0, 3).map((g, i) => (
                 <div key={i} style={{ display: "flex", gap: "10px" }}>
                   <span style={{ color: "var(--amber)", flexShrink: 0, opacity: 0.7 }}>→</span>
-                  <div style={{ fontFamily: "var(--ui)", fontSize: "13px", color: "var(--muted)", lineHeight: 1.6 }}>{g.gap}</div>
+                  <div style={{ fontFamily: "var(--ui)", fontSize: "15.5px", color: "var(--muted)", lineHeight: 1.6 }}>{g.gap}</div>
                 </div>
               ))}
             </div>
@@ -598,8 +598,8 @@ function PastSessionModal({ session, onClose }) {
 
         {d?.priorityFix && (
           <div style={{ padding: "20px 22px", borderRadius: "14px", background: "rgba(123,108,255,0.05)", border: "1px solid rgba(123,108,255,0.15)" }}>
-            <div style={{ fontFamily: "var(--mono)", fontSize: "10px", color: "var(--primary)", letterSpacing: "0.14em", marginBottom: "10px" }}>FOCUS ON THIS</div>
-            <div style={{ fontFamily: "var(--display)", fontSize: "17px", lineHeight: 1.6 }}>{d.priorityFix}</div>
+            <div style={{ fontFamily: "var(--mono)", fontSize: "12.5px", color: "var(--primary)", letterSpacing: "0.14em", marginBottom: "10px" }}>FOCUS ON THIS</div>
+            <div style={{ fontFamily: "var(--display)", fontSize: "19px", lineHeight: 1.6 }}>{d.priorityFix}</div>
           </div>
         )}
 
@@ -613,7 +613,7 @@ function PastSessionModal({ session, onClose }) {
                 display: "flex", alignItems: "center", justifyContent: "space-between",
                 background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)",
                 borderRadius: "12px", padding: "12px 16px",
-                fontFamily: "var(--mono)", fontSize: "10px",
+                fontFamily: "var(--mono)", fontSize: "12.5px",
                 color: "var(--muted)", letterSpacing: "0.12em",
               }}
             >
@@ -635,10 +635,10 @@ function PastSessionModal({ session, onClose }) {
                   }}>
                     {session.history.map((turn, i) => (
                       <div key={i} style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-                        <span style={{ fontFamily: "var(--mono)", fontSize: "10px", color: turn.speaker === "You" ? "var(--amber)" : "var(--teal)", letterSpacing: "0.08em" }}>
+                        <span style={{ fontFamily: "var(--mono)", fontSize: "12.5px", color: turn.speaker === "You" ? "var(--amber)" : "var(--teal)", letterSpacing: "0.08em" }}>
                           {turn.speaker.toUpperCase()}
                         </span>
-                        <span style={{ fontFamily: "var(--ui)", fontSize: "13px", color: "var(--muted)", lineHeight: 1.6 }}>
+                        <span style={{ fontFamily: "var(--ui)", fontSize: "15.5px", color: "var(--muted)", lineHeight: 1.6 }}>
                           {turn.text}
                         </span>
                       </div>
@@ -721,9 +721,9 @@ export default function Dashboard({ user, onNewSession, getIdToken }) {
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--primary)", boxShadow: "0 0 12px var(--primary-glow)" }} />
-              <span style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--muted)", letterSpacing: "0.3em" }}>SWARM AI</span>
+              <span style={{ fontFamily: "var(--mono)", fontSize: "13.5px", color: "var(--muted)", letterSpacing: "0.3em" }}>SWARM AI</span>
             </div>
-            <h1 style={{ fontFamily: "var(--display)", fontSize: "clamp(32px, 5vw, 48px)", fontWeight: 300, lineHeight: 1.15 }}>
+            <h1 style={{ fontFamily: "var(--display)", fontSize: "clamp(36px, 5.5vw, 54px)", fontWeight: 300, lineHeight: 1.15 }}>
               Welcome back,<br />
               <em style={{
                 fontStyle: "italic",
@@ -779,10 +779,10 @@ export default function Dashboard({ user, onNewSession, getIdToken }) {
                   borderRadius: "14px", pointerEvents: "none",
                 }} />
                 <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
-                  <div style={{ fontFamily: "var(--display)", fontSize: "26px", color, lineHeight: 1, marginBottom: "4px" }}>{value}</div>
-                  {suffix && <span style={{ fontSize: "14px", lineHeight: 1 }}>{suffix}</span>}
+                  <div style={{ fontFamily: "var(--display)", fontSize: "29px", color, lineHeight: 1, marginBottom: "4px" }}>{value}</div>
+                  {suffix && <span style={{ fontSize: "16.5px", lineHeight: 1 }}>{suffix}</span>}
                 </div>
-                <div style={{ fontFamily: "var(--mono)", fontSize: "9px", color: "var(--muted)", letterSpacing: "0.12em" }}>{label.toUpperCase()}</div>
+                <div style={{ fontFamily: "var(--mono)", fontSize: "12px", color: "var(--muted)", letterSpacing: "0.12em" }}>{label.toUpperCase()}</div>
               </div>
             ))}
           </motion.div>
@@ -810,7 +810,7 @@ export default function Dashboard({ user, onNewSession, getIdToken }) {
               padding: "26px 28px",
               display: "flex", alignItems: "center", justifyContent: "space-between",
               borderRadius: "20px",
-              fontSize: "15px",
+              fontSize: "17.5px",
               position: "relative", overflow: "hidden",
             }}
           >
@@ -828,7 +828,7 @@ export default function Dashboard({ user, onNewSession, getIdToken }) {
             }} />
             <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "5px" }}>
               <span style={{ fontFamily: "var(--display)", fontSize: "20px", fontWeight: 400 }}>Launch New Session</span>
-              <span style={{ fontFamily: "var(--mono)", fontSize: "11px", opacity: 0.6, fontWeight: 400, letterSpacing: "0.06em" }}>
+              <span style={{ fontFamily: "var(--mono)", fontSize: "13.5px", opacity: 0.6, fontWeight: 400, letterSpacing: "0.06em" }}>
                 5 AI agents · live voice · adaptive debrief
               </span>
             </div>
@@ -837,7 +837,7 @@ export default function Dashboard({ user, onNewSession, getIdToken }) {
               width: 44, height: 44, borderRadius: "50%",
               background: "rgba(255,255,255,0.15)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: "18px",
+              fontSize: "21px",
               boxShadow: "0 0 0 1px rgba(255,255,255,0.12) inset",
             }}>→</div>
           </motion.button>
@@ -846,7 +846,7 @@ export default function Dashboard({ user, onNewSession, getIdToken }) {
         {/* Past sessions */}
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontFamily: "var(--mono)", fontSize: "10px", color: "rgba(106,103,128,0.5)", letterSpacing: "0.18em" }}>
+            <span style={{ fontFamily: "var(--mono)", fontSize: "12.5px", color: "rgba(106,103,128,0.5)", letterSpacing: "0.18em" }}>
               {loading ? "LOADING..." : sessions.length > 0 ? `PAST SESSIONS (${sessions.length})` : "NO SESSIONS YET"}
             </span>
           </div>
@@ -887,7 +887,7 @@ export default function Dashboard({ user, onNewSession, getIdToken }) {
                 fontSize: "20px", color: "var(--primary)",
               }}>◎</div>
               <div style={{ fontFamily: "var(--display)", fontSize: "20px", color: "var(--text-2)" }}>No sessions yet</div>
-              <div style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "rgba(106,103,128,0.5)", maxWidth: "280px", lineHeight: 1.65 }}>
+              <div style={{ fontFamily: "var(--mono)", fontSize: "13.5px", color: "rgba(106,103,128,0.5)", maxWidth: "280px", lineHeight: 1.65 }}>
                 Complete your first practice to see your performance history here.
               </div>
             </motion.div>
