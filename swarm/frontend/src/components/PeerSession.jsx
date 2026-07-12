@@ -43,7 +43,7 @@ function Shell({ children, wide = false, error, notice }) {
         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
         padding: "80px 24px 48px", maxWidth: wide ? 980 : 560, margin: "0 auto", gap: 20, width: "100%",
       }}>
-        <div style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: ACCENT, letterSpacing: "0.16em", alignSelf: "flex-start" }}>
+        <div style={{ fontFamily: "var(--mono)", fontSize: 15, color: ACCENT, letterSpacing: "0.16em", alignSelf: "flex-start" }}>
           PRACTICE WITH A PERSON
         </div>
         {children}
@@ -51,14 +51,14 @@ function Shell({ children, wide = false, error, notice }) {
           <div style={{
             width: "100%", padding: "12px 16px", borderRadius: 10,
             background: "rgba(217,139,139,0.07)", border: "1px solid rgba(217,139,139,0.25)",
-            fontFamily: "var(--ui)", fontSize: 15.5, color: "var(--alert)", lineHeight: 1.6,
+            fontFamily: "var(--ui)", fontSize: 18, color: "var(--alert)", lineHeight: 1.6,
           }}>{error}</div>
         )}
         {notice && (
           <div style={{
             width: "100%", padding: "12px 16px", borderRadius: 10,
             background: "var(--calm-soft)", border: "1px solid rgba(116,185,160,0.3)",
-            fontFamily: "var(--ui)", fontSize: 15.5, color: "var(--calm)", lineHeight: 1.6,
+            fontFamily: "var(--ui)", fontSize: 18, color: "var(--calm)", lineHeight: 1.6,
           }}>{notice}</div>
         )}
       </div>
@@ -76,7 +76,7 @@ function ReportModal({ open, reason, onChangeReason, onSubmit, onClose }) {
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
           <div className="card" style={{ background: "var(--surface)", padding: 28, maxWidth: 420, width: "92%", display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: 22 }}>Report this session</div>
+            <div style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: 25 }}>Report this session</div>
             <textarea
               value={reason}
               onChange={e => onChangeReason(e.target.value)}
@@ -84,12 +84,12 @@ function ReportModal({ open, reason, onChangeReason, onSubmit, onClose }) {
               placeholder="What happened? A sentence is enough."
               style={{
                 width: "100%", background: "var(--ink)", border: "1px solid var(--line)",
-                borderRadius: 10, padding: "12px 14px", fontSize: 16, fontFamily: "var(--ui)",
+                borderRadius: 10, padding: "12px 14px", fontSize: 19, fontFamily: "var(--ui)",
                 color: "var(--text)", outline: "none", resize: "none", lineHeight: 1.6,
               }}
             />
             <div style={{ display: "flex", gap: 10 }}>
-              <button className="btn btn-primary" style={{ flex: 1, fontSize: 15.5 }} onClick={onSubmit}>Send report</button>
+              <button className="btn btn-primary" style={{ flex: 1, fontSize: 18 }} onClick={onSubmit}>Send report</button>
               <button className="btn btn-ghost" style={{ flex: 1, height: 50 }} onClick={onClose}>Cancel</button>
             </div>
           </div>
@@ -101,7 +101,7 @@ function ReportModal({ open, reason, onChangeReason, onSubmit, onClose }) {
 
 const inputStyle = {
   width: "100%", background: "var(--surface)", border: "1px solid var(--line)",
-  borderRadius: 10, padding: "14px 16px", fontSize: 16.5, fontFamily: "var(--ui)",
+  borderRadius: 10, padding: "14px 16px", fontSize: 19, fontFamily: "var(--ui)",
   color: "var(--text)", outline: "none",
 };
 
@@ -302,7 +302,7 @@ export default function PeerSession({ getIdToken, onExit }) {
   if (step === "agreement") {
     return (
       <Shell error={error} notice={notice}>
-        <h1 style={{ fontFamily: "var(--display)", fontWeight: 400, fontSize: "clamp(30px, 4.5vw, 40px)", lineHeight: 1.2 }}>
+        <h1 style={{ fontFamily: "var(--display)", fontWeight: 400, fontSize: "clamp(36px, 5.5vw, 48px)", lineHeight: 1.2 }}>
           Before you practice with a real person.
         </h1>
         <div className="card" style={{ padding: "22px 24px", display: "flex", flexDirection: "column", gap: 14, width: "100%" }}>
@@ -314,13 +314,13 @@ export default function PeerSession({ getIdToken, onExit }) {
             "Report and block are always one tap away, during and after a session.",
           ].map((line, i) => (
             <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-              <span style={{ color: ACCENT, fontSize: 15.5, lineHeight: 1.6 }}>·</span>
-              <span style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 16.5, color: "var(--text-2)", lineHeight: 1.65 }}>{line}</span>
+              <span style={{ color: ACCENT, fontSize: 18, lineHeight: 1.6 }}>·</span>
+              <span style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 19, color: "var(--text-2)", lineHeight: 1.65 }}>{line}</span>
             </div>
           ))}
         </div>
         <div style={{ display: "flex", gap: 10, width: "100%" }}>
-          <button className="btn btn-primary" style={{ flex: 1, fontSize: 16.5 }}
+          <button className="btn btn-primary" style={{ flex: 1, fontSize: 19 }}
             onClick={() => { localStorage.setItem(AGREEMENT_KEY, String(Date.now())); setStep("setup"); }}>
             I understand
           </button>
@@ -333,15 +333,15 @@ export default function PeerSession({ getIdToken, onExit }) {
   if (step === "setup") {
     return (
       <Shell error={error} notice={notice}>
-        <h1 style={{ fontFamily: "var(--display)", fontWeight: 400, fontSize: "clamp(30px, 4.5vw, 40px)", lineHeight: 1.2 }}>
+        <h1 style={{ fontFamily: "var(--display)", fontWeight: 400, fontSize: "clamp(36px, 5.5vw, 48px)", lineHeight: 1.2 }}>
           Find a practice partner.
         </h1>
-        <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 16.5, color: "var(--dim)", lineHeight: 1.7, alignSelf: "flex-start" }}>
+        <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 19, color: "var(--dim)", lineHeight: 1.7, alignSelf: "flex-start" }}>
           You'll be matched with another person who picked the same kind of practice. Cameras start off for both of you.
         </p>
 
         <label style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--dim)", letterSpacing: "0.12em" }}>
+          <span style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--dim)", letterSpacing: "0.12em" }}>
             DISPLAY NAME (NOT YOUR REAL NAME UNLESS YOU WANT)
           </span>
           <input value={handle} onChange={e => setHandle(e.target.value)} maxLength={24}
@@ -349,7 +349,7 @@ export default function PeerSession({ getIdToken, onExit }) {
         </label>
 
         <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--dim)", letterSpacing: "0.12em" }}>
+          <span style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--dim)", letterSpacing: "0.12em" }}>
             KIND OF PRACTICE
           </span>
           <div style={{ display: "flex", gap: 8 }}>
@@ -359,7 +359,7 @@ export default function PeerSession({ getIdToken, onExit }) {
                   flex: 1, padding: "12px 14px", borderRadius: 10, cursor: "pointer",
                   background: mode === key ? "rgba(143,182,232,0.12)" : "var(--surface)",
                   border: `1px solid ${mode === key ? "rgba(143,182,232,0.5)" : "var(--line)"}`,
-                  fontFamily: "var(--ui)", fontSize: 16,
+                  fontFamily: "var(--ui)", fontSize: 19,
                   color: mode === key ? ACCENT : "var(--dim)", transition: "all 0.2s",
                 }}>
                 {label}
@@ -369,7 +369,7 @@ export default function PeerSession({ getIdToken, onExit }) {
         </div>
 
         <label style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--dim)", letterSpacing: "0.12em" }}>
+          <span style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--dim)", letterSpacing: "0.12em" }}>
             TOPIC (OPTIONAL)
           </span>
           <input value={topic} onChange={e => setTopic(e.target.value)} maxLength={80}
@@ -377,7 +377,7 @@ export default function PeerSession({ getIdToken, onExit }) {
         </label>
 
         <div style={{ display: "flex", gap: 10, width: "100%" }}>
-          <button className="btn btn-primary" style={{ flex: 1, fontSize: 16.5 }} onClick={joinQueue}>
+          <button className="btn btn-primary" style={{ flex: 1, fontSize: 19 }} onClick={joinQueue}>
             Find a partner
           </button>
           <button className="btn btn-ghost" style={{ flex: 1, height: 50 }} onClick={onExit}>Go back</button>
@@ -398,14 +398,14 @@ export default function PeerSession({ getIdToken, onExit }) {
               border: `2px solid ${ACCENT}`, background: "rgba(143,182,232,0.1)",
             }}
           />
-          <div style={{ fontFamily: "var(--display)", fontWeight: 400, fontSize: 25 }}>
+          <div style={{ fontFamily: "var(--display)", fontWeight: 400, fontSize: 28 }}>
             Waiting for a partner…
           </div>
-          <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 16, color: "var(--dim)", lineHeight: 1.7, textAlign: "center", maxWidth: 380 }}>
+          <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 19, color: "var(--dim)", lineHeight: 1.7, textAlign: "center", maxWidth: 380 }}>
             You'll be matched with the next person who chooses {mode === "interview" ? "interview practice" : "casual conversation"}.
             You can cancel any time; nothing happens without you.
           </p>
-          <button className="btn btn-ghost" onClick={cancelWaiting} style={{ fontSize: 15.5 }}>
+          <button className="btn btn-ghost" onClick={cancelWaiting} style={{ fontSize: 18 }}>
             Cancel and go back
           </button>
         </div>
@@ -417,19 +417,19 @@ export default function PeerSession({ getIdToken, onExit }) {
     return (
       <Shell wide error={error} notice={notice}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", flexWrap: "wrap", gap: 10 }}>
-          <div style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 16.5, color: "var(--text-2)", maxWidth: 560 }}>
+          <div style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 19, color: "var(--text-2)", maxWidth: 560 }}>
             You're practicing with <strong style={{ fontWeight: 500, color: ACCENT }}>{match?.partnerHandle || "your partner"}</strong>.
             Camera and mic controls are inside the call. Not recorded.
             {match?.room?.provider !== "daily" && (
-              <span style={{ display: "block", marginTop: 4, fontSize: 15, color: "var(--dim)" }}>
+              <span style={{ display: "block", marginTop: 4, fontSize: 18, color: "var(--dim)" }}>
                 If the room says it's waiting for a host: one of you taps "I am the host" and signs in with Google (free, one time).
               </span>
             )}
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <button className="btn btn-ghost" style={{ height: 34, fontSize: 14.5 }} onClick={() => setShowReport(true)}>Report</button>
-            <button className="btn btn-ghost" style={{ height: 34, fontSize: 14.5 }} onClick={blockPartner}>Block</button>
-            <button className="btn btn-ghost" style={{ height: 34, fontSize: 14.5 }} onClick={endSession}>End session</button>
+            <button className="btn btn-ghost" style={{ height: 34, fontSize: 17 }} onClick={() => setShowReport(true)}>Report</button>
+            <button className="btn btn-ghost" style={{ height: 34, fontSize: 17 }} onClick={blockPartner}>Block</button>
+            <button className="btn btn-ghost" style={{ height: 34, fontSize: 17 }} onClick={endSession}>End session</button>
           </div>
         </div>
 
@@ -447,14 +447,14 @@ export default function PeerSession({ getIdToken, onExit }) {
   // ended
   return (
     <Shell error={error} notice={notice}>
-      <h1 style={{ fontFamily: "var(--display)", fontWeight: 400, fontSize: "clamp(28px, 4.5vw, 36px)" }}>
+      <h1 style={{ fontFamily: "var(--display)", fontWeight: 400, fontSize: "clamp(34px, 5vw, 44px)" }}>
         Session ended.
       </h1>
-      <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 16.5, color: "var(--dim)", lineHeight: 1.7 }}>
+      <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 19, color: "var(--dim)", lineHeight: 1.7 }}>
         Nothing was recorded. If anything felt off, you can still report or block your partner from here.
       </p>
       <div style={{ display: "flex", gap: 10, width: "100%", flexWrap: "wrap" }}>
-        <button className="btn btn-primary" style={{ flex: 1, fontSize: 16.5 }} onClick={() => { setError(null); setStep("setup"); }}>
+        <button className="btn btn-primary" style={{ flex: 1, fontSize: 19 }} onClick={() => { setError(null); setStep("setup"); }}>
           Find another partner
         </button>
         <button className="btn btn-ghost" style={{ flex: 1, height: 50 }} onClick={() => setShowReport(true)}>Report</button>

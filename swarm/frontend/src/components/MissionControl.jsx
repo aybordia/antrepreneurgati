@@ -83,14 +83,14 @@ function AgentOrb({ agent, state }) {
                 ? "rgba(255,255,255,0.04)"
                 : `radial-gradient(circle at 35% 30%, ${agent.color}ff 0%, ${agent.color}55 100%)`,
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "17.5px",
+            fontSize: "20px",
             border: `1px solid ${state === "idle" || state === "waiting" ? "rgba(255,255,255,0.06)" : `${agent.color}44`}`,
             transition: "background 0.4s",
           }}
         >
           <span style={{
             color: state === "idle" || state === "waiting" ? "rgba(255,255,255,0.15)" : "white",
-            fontSize: "15.5px",
+            fontSize: "18px",
           }}>
             {agent.icon}
           </span>
@@ -98,7 +98,7 @@ function AgentOrb({ agent, state }) {
       </div>
 
       <div style={{
-        fontFamily: "var(--mono)", fontSize: "12px",
+        fontFamily: "var(--mono)", fontSize: "15px",
         color: isDone ? agent.color : "var(--muted)",
         letterSpacing: "0.1em", textTransform: "uppercase", textAlign: "center",
         transition: "color 0.4s",
@@ -106,7 +106,7 @@ function AgentOrb({ agent, state }) {
         {agent.label}
       </div>
       <div style={{
-        fontFamily: "var(--mono)", fontSize: "12px",
+        fontFamily: "var(--mono)", fontSize: "15px",
         color: isDone ? "var(--success)" : isActive ? agent.color : "rgba(106,103,128,0.4)",
         transition: "color 0.4s",
       }}>
@@ -145,11 +145,11 @@ function AgentCard({ agent, output, done, waiting, cardRef }) {
       )}
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontFamily: "var(--mono)", fontSize: "12.5px", color: agent.color, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+        <span style={{ fontFamily: "var(--mono)", fontSize: "15px", color: agent.color, letterSpacing: "0.1em", textTransform: "uppercase" }}>
           {agent.label}
         </span>
         <span style={{
-          fontFamily: "var(--mono)", fontSize: "12px",
+          fontFamily: "var(--mono)", fontSize: "15px",
           color: state === "done" ? "var(--success)" : state === "active" ? agent.color : "var(--muted)",
           display: "flex", alignItems: "center", gap: "5px",
         }}>
@@ -166,7 +166,7 @@ function AgentCard({ agent, output, done, waiting, cardRef }) {
       <div
         ref={cardRef}
         style={{
-          fontFamily: "var(--mono)", fontSize: "12.5px", color: "var(--muted)",
+          fontFamily: "var(--mono)", fontSize: "15px", color: "var(--muted)",
           lineHeight: 1.65, maxHeight: "60px", overflowY: "auto",
           scrollbarWidth: "none", wordBreak: "break-word", flex: 1,
         }}
@@ -271,10 +271,10 @@ export default function MissionControl({ situation, intent = null, mode = "inter
               border: "2px solid var(--calm)", background: "var(--calm-soft)",
             }}
           />
-          <div style={{ fontFamily: "var(--display)", fontWeight: 400, fontSize: 27 }}>
+          <div style={{ fontFamily: "var(--display)", fontWeight: 400, fontSize: 30 }}>
             {sessionData ? "Your conversation partner is ready." : "Setting things up…"}
           </div>
-          <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 16.5, color: "var(--dim)", lineHeight: 1.7 }}>
+          <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 19, color: "var(--dim)", lineHeight: 1.7 }}>
             {sessionData
               ? `You'll be chatting with ${sessionData.personas?.[0]?.name || "a friendly partner"} (a fictional AI, not a real person). Take your time, end whenever you like.`
               : "Just a moment. This is a relaxed space: no question list, no evaluation."}
@@ -282,7 +282,7 @@ export default function MissionControl({ situation, intent = null, mode = "inter
           {error && (
             <div style={{
               padding: "12px 16px", borderRadius: 10, background: "rgba(217,139,139,0.07)",
-              border: "1px solid rgba(217,139,139,0.25)", fontFamily: "var(--ui)", fontSize: 15.5, color: "var(--alert)",
+              border: "1px solid rgba(217,139,139,0.25)", fontFamily: "var(--ui)", fontSize: 18, color: "var(--alert)",
             }}>{error}</div>
           )}
           {sessionData && (
@@ -290,7 +290,7 @@ export default function MissionControl({ situation, intent = null, mode = "inter
               initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
               className="btn btn-primary"
               onClick={() => onBeginSession(sessionData)}
-              style={{ padding: "0 32px", fontSize: 16.5 }}
+              style={{ padding: "0 32px", fontSize: 19 }}
             >
               Say hello
             </motion.button>
@@ -326,14 +326,14 @@ export default function MissionControl({ situation, intent = null, mode = "inter
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
-            <div style={{ fontFamily: "var(--mono)", fontSize: "12.5px", color: "var(--muted)", letterSpacing: "0.2em", marginBottom: "8px" }}>
+            <div style={{ fontFamily: "var(--mono)", fontSize: "15px", color: "var(--muted)", letterSpacing: "0.2em", marginBottom: "8px" }}>
               PHASE 2 OF 4
             </div>
-            <h1 style={{ fontFamily: "var(--display)", fontSize: "clamp(26px, 4vw, 36px)", fontWeight: 400, lineHeight: 1.2, marginBottom: "6px" }}>
+            <h1 style={{ fontFamily: "var(--display)", fontSize: "clamp(32px, 5vw, 44px)", fontWeight: 400, lineHeight: 1.2, marginBottom: "6px" }}>
               Building your panel.
             </h1>
             <div style={{
-              fontFamily: "var(--mono)", fontSize: "12.5px", color: "var(--muted)",
+              fontFamily: "var(--mono)", fontSize: "15px", color: "var(--muted)",
               maxWidth: "420px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
               letterSpacing: "0.03em",
             }}>
@@ -356,7 +356,7 @@ export default function MissionControl({ situation, intent = null, mode = "inter
               animation: allDone ? "none" : undefined,
             }} />
             <span style={{
-              fontFamily: "var(--mono)", fontSize: "12.5px",
+              fontFamily: "var(--mono)", fontSize: "15px",
               color: allDone ? "var(--success)" : "var(--primary)",
               letterSpacing: "0.08em",
             }}>
@@ -372,7 +372,7 @@ export default function MissionControl({ situation, intent = null, mode = "inter
               style={{
                 padding: "14px 18px", borderRadius: "12px",
                 background: "rgba(255,107,107,0.07)", border: "1px solid rgba(255,107,107,0.18)",
-                fontFamily: "var(--mono)", fontSize: "13.5px", color: "var(--coral)",
+                fontFamily: "var(--mono)", fontSize: "16px", color: "var(--coral)",
               }}
             >
               Error: {error}
@@ -383,7 +383,7 @@ export default function MissionControl({ situation, intent = null, mode = "inter
         {/* Agent orbs */}
         <div style={{
           display: "flex", justifyContent: "center",
-          gap: "clamp(20px, 4vw, 56px)",
+          gap: "clamp(26px, 4.5vw, 62px)",
           padding: "12px 0",
         }}>
           {AGENTS.map((a) => (
@@ -432,10 +432,10 @@ export default function MissionControl({ situation, intent = null, mode = "inter
         {/* Progress bar + launch */}
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontFamily: "var(--mono)", fontSize: "12.5px", color: "var(--muted)", letterSpacing: "0.06em" }}>
+            <span style={{ fontFamily: "var(--mono)", fontSize: "15px", color: "var(--muted)", letterSpacing: "0.06em" }}>
               {phaseLabel(progress)}
             </span>
-            <span style={{ fontFamily: "var(--mono)", fontSize: "13.5px", color: "var(--primary)", letterSpacing: "0.04em" }}>
+            <span style={{ fontFamily: "var(--mono)", fontSize: "16px", color: "var(--primary)", letterSpacing: "0.04em" }}>
               {Math.round(progress)}%
             </span>
           </div>

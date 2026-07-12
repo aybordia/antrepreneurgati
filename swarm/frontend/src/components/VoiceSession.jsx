@@ -78,7 +78,7 @@ function SelfView({ stream }) {
   if (hidden) {
     return (
       <button className="btn btn-ghost" onClick={() => setHidden(false)}
-        style={{ position: "fixed", bottom: 26, left: 24, zIndex: 20, height: 32, fontSize: 13.5, padding: "0 12px" }}>
+        style={{ position: "fixed", bottom: 26, left: 24, zIndex: 20, height: 32, fontSize: 16, padding: "0 12px" }}>
         Show my camera
       </button>
     );
@@ -103,13 +103,13 @@ function SelfView({ stream }) {
         }}
       />
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-        <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--dim)", letterSpacing: "0.05em" }}>
+        <span style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--dim)", letterSpacing: "0.05em" }}>
           Your camera. Only you see this.
         </span>
         <button onClick={() => setHidden(true)}
           style={{
             background: "none", border: "none", cursor: "pointer",
-            fontFamily: "var(--mono)", fontSize: 12, color: "var(--dim)",
+            fontFamily: "var(--mono)", fontSize: 15, color: "var(--dim)",
             textDecoration: "underline", padding: 0,
           }}>
           hide
@@ -137,7 +137,7 @@ function CountdownRing({ seconds, total = TIME_LIMIT }) {
           transition={{ duration: 0.9, ease: "linear" }} />
       </svg>
       <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ fontFamily: "var(--mono)", fontSize: 12.5, color, lineHeight: 1 }}>{seconds}</span>
+        <span style={{ fontFamily: "var(--mono)", fontSize: 15, color, lineHeight: 1 }}>{seconds}</span>
       </div>
     </div>
   );
@@ -369,10 +369,10 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             style={{ textAlign: "center", maxWidth: 560 }}
           >
-            <h1 style={{ fontFamily: "var(--display)", fontWeight: 400, fontSize: "clamp(32px, 5vw, 46px)", lineHeight: 1.15, marginBottom: 10 }}>
+            <h1 style={{ fontFamily: "var(--display)", fontWeight: 400, fontSize: "clamp(38px, 6vw, 56px)", lineHeight: 1.15, marginBottom: 10 }}>
               {isConvo ? "Meet your conversation partner." : "Meet your panel."}
             </h1>
-            <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 17.5, color: "var(--dim)", lineHeight: 1.7 }}>
+            <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 20, color: "var(--dim)", lineHeight: 1.7 }}>
               {isConvo
                 ? "A relaxed chat, at your pace. No question list, no evaluation, end whenever you like."
                 : totalQuestions
@@ -380,14 +380,14 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
                 : "They'll ask their questions one at a time."}
             </p>
             {!isConvo && sessionTone && (
-              <p style={{ fontFamily: "var(--mono)", fontSize: 13.5, color: "var(--honey)", letterSpacing: "0.05em", marginTop: 10 }}>
+              <p style={{ fontFamily: "var(--mono)", fontSize: 16, color: "var(--honey)", letterSpacing: "0.05em", marginTop: 10 }}>
                 Tone: {sessionTone.charAt(0).toUpperCase() + sessionTone.slice(1)}
                 {sessionTone === "challenging" && ". Interviewers may be more direct and less accommodating."}
                 {sessionTone === "supportive" && ". Interviewers will be warm and encouraging."}
               </p>
             )}
             {!isConvo && (
-              <p style={{ fontFamily: "var(--mono)", fontSize: 13.5, color: "var(--calm)", letterSpacing: "0.05em", marginTop: 4 }}>
+              <p style={{ fontFamily: "var(--mono)", fontSize: 16, color: "var(--calm)", letterSpacing: "0.05em", marginTop: 4 }}>
                 Support: {supportLevel.charAt(0).toUpperCase() + supportLevel.slice(1)}
                 {supportLevel === "guided" && ". Questions stay on screen with what a full answer includes, and you can always ask for clarification."}
                 {supportLevel === "standard" && ". Questions stay visible on screen."}
@@ -411,16 +411,16 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
                 className="card"
                 style={{ padding: "20px 18px", display: "flex", flexDirection: "column", gap: 8, borderTop: `2px solid ${p.color}` }}
               >
-                <div style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: 19, color: "var(--text)" }}>
+                <div style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: 22, color: "var(--text)" }}>
                   {p.name}
                 </div>
-                <div style={{ fontFamily: "var(--mono)", fontSize: 13, color: p.color, letterSpacing: "0.04em", lineHeight: 1.5 }}>
+                <div style={{ fontFamily: "var(--mono)", fontSize: 16, color: p.color, letterSpacing: "0.04em", lineHeight: 1.5 }}>
                   {p.role}
                 </div>
-                <div style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 15, color: "var(--dim)", lineHeight: 1.6 }}>
+                <div style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 18, color: "var(--dim)", lineHeight: 1.6 }}>
                   {p.style}
                 </div>
-                <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--dim)", opacity: 0.7, marginTop: "auto", paddingTop: 6 }}>
+                <div style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--dim)", opacity: 0.7, marginTop: "auto", paddingTop: 6 }}>
                   Simulated interviewer. Fictional, not a real person.
                 </div>
               </motion.div>
@@ -434,31 +434,31 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
             className="card"
             style={{ padding: "20px 22px", maxWidth: 620, display: "flex", flexDirection: "column", gap: 10 }}
           >
-            <div style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--calm)", letterSpacing: "0.12em" }}>
+            <div style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--calm)", letterSpacing: "0.12em" }}>
               OPTIONAL: CAMERA TRACKING
             </div>
-            <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 15.5, color: "var(--text-2)", lineHeight: 1.7 }}>
+            <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 18, color: "var(--text-2)", lineHeight: 1.7 }}>
               With your permission, your camera can track <strong style={{ fontWeight: 500 }}>posture, head tilt, and mouth movement</strong> during
               the session. Everything is processed on your device. Raw video is never stored and never leaves your computer;
               only derived numbers are kept. Nothing is shown or judged live. Afterward, you choose which observations
               (if any) appear in your private debrief.
             </p>
             {tracking.status === "denied" && (
-              <p style={{ fontFamily: "var(--ui)", fontSize: 15, color: "var(--dim)", lineHeight: 1.6 }}>
+              <p style={{ fontFamily: "var(--ui)", fontSize: 18, color: "var(--dim)", lineHeight: 1.6 }}>
                 Camera access declined. No problem: your session runs voice-only and the debrief simply skips tracking sections.
               </p>
             )}
             {cameraNote && (
-              <p style={{ fontFamily: "var(--ui)", fontSize: 15, color: "var(--dim)", lineHeight: 1.6 }}>{cameraNote}</p>
+              <p style={{ fontFamily: "var(--ui)", fontSize: 18, color: "var(--dim)", lineHeight: 1.6 }}>{cameraNote}</p>
             )}
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 4 }}>
               <button className="btn btn-primary" onClick={() => handleBegin(true)}
                 disabled={tracking.status === "starting"}
-                style={{ padding: "0 22px", fontSize: 16.5 }}>
+                style={{ padding: "0 22px", fontSize: 19 }}>
                 {tracking.status === "starting" ? "Starting camera…" : "Begin with camera"}
               </button>
               <button className="btn btn-ghost" onClick={() => handleBegin(false)}
-                style={{ height: 50, padding: "0 22px", fontSize: 16.5 }}>
+                style={{ height: 50, padding: "0 22px", fontSize: 19 }}>
                 Begin voice-only
               </button>
             </div>
@@ -485,11 +485,11 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
 
         {/* Status line */}
         <div style={{ display: "flex", alignItems: "center", gap: 14, alignSelf: "stretch", justifyContent: "space-between" }}>
-          <span style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: isConvo ? "var(--calm)" : "var(--dim)", letterSpacing: "0.16em" }}>
+          <span style={{ fontFamily: "var(--mono)", fontSize: 15, color: isConvo ? "var(--calm)" : "var(--dim)", letterSpacing: "0.16em" }}>
             {isConvo ? "OPEN CONVERSATION · NO EVALUATION" : "LIVE SESSION"}
           </span>
           {tracking.isTracking && (
-            <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--calm)", letterSpacing: "0.08em", opacity: 0.7 }}>
+            <span style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--calm)", letterSpacing: "0.08em", opacity: 0.7 }}>
               CAMERA ON · PRIVATE · NO LIVE FEEDBACK
             </span>
           )}
@@ -505,13 +505,13 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
             transition={{ duration: 0.3 }}
             style={{ textAlign: "center" }}
           >
-            <div style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: 22, marginBottom: 2 }}>
+            <div style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: 25, marginBottom: 2 }}>
               {activePersona?.name || "Panel"}
             </div>
-            <div style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: personaColor, letterSpacing: "0.05em", opacity: 0.9 }}>
+            <div style={{ fontFamily: "var(--mono)", fontSize: 15, color: personaColor, letterSpacing: "0.05em", opacity: 0.9 }}>
               {activePersona?.role || ""}
             </div>
-            <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--dim)", marginTop: 5, opacity: 0.7 }}>
+            <div style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--dim)", marginTop: 5, opacity: 0.7 }}>
               Simulated interviewer. Fictional, not a real person.
             </div>
           </motion.div>
@@ -534,21 +534,21 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
                 borderRadius: "var(--radius)",
               }}
             >
-              <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--dim)", letterSpacing: "0.14em", marginBottom: 6 }}>
+              <div style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--dim)", letterSpacing: "0.14em", marginBottom: 6 }}>
                 CURRENT QUESTION
               </div>
-              <div style={{ fontFamily: "var(--ui)", fontWeight: 400, fontSize: 17, lineHeight: 1.6, color: "var(--text)" }}>
+              <div style={{ fontFamily: "var(--ui)", fontWeight: 400, fontSize: 20, lineHeight: 1.6, color: "var(--text)" }}>
                 {currentQuestion.text}
               </div>
               {supportLevel === "guided" && currentQuestion.parts?.length > 0 && (
                 <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 5 }}>
-                  <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--calm)", letterSpacing: "0.12em" }}>
+                  <div style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--calm)", letterSpacing: "0.12em" }}>
                     A FULL ANSWER USUALLY INCLUDES
                   </div>
                   {currentQuestion.parts.map((part, i) => (
                     <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-                      <span aria-hidden style={{ color: "var(--calm)", fontSize: 14.5, lineHeight: 1.6 }}>·</span>
-                      <span style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 15, color: "var(--text-2)", lineHeight: 1.6 }}>
+                      <span aria-hidden style={{ color: "var(--calm)", fontSize: 17, lineHeight: 1.6 }}>·</span>
+                      <span style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 18, color: "var(--text-2)", lineHeight: 1.6 }}>
                         {part}
                       </span>
                     </div>
@@ -556,7 +556,7 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
                 </div>
               )}
               {supportLevel === "guided" && (
-                <div style={{ marginTop: 8, fontFamily: "var(--mono)", fontSize: 12, color: "var(--dim)", opacity: 0.8 }}>
+                <div style={{ marginTop: 8, fontFamily: "var(--mono)", fontSize: 15, color: "var(--dim)", opacity: 0.8 }}>
                   Unsure what they mean? Asking them to clarify is always OK.
                 </div>
               )}
@@ -572,7 +572,7 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
               initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               style={{
                 padding: "16px 20px", width: "100%",
-                fontSize: 18, lineHeight: 1.75,
+                fontSize: 21, lineHeight: 1.75,
                 fontFamily: "var(--ui)", fontWeight: 300,
                 background: "var(--surface)",
                 border: "1px solid var(--line)",
@@ -593,7 +593,7 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
               style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}
             >
               <MicWaveform active={isListening} analyserRef={analyserRef} />
-              <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--calm)", letterSpacing: "0.12em", opacity: 0.8 }}>
+              <div style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--calm)", letterSpacing: "0.12em", opacity: 0.8 }}>
                 LISTENING. TAKE YOUR TIME.
               </div>
             </motion.div>
@@ -607,7 +607,7 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
               style={{
                 width: "100%", padding: "12px 16px", borderRadius: 10,
                 background: "rgba(217,139,139,0.07)", border: "1px solid rgba(217,139,139,0.25)",
-                fontFamily: "var(--mono)", fontSize: 13.5, color: "var(--alert)",
+                fontFamily: "var(--mono)", fontSize: 16, color: "var(--alert)",
               }}
             >
               {micError}
@@ -638,11 +638,11 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
                 transition={{ duration: 0.3 }}
                 style={{ display: "flex", flexDirection: "column", gap: 4 }}
               >
-                <span style={{ fontFamily: "var(--mono)", fontSize: 12, letterSpacing: "0.1em", color: tColor }}>
+                <span style={{ fontFamily: "var(--mono)", fontSize: 15, letterSpacing: "0.1em", color: tColor }}>
                   {turn.speaker.toUpperCase()}
                 </span>
                 <span style={{
-                  fontSize: 16.5, fontFamily: "var(--ui)", fontWeight: 300,
+                  fontSize: 19, fontFamily: "var(--ui)", fontWeight: 300,
                   color: "var(--text)", lineHeight: 1.65,
                   opacity: isLast ? 1 : 0.5,
                   transition: "opacity 0.3s",
@@ -659,8 +659,8 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 style={{ display: "flex", flexDirection: "column", gap: 4 }}
               >
-                <span style={{ fontFamily: "var(--mono)", fontSize: 12, letterSpacing: "0.1em", color: "var(--calm)" }}>YOU</span>
-                <span style={{ fontSize: 16.5, color: "var(--text)", lineHeight: 1.65, opacity: 0.45, fontStyle: "italic" }}>
+                <span style={{ fontFamily: "var(--mono)", fontSize: 15, letterSpacing: "0.1em", color: "var(--calm)" }}>YOU</span>
+                <span style={{ fontSize: 19, color: "var(--text)", lineHeight: 1.65, opacity: 0.45, fontStyle: "italic" }}>
                   Writing down what you said…
                   <motion.span animate={{ opacity: [1, 0] }} transition={{ duration: 0.6, repeat: Infinity }}>|</motion.span>
                 </span>
@@ -689,7 +689,7 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
               }}
             >
               <span className="dot" style={{ background: "var(--calm)", width: 5, height: 5 }} />
-              <span style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--calm)", letterSpacing: "0.07em" }}>
+              <span style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--calm)", letterSpacing: "0.07em" }}>
                 {isProcessing ? "TRANSCRIBING" : "LISTENING. TAP WHEN DONE."}
               </span>
               {timedMode && countdown !== null && <CountdownRing seconds={countdown} />}
@@ -709,7 +709,7 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
               }}
             >
               <span className="dot" style={{ background: "var(--honey)", width: 5, height: 5 }} />
-              <span style={{ fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--honey)", letterSpacing: "0.07em" }}>
+              <span style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--honey)", letterSpacing: "0.07em" }}>
                 {(activePersona?.name || "PANEL").split(/\s+/)[0].toUpperCase()} IS SPEAKING
               </span>
             </motion.div>
@@ -722,7 +722,7 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
 
       {/* End session button */}
       <button className="btn btn-ghost" onClick={() => setShowConfirm(true)}
-        style={{ position: "fixed", bottom: 26, right: 24, zIndex: 20, height: 36, fontSize: 14.5, padding: "0 16px" }}>
+        style={{ position: "fixed", bottom: 26, right: 24, zIndex: 20, height: 36, fontSize: 17, padding: "0 16px" }}>
         {isConvo ? "End conversation" : "End session"}
       </button>
 
@@ -739,12 +739,12 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
               zIndex: 20, display: "flex", alignItems: "center", gap: 12,
             }}
           >
-            <span style={{ color: "var(--calm)", fontSize: 15.5 }}>✓</span>
-            <span style={{ fontFamily: "var(--mono)", fontSize: 13.5, color: "var(--calm)", letterSpacing: "0.06em" }}>
+            <span style={{ color: "var(--calm)", fontSize: 18 }}>✓</span>
+            <span style={{ fontFamily: "var(--mono)", fontSize: 16, color: "var(--calm)", letterSpacing: "0.06em" }}>
               Session complete
             </span>
             <button className="btn btn-primary" onClick={handleEnd}
-              style={{ height: 32, fontSize: 14.5, padding: "0 14px", borderRadius: 8 }}>
+              style={{ height: 32, fontSize: 17, padding: "0 14px", borderRadius: 8 }}>
               See your debrief
             </button>
           </motion.div>
@@ -775,17 +775,17 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
               }}
             >
               <div>
-                <div style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: 24, marginBottom: 10 }}>
+                <div style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: 27, marginBottom: 10 }}>
                   {isConvo ? "End the conversation?" : "End the session?"}
                 </div>
-                <div style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 16.5, color: "var(--dim)", lineHeight: 1.7 }}>
+                <div style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 19, color: "var(--dim)", lineHeight: 1.7 }}>
                   {isConvo
                     ? "You'll get a short optional recap and your transcript. No evaluation."
                     : "You'll get a private debrief: your panel's impressions and your full transcript. No scores."}
                 </div>
               </div>
               <div style={{ display: "flex", gap: 10 }}>
-                <button className="btn btn-primary" onClick={handleEnd} style={{ flex: 1, fontSize: 16.5 }}>
+                <button className="btn btn-primary" onClick={handleEnd} style={{ flex: 1, fontSize: 19 }}>
                   {isConvo ? "End conversation" : "End session"}
                 </button>
                 <button className="btn btn-ghost" onClick={() => setShowConfirm(false)} style={{ flex: 1, height: 50 }}>Keep going</button>

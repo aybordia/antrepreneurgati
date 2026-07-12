@@ -81,7 +81,7 @@ export default function WaitlistPage({ onBack }) {
 
           <h1 style={{
             fontFamily: "var(--display)",
-            fontSize: "clamp(32px, 5vw, 50px)",
+            fontSize: "clamp(38px, 6vw, 60px)",
             fontWeight: 300,
             lineHeight: 1.1,
             color: "var(--text)",

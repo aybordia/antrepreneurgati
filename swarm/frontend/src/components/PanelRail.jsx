@@ -79,7 +79,7 @@ export default function PanelRail({ personas = [], activeName, speaking }) {
   const n = personas.length;
   return (
     <div role="group" aria-label="Interview panel"
-      style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: "clamp(14px, 4vw, 34px)" }}>
+      style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: "clamp(18px, 4vw, 40px)" }}>
       {personas.map((p, i) => {
         const isActive = p.name === activeName;
         // Shallow arc: outer nodes sit slightly lower
@@ -109,7 +109,7 @@ export default function PanelRail({ personas = [], activeName, speaking }) {
               </div>
             </div>
             <span style={{
-              fontFamily: "var(--mono)", fontSize: 12.5, letterSpacing: "0.04em",
+              fontFamily: "var(--mono)", fontSize: 15, letterSpacing: "0.04em",
               color: isActive ? p.color : "var(--dim)",
               opacity: isActive ? 1 : 0.65,
               transition: "color 0.3s, opacity 0.3s",
@@ -148,7 +148,7 @@ export function QuestionRail({ total = 0, current = 0, complete = false }) {
           );
         })}
       </div>
-      <span aria-live="polite" style={{ fontFamily: "var(--mono)", fontSize: 13.5, color: "var(--dim)", letterSpacing: "0.06em" }}>
+      <span aria-live="polite" style={{ fontFamily: "var(--mono)", fontSize: 16, color: "var(--dim)", letterSpacing: "0.06em" }}>
         {complete ? "All questions covered" : `Question ${shown} of ${total}`}
       </span>
     </div>

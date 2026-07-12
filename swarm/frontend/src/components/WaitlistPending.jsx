@@ -70,7 +70,7 @@ export default function WaitlistPending({ user, onSignOut, onJoinWaitlist }) {
         >
           <h1 style={{
             fontFamily: "var(--display)",
-            fontSize: "clamp(28px, 4vw, 40px)",
+            fontSize: "clamp(34px, 5vw, 48px)",
             fontWeight: 300,
             color: "var(--text)",
             marginBottom: "14px",

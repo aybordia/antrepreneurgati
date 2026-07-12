@@ -16,17 +16,17 @@ function AuroraBlob({ style }) {
 function LogoMark() {
   return (
     <svg width="48" height="48" viewBox="0 0 48 48" fill="none"
-      style={{ display: "block", filter: "drop-shadow(0 0 14px rgba(123,108,255,0.55))" }}>
+      style={{ display: "block", filter: "drop-shadow(0 0 14px rgba(228,163,57,0.5))" }}>
       {/* Outer ring */}
-      <circle cx="24" cy="24" r="22" stroke="rgba(123,108,255,0.25)" strokeWidth="1" />
+      <circle cx="24" cy="24" r="22" stroke="rgba(228,163,57,0.25)" strokeWidth="1" />
       {/* Spinning dashed ring */}
-      <circle cx="24" cy="24" r="22" stroke="rgba(123,108,255,0.55)" strokeWidth="1.5"
+      <circle cx="24" cy="24" r="22" stroke="rgba(228,163,57,0.5)" strokeWidth="1.5"
         strokeDasharray="8 6" style={{ animation: "rotateSlow 12s linear infinite", transformOrigin: "24px 24px" }} />
       {/* Three nodes */}
       {[
-        { cx: 24, cy: 10, r: 3.5, color: "#7B6CFF" },
-        { cx: 38, cy: 34, r: 3.5, color: "#00D9FF" },
-        { cx: 10, cy: 34, r: 3.5, color: "#4DDDAA" },
+        { cx: 24, cy: 10, r: 3.5, color: "#E4A339" },
+        { cx: 38, cy: 34, r: 3.5, color: "#8FB6E8" },
+        { cx: 10, cy: 34, r: 3.5, color: "#74B9A0" },
       ].map(({ cx, cy, r, color }, i) => (
         <g key={i}>
           <circle cx={cx} cy={cy} r={r + 4} fill={`${color}18`} />
@@ -64,19 +64,19 @@ function Feature({ icon, title, desc, color, delay }) {
         background: `${color}18`,
         border: `1px solid ${color}30`,
         display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: "18px",
+        fontSize: "21px",
       }}>
         {icon}
       </div>
       <div>
         <div style={{
-          fontFamily: "var(--ui)", fontWeight: 500, fontSize: "15.5px",
+          fontFamily: "var(--ui)", fontWeight: 500, fontSize: "18px",
           color: "var(--text)", marginBottom: "3px", letterSpacing: "0.01em",
         }}>
           {title}
         </div>
         <div style={{
-          fontFamily: "var(--ui)", fontWeight: 300, fontSize: "14.5px",
+          fontFamily: "var(--ui)", fontWeight: 300, fontSize: "17px",
           color: "var(--muted)", lineHeight: 1.55,
         }}>
           {desc}
@@ -115,25 +115,21 @@ export default function SignIn({ googleReady, onCredential }) {
       transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
       style={{
         position: "absolute", inset: 0,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        background: "#04040A", overflow: "hidden",
+        display: "flex", justifyContent: "center",
+        background: "var(--ink)",
+        overflowY: "auto", overflowX: "hidden",
       }}
     >
-      {/* Aurora blobs */}
+      {/* Ambient pools — new palette, calm */}
       <AuroraBlob style={{
         width: "70vw", height: "70vw", top: "-25%", left: "-20%",
-        background: "radial-gradient(circle, rgba(123,108,255,0.13) 0%, transparent 70%)",
+        background: "radial-gradient(circle, rgba(228,163,57,0.08) 0%, transparent 70%)",
         animation: "auroraMove 20s ease-in-out infinite",
       }} />
       <AuroraBlob style={{
         width: "55vw", height: "55vw", bottom: "-18%", right: "-15%",
-        background: "radial-gradient(circle, rgba(0,217,255,0.09) 0%, transparent 70%)",
+        background: "radial-gradient(circle, rgba(116,185,160,0.07) 0%, transparent 70%)",
         animation: "auroraMove 26s ease-in-out infinite reverse",
-      }} />
-      <AuroraBlob style={{
-        width: "40vw", height: "40vw", top: "50%", left: "58%",
-        background: "radial-gradient(circle, rgba(77,221,170,0.07) 0%, transparent 70%)",
-        animation: "auroraMove 22s ease-in-out infinite 6s",
       }} />
 
       {/* Grid lines */}
@@ -147,11 +143,13 @@ export default function SignIn({ googleReady, onCredential }) {
       }} />
       <div className="noise" />
 
-      {/* ── Main content ── */}
+      {/* ── Main content — margin auto keeps it centered but scrollable when
+             it grows taller than the viewport ── */}
       <div style={{
         position: "relative", zIndex: 10,
-        width: "100%", maxWidth: "460px",
-        padding: "0 28px",
+        width: "100%", maxWidth: "520px",
+        padding: "48px 28px 64px",
+        margin: "auto",
         display: "flex", flexDirection: "column", alignItems: "center",
       }}>
 
@@ -174,7 +172,7 @@ export default function SignIn({ googleReady, onCredential }) {
               background: "linear-gradient(to bottom, transparent, rgba(255,255,255,0.2), transparent)",
             }} />
             <span style={{
-              fontFamily: "var(--mono)", fontSize: "13.5px",
+              fontFamily: "var(--mono)", fontSize: "16px",
               letterSpacing: "0.45em", color: "var(--muted)",
               textTransform: "uppercase",
             }}>
@@ -194,7 +192,7 @@ export default function SignIn({ googleReady, onCredential }) {
           transition={{ delay: 0.28, duration: 0.95, ease: [0.16, 1, 0.3, 1] }}
           style={{
             fontFamily: "var(--display)",
-            fontSize: "clamp(40px, 6.5vw, 62px)",
+            fontSize: "clamp(46px, 7vw, 72px)",
             fontWeight: 300,
             lineHeight: 1.08,
             color: "var(--text)",
@@ -206,7 +204,7 @@ export default function SignIn({ googleReady, onCredential }) {
           <br />
           <em style={{
             fontStyle: "italic",
-            background: "linear-gradient(135deg, #7B6CFF 0%, #00D9FF 60%, #4DDDAA 100%)",
+            background: "linear-gradient(135deg, #E4A339 0%, #EFC272 55%, #74B9A0 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
@@ -222,7 +220,7 @@ export default function SignIn({ googleReady, onCredential }) {
           transition={{ delay: 0.42, duration: 0.7 }}
           style={{
             fontFamily: "var(--ui)", fontWeight: 300,
-            fontSize: "17.5px", color: "var(--muted)",
+            fontSize: "20px", color: "var(--muted)",
             lineHeight: 1.75, textAlign: "center",
             marginBottom: "36px", maxWidth: "360px",
           }}
@@ -239,21 +237,21 @@ export default function SignIn({ googleReady, onCredential }) {
             icon="🎙"
             title="Live voice interviews"
             desc="Speak naturally. The panel adapts in real time based on your answers."
-            color="#7B6CFF"
+            color="#E4A339"
             delay={0.52}
           />
           <Feature
             icon="🔬"
             title="Deep-researched questions"
             desc="Five agents spend time on your exact company, role, and résumé before you even start."
-            color="#00D9FF"
+            color="#8FB6E8"
             delay={0.60}
           />
           <Feature
             icon="📋"
             title="Private, non-scored debrief"
             desc="Every session ends with your panel's written impressions and your full transcript. Observations, never grades."
-            color="#4DDDAA"
+            color="#74B9A0"
             delay={0.68}
           />
         </div>
@@ -280,14 +278,14 @@ export default function SignIn({ googleReady, onCredential }) {
           {/* Card headline */}
           <div style={{ textAlign: "center" }}>
             <div style={{
-              fontFamily: "var(--display)", fontSize: "24px",
+              fontFamily: "var(--display)", fontSize: "27px",
               fontWeight: 300, letterSpacing: "0.01em",
               marginBottom: "7px", color: "var(--text)",
             }}>
               Ready to be challenged?
             </div>
             <div style={{
-              fontFamily: "var(--ui)", fontSize: "15.5px",
+              fontFamily: "var(--ui)", fontSize: "18px",
               color: "var(--muted)", lineHeight: 1.65,
             }}>
               Sign in with Google to start your first session.
@@ -307,7 +305,7 @@ export default function SignIn({ googleReady, onCredential }) {
 
           {!googleReady && (
             <div style={{
-              fontFamily: "var(--mono)", fontSize: "13.5px",
+              fontFamily: "var(--mono)", fontSize: "16px",
               color: "var(--muted)", opacity: 0.4,
               letterSpacing: "0.06em",
             }}>
@@ -328,9 +326,9 @@ export default function SignIn({ googleReady, onCredential }) {
               <div key={label} style={{
                 display: "flex", alignItems: "center", gap: "5px",
               }}>
-                <span style={{ fontSize: "13.5px", opacity: 0.55 }}>{icon}</span>
+                <span style={{ fontSize: "16px", opacity: 0.55 }}>{icon}</span>
                 <span style={{
-                  fontFamily: "var(--mono)", fontSize: "12.5px",
+                  fontFamily: "var(--mono)", fontSize: "15px",
                   color: "var(--muted)", opacity: 0.45,
                   letterSpacing: "0.06em",
                 }}>
@@ -352,24 +350,24 @@ export default function SignIn({ googleReady, onCredential }) {
             style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
               width: "100%", padding: "11px 18px", borderRadius: "12px",
-              border: "1px solid rgba(123,108,255,0.25)",
+              border: "1px solid rgba(228,163,57,0.25)",
               background: "rgba(123,108,255,0.07)",
               textDecoration: "none",
               transition: "all 0.2s",
             }}
             onMouseEnter={e => { e.currentTarget.style.background = "rgba(123,108,255,0.13)"; e.currentTarget.style.borderColor = "rgba(123,108,255,0.4)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "rgba(123,108,255,0.07)"; e.currentTarget.style.borderColor = "rgba(123,108,255,0.25)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(123,108,255,0.07)"; e.currentTarget.style.borderColor = "rgba(228,163,57,0.25)"; }}
           >
-            <span style={{ fontSize: "15.5px" }}>✦</span>
+            <span style={{ fontSize: "18px" }}>✦</span>
             <div style={{ textAlign: "left" }}>
-              <div style={{ fontFamily: "var(--mono)", fontSize: "13.5px", color: "#a09aff", letterSpacing: "0.06em" }}>
+              <div style={{ fontFamily: "var(--mono)", fontSize: "16px", color: "#a09aff", letterSpacing: "0.06em" }}>
                 JOIN OUR COMMUNITY
               </div>
-              <div style={{ fontFamily: "var(--ui)", fontSize: "13.5px", color: "var(--muted)", opacity: 0.6, marginTop: "1px" }}>
+              <div style={{ fontFamily: "var(--ui)", fontSize: "16px", color: "var(--muted)", opacity: 0.6, marginTop: "1px" }}>
                 Stay in the loop as we build
               </div>
             </div>
-            <span style={{ marginLeft: "auto", fontFamily: "var(--mono)", fontSize: "13.5px", color: "rgba(160,154,255,0.5)" }}>→</span>
+            <span style={{ marginLeft: "auto", fontFamily: "var(--mono)", fontSize: "16px", color: "rgba(160,154,255,0.5)" }}>→</span>
           </a>
         </motion.div>
 

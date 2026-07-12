@@ -51,7 +51,7 @@ body {
   background: var(--ink);
   color: var(--text);
   font-family: var(--ui);
-  font-size: 17px; /* large, readable base — a deliberate accessibility choice */
+  font-size: 19px; /* large, readable base — a deliberate accessibility choice */
   line-height: 1.65;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
@@ -114,13 +114,13 @@ p { text-wrap: pretty; }
 /* ─── Buttons ───────────────────────────────────────────────── */
 .btn {
   display: inline-flex; align-items: center; justify-content: center;
-  height: 56px;
+  height: 60px;
   border-radius: 10px;
   border: none;
   cursor: pointer;
   font-family: var(--ui);
   font-weight: 500;
-  font-size: 17px;
+  font-size: 19px;
   letter-spacing: 0.01em;
   transition: transform 0.18s var(--ease-spring), box-shadow 0.2s ease, background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
   white-space: nowrap;
@@ -144,8 +144,8 @@ p { text-wrap: pretty; }
   background: transparent;
   border: 1px solid var(--line);
   color: var(--dim);
-  height: 46px;
-  font-size: 15px;
+  height: 50px;
+  font-size: 17px;
   border-radius: 10px;
 }
 .btn-ghost:hover {
@@ -228,7 +228,7 @@ p { text-wrap: pretty; }
 .tag {
   display: inline-flex; align-items: center;
   padding: 6px 14px; border-radius: 999px;
-  font-family: var(--mono); font-size: 13px; letter-spacing: 0.05em;
+  font-family: var(--mono); font-size: 15px; letter-spacing: 0.05em;
   border: 1px solid var(--line);
   background: rgba(255,255,255,0.02);
   color: var(--dim);
