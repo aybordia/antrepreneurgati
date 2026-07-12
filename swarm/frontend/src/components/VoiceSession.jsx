@@ -492,10 +492,10 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
             </h1>
             <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 20, color: "var(--dim)", lineHeight: 1.7 }}>
               {isConvo
-                ? "A relaxed chat, at your pace. No question list, no evaluation, end whenever you like."
+                ? "Relaxed. No evaluation. End anytime."
                 : totalQuestions
-                ? `They'll ask ${totalQuestions} planned questions, one at a time. You'll always see which question you're on.`
-                : "They'll ask their questions one at a time."}
+                ? `${totalQuestions} questions, one at a time.`
+                : "One question at a time."}
             </p>
             {!isConvo && sessionTone && (
               <p style={{ fontFamily: "var(--mono)", fontSize: 16, color: "var(--honey)", letterSpacing: "0.05em", marginTop: 10 }}>
@@ -556,10 +556,8 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
               OPTIONAL: CAMERA TRACKING
             </div>
             <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 18, color: "var(--text-2)", lineHeight: 1.7 }}>
-              With your permission, your camera can track <strong style={{ fontWeight: 500 }}>posture, head tilt, and mouth movement</strong> during
-              the session. Everything is processed on your device. Raw video is never stored and never leaves your computer;
-              only derived numbers are kept. Nothing is shown or judged live. Afterward, you choose which observations
-              (if any) appear in your private debrief.
+              Tracks posture, head tilt, and mouth movement, on your device only.
+              Never stored. Never judged live. You choose what appears in your debrief.
             </p>
             {tracking.status === "denied" && (
               <p style={{ fontFamily: "var(--ui)", fontSize: 18, color: "var(--dim)", lineHeight: 1.6 }}>

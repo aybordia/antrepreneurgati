@@ -337,7 +337,7 @@ export default function PeerSession({ getIdToken, onExit }) {
           Find a practice partner.
         </h1>
         <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 19, color: "var(--dim)", lineHeight: 1.7, alignSelf: "flex-start" }}>
-          You'll be matched with another person who picked the same kind of practice. Cameras start off for both of you.
+          Cameras start off for both of you.
         </p>
 
         <label style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8 }}>

@@ -181,16 +181,8 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                   fontSize: "clamp(42px, 6.5vw, 64px)", lineHeight: 1.12, marginBottom: 12,
                 }}
               >
-                {isConvo ? <>What would you<br />like to talk about?</> : <>Tell us about<br />your interview.</>}
+                {isConvo ? "Your topic." : "Your interview."}
               </motion.h1>
-              <motion.p
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }}
-                style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 20, color: "var(--dim)", lineHeight: 1.7, maxWidth: 460 }}
-              >
-                {isConvo
-                  ? "Anything at all. This is relaxed practice with one friendly AI partner: no questions to get through, no evaluation, end whenever you like."
-                  : "Say it or type it: where, what for, how many interviewers. We'll build a fictional panel and a question plan you can see before you start."}
-              </motion.p>
             </div>
 
             {/* Input console */}
@@ -369,9 +361,6 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                     </button>
                   ))}
                 </div>
-                <span style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 18, color: "var(--dim)", lineHeight: 1.6 }}>
-                  {SUPPORT_LEVELS.find(s => s.key === supportLevel)?.desc}
-                </span>
               </div>
             )}
 
@@ -396,9 +385,11 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                     </button>
                   ))}
                 </div>
-                <span style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 18, color: "var(--dim)", lineHeight: 1.6 }}>
-                  You selected: <strong style={{ fontWeight: 500, color: "var(--text-2)" }}>{TONES.find(t => t.key === tone)?.label}</strong>. {TONES.find(t => t.key === tone)?.desc}
-                </span>
+                {tone === "challenging" && (
+                  <span style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 16, color: "var(--dim)", lineHeight: 1.6 }}>
+                    More direct, less accommodating.
+                  </span>
+                )}
               </div>
             )}
 
@@ -495,41 +486,26 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                 : isConvo ? "Say what you'd like to chat about" : "Describe your interview to begin"}
             </motion.button>
 
-            {/* Examples */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--dim)", letterSpacing: "0.14em", opacity: 0.7 }}>
-                EXAMPLES
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {examples.map((ex, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setSituation(ex.label)}
-                    style={{
-                      background: i === exIdx ? "var(--honey-soft)" : "transparent",
-                      border: `1px solid ${i === exIdx ? "rgba(228,163,57,0.35)" : "var(--line)"}`,
-                      borderRadius: 999, cursor: "pointer",
-                      padding: "6px 14px",
-                      fontFamily: "var(--mono)", fontSize: 15,
-                      color: i === exIdx ? "var(--honey)" : "var(--dim)",
-                      letterSpacing: "0.05em",
-                      transition: "all 0.35s ease",
-                    }}
-                  >
-                    {ex.tag}
-                  </button>
-                ))}
-              </div>
-              <button
-                onClick={() => setSituation(examples[exIdx].label)}
-                style={{
-                  background: "none", border: "none", cursor: "pointer", textAlign: "left",
-                  fontFamily: "var(--ui)", fontWeight: 300,
-                  fontSize: 18, color: "var(--dim)", lineHeight: 1.6, padding: 0, opacity: 0.75,
-                }}
-              >
-                "{examples[exIdx].label}"
-              </button>
+            {/* Example chips — tap to fill */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {examples.map((ex, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSituation(ex.label)}
+                  style={{
+                    background: i === exIdx ? "var(--honey-soft)" : "transparent",
+                    border: `1px solid ${i === exIdx ? "rgba(228,163,57,0.35)" : "var(--line)"}`,
+                    borderRadius: 999, cursor: "pointer",
+                    padding: "6px 14px",
+                    fontFamily: "var(--mono)", fontSize: 15,
+                    color: i === exIdx ? "var(--honey)" : "var(--dim)",
+                    letterSpacing: "0.05em",
+                    transition: "all 0.35s ease",
+                  }}
+                >
+                  {ex.tag}
+                </button>
+              ))}
             </div>
           </div>
         </div>

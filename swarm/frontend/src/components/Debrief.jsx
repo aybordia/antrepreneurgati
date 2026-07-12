@@ -92,8 +92,8 @@ function ScorePanel({ scores, overall }) {
             </div>
           )
         ))}
-        <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 18, color: "var(--dim)", lineHeight: 1.6, marginTop: 4 }}>
-          These score the content of your answers in this session, never you as a person, and never how you spoke, moved, or paused.
+        <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 17, color: "var(--dim)", lineHeight: 1.6, marginTop: 4 }}>
+          About your answers, never you.
         </p>
       </div>
     </div>
@@ -110,6 +110,7 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
   const savedRef = useRef(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
   // Which tracking categories the user has opted in to see — default: none (hidden)
   const [selectedCategories, setSelectedCategories] = useState(loadCategoryPrefs);
   const currentAudioRef = useRef(null);
@@ -269,14 +270,9 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
           <div style={{ fontFamily: "var(--mono)", fontSize: 15, color: isConvo ? "var(--calm)" : "var(--muted)", letterSpacing: "0.2em", marginBottom: 12 }}>
             {isConvo ? "OPTIONAL RECAP" : "PRIVATE DEBRIEF"}
           </div>
-          <h1 style={{ fontFamily: "var(--display)", fontSize: "clamp(40px, 6vw, 60px)", fontWeight: 300, lineHeight: 1.15, marginBottom: 10 }}>
-            {isConvo ? "Nice chat." : "How the session went."}
+          <h1 style={{ fontFamily: "var(--display)", fontSize: "clamp(40px, 6vw, 60px)", fontWeight: 300, lineHeight: 1.15 }}>
+            {isConvo ? "Nice chat." : "How it went."}
           </h1>
-          <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 19, color: "var(--muted)", lineHeight: 1.7, maxWidth: 520 }}>
-            {isConvo
-              ? "Here's a short recap and your transcript, just for you. Nothing here is a score or an evaluation."
-              : "Everything here is private and only for you. Scores and observations measure the content of your answers, never you as a person."}
-          </p>
         </motion.div>
 
         {error && (
@@ -300,21 +296,64 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
           </div>
         )}
 
-        {/* Session facts — neutral */}
-        {debrief?.session_facts && (
-          <motion.div {...fadeUp(0.08)} style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <span className="tag">{debrief.session_facts.questions_asked} questions asked</span>
-            <span className="tag">{debrief.session_facts.answers_given} answers given</span>
-            <span className="tag">{personas.length} simulated interviewers</span>
-          </motion.div>
-        )}
-
         {/* Answer-content scores — overall + the per-dimension "why" */}
         {debrief?.scores && debrief?.clarityScore != null && (
           <motion.div {...fadeUp(0.1)}>
             <ScorePanel scores={debrief.scores} overall={debrief.clarityScore} />
           </motion.div>
         )}
+
+        {/* Voice — two lines, that's it */}
+        {!isConvo && (debrief?.focus || (debrief?.communication_observations || []).length > 0) && (
+          <motion.div {...fadeUp(0.12)} className="card" style={{ padding: "22px 26px", borderTop: "2px solid var(--calm)", display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--calm)", letterSpacing: "0.16em" }}>
+              VOICE
+            </div>
+            {debrief?.focus && (
+              <p style={{ fontFamily: "var(--ui)", fontWeight: 400, fontSize: 21, lineHeight: 1.65, color: "var(--text)" }}>
+                {debrief.focus}
+              </p>
+            )}
+            {debrief?.communication_observations?.[0] && (
+              <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 19, lineHeight: 1.65, color: "var(--text-2)" }}>
+                {debrief.communication_observations[0].observation}
+              </p>
+            )}
+          </motion.div>
+        )}
+
+        {/* Camera — up to three lines, opt-in */}
+        {availableSignals.length > 0 && (
+          <motion.div {...fadeUp(0.16)} className="card" style={{ padding: "22px 26px", borderTop: "2px solid var(--honey)", display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--honey)", letterSpacing: "0.16em" }}>
+                CAMERA
+              </span>
+              {availableSignals.map(cat => {
+                const on = selectedCategories.includes(cat);
+                return (
+                  <button key={cat} onClick={() => toggleCategory(cat)} aria-pressed={on}
+                    style={{
+                      padding: "6px 14px", borderRadius: 999, cursor: "pointer",
+                      background: on ? "var(--honey-soft)" : "transparent",
+                      border: `1px solid ${on ? "rgba(228,163,57,0.45)" : "var(--line)"}`,
+                      fontFamily: "var(--ui)", fontSize: 15,
+                      color: on ? "var(--honey)" : "var(--dim)", transition: "all 0.2s",
+                    }}>
+                    {CATEGORY_LABELS[cat] || cat}
+                  </button>
+                );
+              })}
+            </div>
+            {selectedCategories.filter(c => debrief.signal_summary[c]).slice(0, 3).map(cat => (
+              <p key={cat} style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 19, lineHeight: 1.65, color: "var(--text-2)" }}>
+                <strong style={{ fontWeight: 500, color: "var(--text)" }}>{CATEGORY_LABELS[cat] || cat}:</strong> {debrief.signal_summary[cat]}
+              </p>
+            ))}
+          </motion.div>
+        )}
+
+        {showDetail && (<>
 
         {/* Communication observations — per-dimension, descriptive, never collapsed */}
         {(debrief?.communication_observations || []).length > 0 && (
@@ -356,9 +395,6 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
             <div style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--calm)", letterSpacing: "0.16em", marginBottom: 8 }}>
               THINGS YOU CAN SAY IN A REAL INTERVIEW
             </div>
-            <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 18, color: "var(--dim)", lineHeight: 1.6, marginBottom: 12 }}>
-              Asking for reasonable accommodations is normal and effective. Based on this session, these might help you:
-            </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {debrief.self_advocacy.map((line, i) => (
                 <div key={i} style={{
@@ -373,7 +409,10 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
           </motion.div>
         )}
 
-        {/* Persona impressions */}
+        </>)}
+
+        {/* Persona impressions — the recap is always visible in casual mode */}
+        {(showDetail || isConvo) && (
         <motion.div {...fadeUp(0.14)} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--muted)", letterSpacing: "0.16em" }}>
@@ -399,52 +438,6 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
             </motion.div>
           ))}
         </motion.div>
-
-        {/* Tracking observations — opt-in, default hidden */}
-        {availableSignals.length > 0 && (
-          <motion.div {...fadeUp(0.3)} className="card" style={{ padding: "22px 24px" }}>
-            <div style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--muted)", letterSpacing: "0.16em", marginBottom: 8 }}>
-              PRIVATE TRACKING OBSERVATIONS
-            </div>
-            <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 18, color: "var(--muted)", lineHeight: 1.7, marginBottom: 14 }}>
-              Optional observations from this session (camera signals were processed entirely on your device; no video was stored).
-              They're hidden by default. Choose what you'd like to see; these are neutral descriptions, not judgments — differences are not deficits.
-            </p>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
-              {availableSignals.map(cat => {
-                const on = selectedCategories.includes(cat);
-                return (
-                  <button key={cat} onClick={() => toggleCategory(cat)}
-                    aria-pressed={on}
-                    style={{
-                      padding: "7px 14px", borderRadius: 999,
-                      background: on ? "rgba(123,108,255,0.12)" : "rgba(255,255,255,0.03)",
-                      border: `1px solid ${on ? "rgba(123,108,255,0.45)" : "rgba(255,255,255,0.08)"}`,
-                      fontFamily: "var(--mono)", fontSize: 15, letterSpacing: "0.08em",
-                      color: on ? "var(--primary)" : "var(--muted)", transition: "all 0.2s",
-                    }}>
-                    {on ? "✓ " : "+ "}{CATEGORY_LABELS[cat] || cat}
-                  </button>
-                );
-              })}
-            </div>
-            <AnimatePresence>
-              {selectedCategories.filter(c => debrief.signal_summary[c]).map(cat => (
-                <motion.div key={cat}
-                  initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                  style={{ overflow: "hidden" }}>
-                  <div style={{ paddingTop: 14 }}>
-                    <div style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--teal)", letterSpacing: "0.1em", marginBottom: 4 }}>
-                      {(CATEGORY_LABELS[cat] || cat).toUpperCase()}
-                    </div>
-                    <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 19, lineHeight: 1.7, color: "var(--text-2)" }}>
-                      {debrief.signal_summary[cat]}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </motion.div>
         )}
 
         {/* Transcript */}
@@ -482,8 +475,14 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
 
         {/* Actions */}
         <motion.div {...fadeUp(0.42)} style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          {!isConvo && (
+            <button className="btn btn-ghost" onClick={() => setShowDetail(v => !v)}
+              style={{ height: 52, padding: "0 20px", fontSize: 19 }}>
+              {showDetail ? "Less detail" : "More detail"}
+            </button>
+          )}
           <button className="btn btn-primary" onClick={() => onAskSwarm(debrief)} style={{ padding: "0 24px" }}>
-            Ask the Swarm about this session →
+            Ask the Swarm →
           </button>
           <button className="btn btn-ghost" onClick={onRunAgain} style={{ height: 52, padding: "0 20px", fontSize: 19 }}>
             Practice again
