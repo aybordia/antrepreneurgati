@@ -199,7 +199,15 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
               transition={{ delay: 0.26, duration: 0.55 }}
               style={{ position: "relative" }}
             >
+              {/* Persistent label: never a disappearing placeholder-as-label */}
+              <label htmlFor="situation-input" style={{
+                display: "block", fontFamily: "var(--mono)", fontSize: 14,
+                color: "var(--dim)", letterSpacing: "0.12em", marginBottom: 8,
+              }}>
+                {isConvo ? "WHAT YOU'D LIKE TO TALK ABOUT" : "YOUR INTERVIEW, IN YOUR OWN WORDS"}
+              </label>
               <textarea
+                id="situation-input"
                 value={situation}
                 onChange={e => { if (!isListening && !isProcessing) setSituation(e.target.value); }}
                 placeholder={
@@ -231,13 +239,12 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
               <button
                 onClick={() => isListening ? stop() : start()}
                 disabled={isProcessing}
-                aria-label={isListening ? "Stop listening" : "Speak your request"}
                 style={{
                   position: "absolute", right: 14, bottom: 18,
-                  width: 42, height: 42, borderRadius: "50%",
+                  height: 44, borderRadius: 999, padding: "0 18px",
                   border: `1px solid ${isListening ? "rgba(116,185,160,0.55)" : "var(--line)"}`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 20, cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  fontSize: 15.5, fontFamily: "var(--ui)", fontWeight: 500, cursor: "pointer",
                   background: isListening ? "var(--calm-soft)" : "var(--raised)",
                   color: isListening ? "var(--calm)" : "var(--dim)",
                   animation: isListening ? "micRing 1.2s ease-out infinite" : "none",
@@ -245,10 +252,10 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                 }}
               >
                 {isProcessing
-                  ? <CircleNotch size={18} weight="bold" style={{ animation: "rotateSlow 1s linear infinite" }} />
+                  ? <><CircleNotch size={18} weight="bold" style={{ animation: "rotateSlow 1s linear infinite" }} /> Writing it down</>
                   : isListening
-                  ? <Stop size={17} weight="fill" />
-                  : <Microphone size={18} weight="regular" />}
+                  ? <><Stop size={17} weight="fill" /> Stop listening</>
+                  : <><Microphone size={18} weight="regular" /> Speak instead</>}
               </button>
 
               <AnimatePresence>
@@ -440,10 +447,16 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                   transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                   style={{ overflow: "hidden" }}
                 >
+                  <label htmlFor="background-input" style={{
+                    display: "block", fontFamily: "var(--mono)", fontSize: 14,
+                    color: "var(--dim)", letterSpacing: "0.12em", margin: "10px 0 8px",
+                  }}>
+                    YOUR BACKGROUND (OPTIONAL)
+                  </label>
                   <textarea
+                    id="background-input"
                     value={resumeContext}
                     onChange={e => setResumeContext(e.target.value)}
-                    aria-label="Background context"
                     placeholder={"Paste your résumé or any background that helps the panel ask questions about you specifically."}
                     rows={4}
                     style={{

@@ -43,6 +43,49 @@
   --radius:      14px; /* one radius system: cards 14, buttons 10, pills 999 */
 }
 
+/* ─── Sensory modes ─────────────────────────────────────────────
+   Dark (default): soft blue-gray dark, never pitch black.
+   Light: warm glare-free off-white with charcoal text.
+   Plain: light tokens + no textures, no animation, simple sans display. */
+:root[data-theme="light"], :root[data-theme="plain"] {
+  --ink:      #F5F4EF;   /* warm off-white, not pure white */
+  --surface:  #FCFBF8;
+  --raised:   #EFEDE6;
+  --line:     #D9D5CA;
+  --text:     #2A2A2A;   /* charcoal, not pure black */
+  --dim:      #63625D;
+  --honey:    #A06E14;   /* darker honey for AA contrast on light */
+  --honey-soft: rgba(160,110,20,0.1);
+  --calm:     #2F6E5A;   /* darker sage for AA contrast on light */
+  --calm-soft: rgba(47,110,90,0.1);
+  --alert:    #A04848;
+
+  --primary-glow: rgba(160,110,20,0.18);
+  --cyan:     #3E6EA8;
+  --text-2:   #44443F;
+  --glass:    rgba(0,0,0,0.025);
+  --glass-b:  rgba(0,0,0,0.05);
+}
+
+:root[data-theme="plain"] {
+  --display: 'Figtree', system-ui, sans-serif; /* no stylized display face */
+}
+
+/* Plain text view: no texture, no ambient art, no motion at all */
+[data-theme="plain"] .noise,
+[data-theme="plain"] .ambient { display: none; }
+:root[data-theme="plain"] *,
+:root[data-theme="plain"] *::before,
+:root[data-theme="plain"] *::after {
+  animation: none !important;
+  transition: none !important;
+  backdrop-filter: none !important;
+  text-shadow: none !important;
+}
+
+/* Light-mode fixes for the few non-token surfaces */
+[data-theme="light"] .noise { opacity: 0.015; }
+
 /* ─── Reset ─────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body, #root { height: 100%; width: 100%; }

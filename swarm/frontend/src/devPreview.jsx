@@ -67,6 +67,7 @@ window.fetch = async (url, opts) => {
 };
 
 const screen = new URLSearchParams(location.search).get("screen") || "input";
+document.documentElement.dataset.theme = new URLSearchParams(location.search).get("theme") || "dark";
 const noop = async () => "dev-token";
 
 // Static mock of the active-session composition for visual review

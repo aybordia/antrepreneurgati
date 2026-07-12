@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { streamFetch } from "../lib/api";
+import SnakeGame from "./SnakeGame";
 
 const AGENTS = [
   { name: "Researcher",     color: "#8FB6E8", label: "Researcher",    icon: "◎" },
@@ -195,6 +196,17 @@ export default function MissionControl({ situation, intent = null, mode = "inter
   const [error, setError] = useState(null);
   const cardRefs = useRef({});
 
+  // Pause the visible stream: the work continues underneath, but the display
+  // holds perfectly still so it can be read at the user's own pace.
+  const [paused, setPaused] = useState(false);
+  const [frozen, setFrozen] = useState(null);
+  const togglePause = () => {
+    setFrozen(paused ? null : { outputs, done });
+    setPaused(p => !p);
+  };
+  const viewOutputs = paused && frozen ? frozen.outputs : outputs;
+  const viewDone = paused && frozen ? frozen.done : done;
+
   useEffect(() => {
     const controller = new AbortController();
 
@@ -238,17 +250,19 @@ export default function MissionControl({ situation, intent = null, mode = "inter
   }, [situation, intent, mode, tone, supportLevel, getIdToken]);
 
   useEffect(() => {
+    if (paused) return; // no auto-scroll while reading
     Object.values(cardRefs.current).forEach(el => { if (el) el.scrollTop = el.scrollHeight; });
-  }, [outputs]);
+  }, [outputs, paused]);
 
-  const doneCount = Object.keys(done).length;
-  const activeCount = AGENTS.filter(a => outputs[a.name]?.length > 0 && !done[a.name]).length;
+  const doneCount = Object.keys(viewDone).length;
+  const activeCount = AGENTS.filter(a => viewOutputs[a.name]?.length > 0 && !viewDone[a.name]).length;
   const progress = Math.min(((doneCount + activeCount * 0.5) / 5) * 100, 99);
-  const allDone = doneCount === 5;
+  // allDone follows LIVE state so the begin button appears even while paused
+  const allDone = Object.keys(done).length === 5;
 
   const getState = (name) => {
-    if (done[name]) return "done";
-    if (outputs[name]?.length > 0) return "active";
+    if (viewDone[name]) return "done";
+    if (viewOutputs[name]?.length > 0) return "active";
     if (name === "Architect" && doneCount < 4) return "waiting";
     return "idle";
   };
@@ -301,7 +315,7 @@ export default function MissionControl({ situation, intent = null, mode = "inter
   }
 
   return (
-    <motion.div className="screen" variants={sv} initial="initial" animate="animate" exit="exit"
+    <motion.div className="screen screen-scroll" variants={sv} initial="initial" animate="animate" exit="exit"
       style={{ background: "var(--bg)" }}
     >
       <div className="ambient" />
@@ -318,7 +332,7 @@ export default function MissionControl({ situation, intent = null, mode = "inter
 
       <div style={{
         position: "relative", zIndex: 1,
-        height: "100%", display: "flex", flexDirection: "column",
+        minHeight: "100%", display: "flex", flexDirection: "column",
         padding: "28px 28px 24px",
         maxWidth: "1000px", margin: "0 auto", width: "100%", gap: "18px",
       }}>
@@ -364,6 +378,26 @@ export default function MissionControl({ situation, intent = null, mode = "inter
             </span>
           </motion.div>
         </div>
+
+        {/* Freeze the stream and read at your own pace */}
+        {!allDone && (
+          <button
+            onClick={togglePause}
+            aria-pressed={paused}
+            style={{
+              alignSelf: "flex-start",
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "8px 18px", borderRadius: 999, cursor: "pointer",
+              background: paused ? "var(--calm-soft)" : "var(--surface)",
+              border: `1px solid ${paused ? "rgba(116,185,160,0.45)" : "var(--line)"}`,
+              fontFamily: "var(--ui)", fontSize: 15, fontWeight: 500,
+              color: paused ? "var(--calm)" : "var(--dim)",
+              transition: "all 0.2s",
+            }}
+          >
+            {paused ? "▶ Resume live updates" : "⏸ Pause updates to read"}
+          </button>
+        )}
 
         {/* Error */}
         <AnimatePresence>
@@ -413,7 +447,7 @@ export default function MissionControl({ situation, intent = null, mode = "inter
           {AGENTS.slice(0, 3).map(a => (
             <AgentCard
               key={a.name} agent={a}
-              output={outputs[a.name]} done={done[a.name]} waiting={false}
+              output={viewOutputs[a.name]} done={viewDone[a.name]} waiting={false}
               cardRef={el => cardRefs.current[a.name] = el}
             />
           ))}
@@ -422,7 +456,7 @@ export default function MissionControl({ situation, intent = null, mode = "inter
           {AGENTS.slice(3).map(a => (
             <AgentCard
               key={a.name} agent={a}
-              output={outputs[a.name]} done={done[a.name]}
+              output={viewOutputs[a.name]} done={viewDone[a.name]}
               waiting={a.name === "Architect" && doneCount < 4}
               cardRef={el => cardRefs.current[a.name] = el}
             />
@@ -481,6 +515,21 @@ export default function MissionControl({ situation, intent = null, mode = "inter
             )}
           </AnimatePresence>
         </div>
+
+        {/* Something to do while the swarm works */}
+        <AnimatePresence>
+          {!allDone && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.5, delay: 0.6 }}
+              style={{ display: "flex", justifyContent: "center", paddingBottom: 24 }}
+            >
+              <SnakeGame />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );

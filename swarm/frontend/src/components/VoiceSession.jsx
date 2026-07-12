@@ -119,6 +119,123 @@ function SelfView({ stream }) {
   );
 }
 
+/* Literal answer templates by question type — sentence starters, not scripts */
+const ANSWER_TEMPLATES = {
+  behavioral: {
+    title: "Story template",
+    steps: [
+      ["The situation", "\"One time, at ___…\" Set the scene in one sentence."],
+      ["Your job", "\"My job was to ___.\" What were you responsible for?"],
+      ["What you did", "\"So I ___.\" The specific things you actually did."],
+      ["The result", "\"In the end, ___.\" What happened because of it."],
+      ["What you learned", "\"I learned ___.\" One sentence is enough."],
+    ],
+  },
+  motivational: {
+    title: "Why-you template",
+    steps: [
+      ["The spark", "\"I first got interested when ___.\""],
+      ["One specific moment", "Tell one small, real story that shows it."],
+      ["Why here", "\"That's why this place fits, because ___.\""],
+    ],
+  },
+  technical: {
+    title: "Technical answer template",
+    steps: [
+      ["Answer first", "Give the direct answer in one sentence before explaining."],
+      ["Example", "\"For example, ___.\" Something you did, built, or studied."],
+      ["Honest limits", "It's OK to say what you're not sure about."],
+    ],
+  },
+  clarification: {
+    title: "This question may be vague on purpose",
+    steps: [
+      ["It's OK to ask", "\"Could you clarify what you mean by ___?\""],
+      ["Offer options", "\"Do you mean X, or Y?\""],
+      ["Then answer", "Once it's clear, answer with one specific example."],
+    ],
+  },
+};
+
+function HintPopup({ question, onClose }) {
+  const template = ANSWER_TEMPLATES[question?.type] || ANSWER_TEMPLATES.behavioral;
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, background: "rgba(8,10,16,0.8)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        zIndex: 90, padding: 20,
+      }}
+    >
+      <motion.div
+        initial={{ scale: 0.95, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.97, opacity: 0 }}
+        transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+        onClick={e => e.stopPropagation()}
+        className="card"
+        role="dialog" aria-label="Answer hint"
+        style={{
+          background: "var(--surface)", maxWidth: 560, width: "100%",
+          maxHeight: "80vh", overflowY: "auto",
+          padding: "28px 30px", display: "flex", flexDirection: "column", gap: 16,
+          borderTop: "2px solid var(--honey)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+          <span style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: 24 }}>{template.title}</span>
+          <button className="btn btn-ghost" onClick={onClose} style={{ height: 40, fontSize: 15, padding: "0 16px" }}>
+            Close
+          </button>
+        </div>
+
+        {question?.text && (
+          <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 17, color: "var(--dim)", lineHeight: 1.6 }}>
+            For: "{question.text}"
+          </p>
+        )}
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {template.steps.map(([label, text], i) => (
+            <div key={i} style={{
+              display: "flex", gap: 14, alignItems: "flex-start",
+              padding: "12px 16px", borderRadius: 10,
+              background: "var(--raised)", border: "1px solid var(--line)",
+            }}>
+              <span style={{
+                fontFamily: "var(--mono)", fontSize: 15, color: "var(--honey)",
+                flexShrink: 0, width: 140, lineHeight: 1.55,
+              }}>
+                {label}
+              </span>
+              <span style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 17, color: "var(--text-2)", lineHeight: 1.65 }}>
+                {text}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {question?.parts?.length > 0 && (
+          <div>
+            <div style={{ fontFamily: "var(--mono)", fontSize: 13, color: "var(--calm)", letterSpacing: "0.1em", marginBottom: 6 }}>
+              THIS QUESTION SPECIFICALLY ASKS FOR
+            </div>
+            {question.parts.map((p, i) => (
+              <div key={i} style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 17, color: "var(--text-2)", lineHeight: 1.7 }}>
+                · {p}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 15, color: "var(--dim)", lineHeight: 1.6 }}>
+          This is a shape to lean on, not a script. Your own words are the right words.
+        </p>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 const TIME_LIMIT = 60;
 
 function CountdownRing({ seconds, total = TIME_LIMIT }) {
@@ -154,6 +271,7 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
   const [countdown, setCountdown] = useState(null);
   const [questionNum, setQuestionNum] = useState(0);
   const [currentQuestion, setCurrentQuestion] = useState(null); // { text, parts, type, index }
+  const [showHint, setShowHint] = useState(false);
 
   const countdownRef = useRef(null);
   const transcriptRef = useRef(null);
@@ -534,8 +652,22 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
                 borderRadius: "var(--radius)",
               }}
             >
-              <div style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--dim)", letterSpacing: "0.14em", marginBottom: 6 }}>
-                CURRENT QUESTION
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, gap: 10 }}>
+                <span style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--dim)", letterSpacing: "0.14em" }}>
+                  CURRENT QUESTION
+                </span>
+                <button
+                  onClick={() => setShowHint(true)}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 6,
+                    padding: "6px 14px", borderRadius: 999, cursor: "pointer",
+                    background: "var(--honey-soft)", border: "1px solid rgba(228,163,57,0.4)",
+                    fontFamily: "var(--ui)", fontSize: 15, color: "var(--honey)",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  Show me a template
+                </button>
               </div>
               <div style={{ fontFamily: "var(--ui)", fontWeight: 400, fontSize: 20, lineHeight: 1.6, color: "var(--text)" }}>
                 {currentQuestion.text}
@@ -716,6 +848,21 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
           )}
         </AnimatePresence>
       </div>
+
+      {/* Answer-template popup — user-initiated, never automatic */}
+      <AnimatePresence>
+        {showHint && (
+          <HintPopup question={currentQuestion} onClose={() => setShowHint(false)} />
+        )}
+      </AnimatePresence>
+
+      {/* Realistic mode has no question card, so the hint lives next to End session */}
+      {!isConvo && supportLevel === "realistic" && currentQuestion && (
+        <button className="btn btn-ghost" onClick={() => setShowHint(true)}
+          style={{ position: "fixed", bottom: 26, right: 190, zIndex: 20, height: 42, fontSize: 15, padding: "0 16px" }}>
+          Show me a template
+        </button>
+      )}
 
       {/* Self-view camera mirror (only when camera tracking is on) */}
       <SelfView stream={tracking.previewStream} />

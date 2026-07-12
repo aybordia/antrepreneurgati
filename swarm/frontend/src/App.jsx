@@ -22,6 +22,39 @@ const SCREENS = {
   ASK_SWARM:       "ASK_SWARM",
 };
 
+const THEME_KEY = "swarm_sensory_mode";
+const THEMES = [
+  { key: "dark", label: "Dark" },
+  { key: "light", label: "Soft light" },
+  { key: "plain", label: "Plain text" },
+];
+
+/* Sensory controls — always fixed top-right, literal text labels, one click
+   per mode. Persists across sessions. */
+function SensoryControls({ theme, onChange }) {
+  return (
+    <div role="group" aria-label="Sensory controls"
+      style={{
+        display: "flex", alignItems: "center", gap: 4,
+        padding: 4, borderRadius: 999,
+        background: "var(--surface)", border: "1px solid var(--line)",
+      }}>
+      {THEMES.map(t => (
+        <button key={t.key} onClick={() => onChange(t.key)} aria-pressed={theme === t.key}
+          style={{
+            padding: "6px 14px", borderRadius: 999, cursor: "pointer", border: "none",
+            background: theme === t.key ? "var(--honey-soft)" : "transparent",
+            color: theme === t.key ? "var(--honey)" : "var(--dim)",
+            fontFamily: "var(--ui)", fontSize: 14.5, fontWeight: 500,
+            transition: "all 0.15s",
+          }}>
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function decodeJwt(jwt) {
   try {
     const base64Url = jwt.split(".")[1];
@@ -52,6 +85,12 @@ export default function App() {
   const [debriefResult, setDebriefResult] = useState(null);
   const [timedMode, setTimedMode] = useState(false);
   const [googleReady, setGoogleReady] = useState(false);
+  const [theme, setTheme] = useState(() => localStorage.getItem(THEME_KEY) || "dark");
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem(THEME_KEY, theme);
+  }, [theme]);
 
   useEffect(() => {
     const legacyScript = document.querySelector("script[src='https://accounts.google.com/gsi/client']");
@@ -169,8 +208,15 @@ export default function App() {
         </button>
       )}
 
+      {!user && (
+        <div style={{ position: "fixed", right: 20, top: 20, zIndex: 1000 }}>
+          <SensoryControls theme={theme} onChange={setTheme} />
+        </div>
+      )}
+
       {user && (
-        <div style={{ position: "fixed", right: 20, top: 20, zIndex: 1000, display: "flex", alignItems: "center", gap: "10px" }}>
+        <div style={{ position: "fixed", right: 20, top: 20, zIndex: 1000, display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <SensoryControls theme={theme} onChange={setTheme} />
           {user.picture && (
             <img src={user.picture} alt="" width={28} height={28} referrerPolicy="no-referrer"
               style={{ borderRadius: "50%", border: "1px solid rgba(255,255,255,0.12)" }} />
