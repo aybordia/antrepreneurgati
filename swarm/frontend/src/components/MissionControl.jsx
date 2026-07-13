@@ -117,95 +117,44 @@ function AgentOrb({ agent, state }) {
   );
 }
 
-/* ── Agent card ── */
-function AgentCard({ agent, output, done, waiting, cardRef }) {
-  const hasOutput = output?.length > 0;
-  const state = done ? "done" : waiting ? "waiting" : hasOutput ? "active" : "idle";
-
-  return (
-    <div style={{
-      position: "relative",
-      background: done
-        ? `rgba(${hexToRgb(agent.color)}, 0.03)`
-        : hasOutput
-        ? "rgba(255,255,255,0.025)"
-        : "rgba(255,255,255,0.018)",
-      border: `1px solid ${done ? `${agent.color}30` : hasOutput ? `${agent.color}14` : "rgba(255,255,255,0.05)"}`,
-      borderRadius: "14px",
-      padding: "14px 16px",
-      display: "flex", flexDirection: "column", gap: "9px",
-      minHeight: "94px", overflow: "hidden",
-      transition: "background 0.4s, border-color 0.4s",
-    }}>
-      {/* Top glow when active */}
-      {hasOutput && !done && (
-        <div style={{
-          position: "absolute", top: 0, left: 0, right: 0, height: "1px",
-          background: `linear-gradient(90deg, transparent, ${agent.color}88, transparent)`,
-        }} />
-      )}
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontFamily: "var(--mono)", fontSize: "15px", color: agent.color, letterSpacing: "0.1em", textTransform: "uppercase" }}>
-          {agent.label}
-        </span>
-        <span style={{
-          fontFamily: "var(--mono)", fontSize: "15px",
-          color: state === "done" ? "var(--success)" : state === "active" ? agent.color : "var(--muted)",
-          display: "flex", alignItems: "center", gap: "5px",
-        }}>
-          {state === "done"
-            ? "✓ Done"
-            : state === "waiting"
-            ? "Waiting…"
-            : state === "active"
-            ? <><span className="dot" style={{ background: agent.color, width: "4px", height: "4px" }} />Active</>
-            : "Standby"}
-        </span>
-      </div>
-
-      <div
-        ref={cardRef}
-        style={{
-          fontFamily: "var(--mono)", fontSize: "15px", color: "var(--muted)",
-          lineHeight: 1.65, maxHeight: "60px", overflowY: "auto",
-          scrollbarWidth: "none", wordBreak: "break-word", flex: 1,
-        }}
-      >
-        {state === "waiting"
-          ? <span style={{ opacity: 0.35, fontStyle: "italic" }}>Awaiting peers...</span>
-          : !hasOutput
-          ? <span style={{ opacity: 0.22 }}>Standby</span>
-          : output}
-      </div>
-    </div>
-  );
-}
-
-function hexToRgb(hex) {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `${r},${g},${b}`;
-}
-
 export default function MissionControl({ situation, intent = null, mode = "interview", tone = "neutral", supportLevel = "guided", onBeginSession, getIdToken }) {
   const [outputs, setOutputs] = useState({});
   const [done, setDone] = useState({});
   const [sessionData, setSessionData] = useState(null);
   const [error, setError] = useState(null);
   const cardRefs = useRef({});
+  // Chronological terminal log: [{ agent, color, text }]
+  const [log, setLog] = useState([]);
+  const terminalRef = useRef(null);
 
   // Pause the visible stream: the work continues underneath, but the display
   // holds perfectly still so it can be read at the user's own pace.
   const [paused, setPaused] = useState(false);
   const [frozen, setFrozen] = useState(null);
   const togglePause = () => {
-    setFrozen(paused ? null : { outputs, done });
+    setFrozen(paused ? null : { outputs, done, log });
     setPaused(p => !p);
   };
   const viewOutputs = paused && frozen ? frozen.outputs : outputs;
   const viewDone = paused && frozen ? frozen.done : done;
+  const viewLog = paused && frozen ? frozen.log : log;
+
+  const agentColor = (name) => AGENTS.find(a => a.name === name)?.color || "var(--dim)";
+  const agentLabel = (name) => AGENTS.find(a => a.name === name)?.label || name;
+
+  const pushLogLine = (agent, text) =>
+    setLog(prev => [...prev.slice(-120), { agent, text }]);
+  const appendLogLine = (agent, text) =>
+    setLog(prev => {
+      const next = [...prev];
+      for (let i = next.length - 1; i >= 0; i--) {
+        if (next[i].agent === agent) {
+          next[i] = { ...next[i], text: next[i].text + text };
+          return next;
+        }
+      }
+      return [...next.slice(-120), { agent, text }];
+    });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -225,15 +174,21 @@ export default function MissionControl({ situation, intent = null, mode = "inter
           if (!chunk.agent) return;
           if (chunk.thinking) {
             setOutputs(p => ({ ...p, [chunk.agent]: chunk.chunk }));
+            pushLogLine(chunk.agent, chunk.chunk);
             return;
           }
           if (chunk.streamStart) {
             setOutputs(p => ({ ...p, [chunk.agent]: chunk.chunk }));
+            pushLogLine(chunk.agent, chunk.chunk);
             return;
           }
-          if (chunk.chunk) setOutputs(p => ({ ...p, [chunk.agent]: (p[chunk.agent] || "") + chunk.chunk }));
+          if (chunk.chunk) {
+            setOutputs(p => ({ ...p, [chunk.agent]: (p[chunk.agent] || "") + chunk.chunk }));
+            appendLogLine(chunk.agent, chunk.chunk);
+          }
           if (chunk.done) {
             setDone(p => ({ ...p, [chunk.agent]: true }));
+            pushLogLine(chunk.agent, "Done.");
             if (chunk.sessionData) setSessionData(chunk.sessionData);
           }
         }, token, controller.signal);
@@ -252,7 +207,8 @@ export default function MissionControl({ situation, intent = null, mode = "inter
   useEffect(() => {
     if (paused) return; // no auto-scroll while reading
     Object.values(cardRefs.current).forEach(el => { if (el) el.scrollTop = el.scrollHeight; });
-  }, [outputs, paused]);
+    if (terminalRef.current) terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+  }, [outputs, log, paused]);
 
   const doneCount = Object.keys(viewDone).length;
   const activeCount = AGENTS.filter(a => viewOutputs[a.name]?.length > 0 && !viewDone[a.name]).length;
@@ -379,26 +335,6 @@ export default function MissionControl({ situation, intent = null, mode = "inter
           </motion.div>
         </div>
 
-        {/* Freeze the stream and read at your own pace */}
-        {!allDone && (
-          <button
-            onClick={togglePause}
-            aria-pressed={paused}
-            style={{
-              alignSelf: "flex-start",
-              display: "inline-flex", alignItems: "center", gap: 8,
-              padding: "8px 18px", borderRadius: 999, cursor: "pointer",
-              background: paused ? "var(--calm-soft)" : "var(--surface)",
-              border: `1px solid ${paused ? "rgba(116,185,160,0.45)" : "var(--line)"}`,
-              fontFamily: "var(--ui)", fontSize: 15, fontWeight: 500,
-              color: paused ? "var(--calm)" : "var(--dim)",
-              transition: "all 0.2s",
-            }}
-          >
-            {paused ? "▶ Resume live updates" : "⏸ Pause updates to read"}
-          </button>
-        )}
-
         {/* Error */}
         <AnimatePresence>
           {error && (
@@ -442,25 +378,51 @@ export default function MissionControl({ situation, intent = null, mode = "inter
           />
         </div>
 
-        {/* Agent cards — 3 top, 2 bottom */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "10px" }}>
-          {AGENTS.slice(0, 3).map(a => (
-            <AgentCard
-              key={a.name} agent={a}
-              output={viewOutputs[a.name]} done={viewDone[a.name]} waiting={false}
-              cardRef={el => cardRefs.current[a.name] = el}
-            />
-          ))}
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-          {AGENTS.slice(3).map(a => (
-            <AgentCard
-              key={a.name} agent={a}
-              output={viewOutputs[a.name]} done={viewDone[a.name]}
-              waiting={a.name === "Architect" && doneCount < 4}
-              cardRef={el => cardRefs.current[a.name] = el}
-            />
-          ))}
+        {/* Live terminal output — one box, explicit pause, reads at your pace */}
+        <div style={{
+          background: "var(--surface)", border: "1px solid var(--line)",
+          borderRadius: "var(--radius)", overflow: "hidden",
+        }}>
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "12px 18px", borderBottom: "1px solid var(--line)", gap: 12,
+          }}>
+            <span style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--dim)", letterSpacing: "0.14em" }}>
+              LIVE TERMINAL OUTPUT
+            </span>
+            <button
+              onClick={togglePause}
+              aria-pressed={paused}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 8,
+                padding: "7px 16px", borderRadius: 999, cursor: "pointer",
+                background: paused ? "var(--calm-soft)" : "var(--raised)",
+                border: `1px solid ${paused ? "rgba(116,185,160,0.45)" : "var(--line)"}`,
+                fontFamily: "var(--ui)", fontSize: 15, fontWeight: 500,
+                color: paused ? "var(--calm)" : "var(--dim)",
+                transition: "all 0.2s",
+              }}
+            >
+              {paused ? "▶ Resume stream" : "⏸ Pause stream"}
+            </button>
+          </div>
+          <div ref={terminalRef} style={{
+            height: 190, overflowY: "auto", padding: "14px 18px",
+            background: "var(--ink)",
+            display: "flex", flexDirection: "column", gap: 8,
+          }}>
+            {viewLog.length === 0 && (
+              <span style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--dim)", opacity: 0.6 }}>
+                {">"} Starting up...
+              </span>
+            )}
+            {viewLog.map((line, i) => (
+              <div key={i} style={{ fontFamily: "var(--mono)", fontSize: 15, lineHeight: 1.6, wordBreak: "break-word" }}>
+                <span style={{ color: agentColor(line.agent) }}>{">"} {agentLabel(line.agent)}:</span>{" "}
+                <span style={{ color: "var(--text-2)" }}>{line.text}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Progress bar + launch */}
