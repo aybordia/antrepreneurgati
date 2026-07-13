@@ -480,7 +480,7 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
         <div style={{
           position: "relative", zIndex: 1, minHeight: "100%",
           display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-          padding: "72px 24px 48px", maxWidth: 860, margin: "0 auto", gap: 30,
+          padding: "72px 28px 48px", maxWidth: 1120, margin: "0 auto", gap: 34, width: "100%",
         }}>
           <motion.div
             initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
@@ -507,17 +507,15 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
             {!isConvo && (
               <p style={{ fontFamily: "var(--mono)", fontSize: 16, color: "var(--calm)", letterSpacing: "0.05em", marginTop: 4 }}>
                 Support: {supportLevel.charAt(0).toUpperCase() + supportLevel.slice(1)}
-                {supportLevel === "guided" && ". Questions stay on screen with what a full answer includes, and you can always ask for clarification."}
-                {supportLevel === "standard" && ". Questions stay visible on screen."}
-                {supportLevel === "realistic" && ". Spoken questions only, like a real interview."}
               </p>
             )}
           </motion.div>
 
-          {/* Panel assembly — signature moment */}
+          {/* Panel assembly — names only, big */}
           <div className="persona-grid" style={{
             "--cols": personas.length <= 3 ? personas.length : Math.ceil(personas.length / 2),
-            maxWidth: personas.length === 4 ? 620 : 760,
+            maxWidth: personas.length === 4 ? 860 : 1040,
+            gap: 18,
           }}>
             {personas.map((p, i) => (
               <motion.div
@@ -525,21 +523,19 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
                 initial={{ opacity: 0, y: 22 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 + i * 0.12, duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-                whileHover={{ y: -3 }}
+                whileHover={{ y: -4 }}
                 className="card"
-                style={{ padding: "20px 18px", display: "flex", flexDirection: "column", gap: 8, borderTop: `2px solid ${p.color}` }}
+                style={{
+                  padding: "40px 20px 28px", minHeight: 170,
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12,
+                  borderTop: `4px solid ${p.color}`, textAlign: "center",
+                }}
               >
-                <div style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: 22, color: "var(--text)" }}>
+                <div style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: "clamp(26px, 2.6vw, 34px)", lineHeight: 1.2, color: "var(--text)" }}>
                   {p.name}
                 </div>
-                <div style={{ fontFamily: "var(--mono)", fontSize: 16, color: p.color, letterSpacing: "0.04em", lineHeight: 1.5 }}>
-                  {p.role}
-                </div>
-                <div style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 18, color: "var(--dim)", lineHeight: 1.6 }}>
-                  {p.style}
-                </div>
-                <div style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--dim)", opacity: 0.7, marginTop: "auto", paddingTop: 6 }}>
-                  Simulated interviewer. Fictional, not a real person.
+                <div style={{ fontFamily: "var(--mono)", fontSize: 14, color: "var(--dim)", opacity: 0.75 }}>
+                  Fictional, not a real person
                 </div>
               </motion.div>
             ))}
@@ -550,7 +546,7 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
             initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 + personas.length * 0.12, duration: 0.5 }}
             className="card"
-            style={{ padding: "20px 22px", maxWidth: 620, display: "flex", flexDirection: "column", gap: 10 }}
+            style={{ padding: "22px 26px", maxWidth: 860, width: "100%", display: "flex", flexDirection: "column", gap: 10 }}
           >
             <div style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--calm)", letterSpacing: "0.12em" }}>
               OPTIONAL: CAMERA TRACKING

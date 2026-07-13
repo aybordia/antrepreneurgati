@@ -22,17 +22,17 @@ export default function ModeSelect({ onSelect, onBack }) {
       <div style={{
         position: "relative", zIndex: 1, minHeight: "100%",
         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        padding: "80px 24px 48px", maxWidth: 880, margin: "0 auto", gap: 28,
+        padding: "72px 32px 40px", maxWidth: 1280, margin: "0 auto", gap: 40, width: "100%",
       }}>
         <motion.h1 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }}
-          style={{ fontFamily: "var(--display)", fontWeight: 400, fontSize: "clamp(38px, 6vw, 56px)", lineHeight: 1.15, textAlign: "center" }}>
+          style={{ fontFamily: "var(--display)", fontWeight: 400, fontSize: "clamp(52px, 8vw, 88px)", lineHeight: 1.1, textAlign: "center" }}>
           Practice.
         </motion.h1>
 
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: 14, width: "100%",
+          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+          gap: 20, width: "100%", flex: 1, maxHeight: 560,
         }}>
           {MODES.map((m, i) => (
             <motion.button
@@ -40,25 +40,26 @@ export default function ModeSelect({ onSelect, onBack }) {
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 + i * 0.08, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              whileHover={{ y: -4 }}
+              whileHover={{ y: -6, scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
               onClick={() => onSelect(m.key)}
               className="card"
               style={{
-                padding: "48px 22px", cursor: "pointer",
+                padding: "24px", cursor: "pointer",
+                minHeight: "min(48vh, 460px)",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                borderTop: `3px solid ${m.accent}`,
+                borderTop: `4px solid ${m.accent}`,
                 background: "var(--surface)",
               }}
             >
-              <span style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: 34, color: "var(--text)" }}>
+              <span style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: "clamp(40px, 4.5vw, 62px)", color: "var(--text)" }}>
                 {m.title}
               </span>
             </motion.button>
           ))}
         </div>
 
-        <button className="btn btn-ghost" onClick={onBack} style={{ fontSize: 17 }}>
+        <button className="btn btn-ghost" onClick={onBack} style={{ fontSize: 18 }}>
           Back
         </button>
       </div>
