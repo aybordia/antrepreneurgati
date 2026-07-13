@@ -720,7 +720,7 @@ export default function Dashboard({ user, onNewSession, getIdToken }) {
         >
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
-              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--primary)", boxShadow: "0 0 12px var(--primary-glow)" }} />
+              <img src="/logo.png" alt="Swarm AI logo" width={34} height={34} style={{ display: "block" }} />
               <span style={{ fontFamily: "var(--mono)", fontSize: "16px", color: "var(--muted)", letterSpacing: "0.3em" }}>SWARM AI</span>
             </div>
             <h1 style={{ fontFamily: "var(--display)", fontSize: "clamp(42px, 6.5vw, 64px)", fontWeight: 300, lineHeight: 1.15 }}>

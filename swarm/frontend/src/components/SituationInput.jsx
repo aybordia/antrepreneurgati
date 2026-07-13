@@ -163,10 +163,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
 
             {/* Brand */}
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span aria-hidden style={{
-                width: 8, height: 8, borderRadius: "50%",
-                background: "var(--honey)",
-              }} />
+              <img src="/logo.png" alt="Swarm AI logo" width={30} height={30} style={{ display: "block" }} />
               <span style={{ fontFamily: "var(--mono)", fontSize: 16, letterSpacing: "0.35em", color: "var(--dim)", textTransform: "uppercase" }}>
                 Swarm AI {isConvo ? "· Conversation" : "· Interview"}
               </span>
