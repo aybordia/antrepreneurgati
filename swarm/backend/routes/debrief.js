@@ -5,21 +5,23 @@
 import { callLLM, parseJSON } from "../lib/llm.js";
 import { summarizeSignals } from "../lib/signalSummary.js";
 
-const IMPRESSIONS_PROMPT = `You write post-interview impressions from FICTIONAL simulated interviewers for a private practice debrief.
+const IMPRESSIONS_PROMPT = `You write post-interview impressions from FICTIONAL simulated interviewers for a private practice debrief. The candidate is autistic; this tool exists specifically for autistic (ASD) candidates, and every impression must be written with that in mind.
 Return ONLY valid JSON: {"impressions":[{"persona":"<name>","impression":"..."}]}
 
 Rules for every impression:
 - Written in that persona's voice, consistent with their described style.
+- LITERAL, DIRECT language only: no idioms, no metaphors, no sarcasm, no vague hedging like "maybe consider possibly". Say exactly what you mean in plain words.
 - 2-4 sentences: what stood out in the CONTENT of the candidate's answers (specific — quote or reference actual things they said), then at most one optional, concrete suggestion.
+- Name autistic strengths explicitly when they appear in the transcript: precision, detailed knowledge, honesty, direct answers, deep interest in the subject. These are real interview advantages — say so plainly.
 - Constructive and private. NEVER a score, grade, ranking, or pass/fail judgment.
 - NEVER comment on pauses, thinking time, pacing, speech patterns, tone of voice, eye contact, or body language. Content only.
-- If the candidate asked a clarifying question at any point, mention it positively: asking for clarification is a strong interview skill.
-- Never suggest the candidate act more "normal", hide their personality, suppress movement or stimming, change their voice, or perform differently as a person. Suggestions target answer content and structure only (e.g. "add the concrete example you mentioned earlier").`;
+- If the candidate asked a clarifying question at any point, mention it positively and explicitly: asking for clarification is a strong interview skill and a valid accommodation.
+- Never suggest the candidate act more "normal", mask, hide their personality, suppress movement or stimming, change their voice, force eye contact, or perform differently as a person. Suggestions target answer content and structure only (e.g. "add the concrete example you mentioned earlier"). Difference is not deficit.`;
 
 // Research-grounded per-dimension analysis (pragmatic-communication +
 // adapted-interview literature): separate dimensions, never collapsed into
 // one judgment, so the user knows exactly WHAT to work on and what's already strong.
-const OBSERVATIONS_PROMPT = `You analyze a mock-interview transcript across specific communication dimensions for a private, non-scored debrief. This tool serves autistic users; differences are not deficits, and only functional communication gaps matter.
+const OBSERVATIONS_PROMPT = `You analyze a mock-interview transcript across specific communication dimensions for a private debrief. The candidate is autistic — this tool exists specifically for autistic (ASD) candidates. Differences are not deficits; only functional communication gaps matter. All feedback uses literal, direct, concrete language: no idioms, no metaphors, no vague hedging.
 Return ONLY valid JSON, fields in this exact order:
 {"scores":{"relevance":0,"completeness":0,"specificity":0,"organization":0,"clarification":0},"focus":"...","self_advocacy":["...","..."],"observations":[{"dimension":"...","observation":"...","suggestion":"..."}]}
 
@@ -40,11 +42,11 @@ Dimensions to cover (skip any with nothing meaningful to say; 3-5 total):
 
 Rules:
 - Every observation is about the CANDIDATE (the "You" speaker in the transcript) — never about the interviewer or the questions themselves.
-- Each observation: 1-2 sentences, descriptive and specific, citing what they actually said. Strengths count as observations too.
-- Each suggestion: optional, one concrete sentence about answer content/structure only.
-- "focus": ONE sentence naming the single highest-leverage thing to practice next, phrased as an invitation.
-- "self_advocacy": 2-3 exact sentences the user could say in a REAL interview to request reasonable accommodations (e.g. "Could you break that question into parts?", "I'd like a moment to think about that.", "Could I see the questions in writing?"). Pick ones that match what actually helped or was hard in THIS transcript.
-- NEVER a score or grade. NEVER mention pauses, pacing, voice, eye contact, movement, or body language.`;
+- Each observation: 1-2 sentences, descriptive and specific, citing what they actually said. Strengths count as observations too — name autistic strengths plainly when present (precision, detail, honesty, directness, subject depth).
+- Each suggestion: optional, one concrete sentence about answer content/structure only. Prefer ASD-informed strategies that actually work for autistic candidates: use a template or script shape (that is allowed and effective), prepare a bank of 3-4 real stories in advance, ask for the question in writing, ask which meaning is intended, say "I need a moment to think". Never suggest "be more confident", "relax", "be natural", or anything about performing differently as a person.
+- "focus": ONE sentence naming the single highest-leverage thing to practice next, phrased as a literal invitation ("Next time, try adding what happened at the end of each story."). No metaphors.
+- "self_advocacy": 2-3 exact sentences the user could copy word-for-word in a REAL interview to request reasonable ASD accommodations (e.g. "Could you break that question into parts?", "I'd like a moment to think about that.", "Could I see the questions in writing?", "Do you mean X or Y?"). Pick ones that match what actually helped or was hard in THIS transcript.
+- NEVER a score or grade in the text. NEVER mention pauses, pacing, voice, eye contact, movement, stimming, or body language. Never coach masking.`;
 
 // Descriptive pacing note from turn timestamps. Relative comparisons only
 // (absolute values include speech playback and transcription overhead), and
@@ -97,7 +99,7 @@ export default async function handler(req, res) {
     if (userTurns.length > 0) {
       try {
         const raw = await callLLM({
-          systemPrompt: `You write a short, warm recap of a casual conversation-practice session. 2-3 sentences: what you chatted about and one genuine, friendly note about the conversation. Never a score, grade, or evaluation. Never mention pauses, pacing, or speech patterns. Return ONLY: {"recap":"..."}`,
+          systemPrompt: `You write a short, warm recap of a casual conversation-practice session for an autistic user (this tool is built specifically for ASD). Literal, direct, friendly language: no idioms, no metaphors. 2-3 sentences: what you chatted about and one genuine, specific note about the conversation. Never a score, grade, or evaluation. Never mention pauses, pacing, or speech patterns. Never suggest acting more 'normal'. Return ONLY: {"recap":"..."}`,
           userPrompt: `Transcript:\n${transcriptText.slice(0, 4000)}`,
           maxTokens: 160,
         });

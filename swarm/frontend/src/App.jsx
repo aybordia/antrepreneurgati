@@ -22,6 +22,28 @@ const SCREENS = {
   ASK_SWARM:       "ASK_SWARM",
 };
 
+/* Persistent product identity — visible on every page */
+function ForASDBanner() {
+  return (
+    <div aria-label="This app is built for autistic people" style={{
+      position: "fixed", top: 14, left: "50%", transform: "translateX(-50%)",
+      zIndex: 999, pointerEvents: "none",
+      display: "flex", alignItems: "center", gap: 14,
+    }}>
+      <span style={{
+        fontFamily: "var(--display)", fontWeight: 600,
+        fontSize: "clamp(26px, 3vw, 38px)", lineHeight: 1,
+        letterSpacing: "0.12em",
+        background: "linear-gradient(135deg, #E4A339 0%, #EFC272 55%, #74B9A0 100%)",
+        WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+        whiteSpace: "nowrap",
+      }}>
+        FOR ASD
+      </span>
+    </div>
+  );
+}
+
 const THEME_KEY = "swarm_sensory_mode";
 const THEMES = [
   { key: "dark", label: "Dark" },
@@ -188,6 +210,7 @@ export default function App() {
 
   return (
     <div style={{ position: "relative", width: "100vw", height: "100vh", background: "var(--ink)" }}>
+      <ForASDBanner />
 
       {user && screen !== SCREENS.DASHBOARD && (
         <button

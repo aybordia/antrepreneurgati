@@ -169,7 +169,7 @@ export default function SignIn({ googleReady, onCredential }) {
             marginBottom: "16px",
           }}
         >
-          Your AI panel.
+          Interview practice
           <br />
           <em style={{
             fontStyle: "italic",
@@ -178,7 +178,7 @@ export default function SignIn({ googleReady, onCredential }) {
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
           }}>
-            Ruthlessly honest.
+            built for ASD.
           </em>
         </motion.h1>
 
@@ -194,7 +194,7 @@ export default function SignIn({ googleReady, onCredential }) {
             marginBottom: "36px", maxWidth: "360px",
           }}
         >
-          A panel of fictional AI interviewers is built around your exact situation, then interviews you live by voice. Practice on your own terms, with a private debrief afterward.
+          Made specifically for autistic people. Fictional AI interviewers, clear literal questions, your pace, no judgment of how you speak or move. Private ASD-informed debrief afterward.
         </motion.p>
 
         {/* Feature highlights */}
