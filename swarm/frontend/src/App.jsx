@@ -22,18 +22,22 @@ const SCREENS = {
   ASK_SWARM:       "ASK_SWARM",
 };
 
-/* Persistent product identity — visible on every page */
+/* Persistent product identity — visible on every page. Sits in its own
+   opaque pill so it never visually merges with content behind it. */
 function ForASDBanner() {
   return (
     <div aria-label="This app is built for autistic people" style={{
-      position: "fixed", top: 14, left: "50%", transform: "translateX(-50%)",
+      position: "fixed", top: 12, left: "50%", transform: "translateX(-50%)",
       zIndex: 999, pointerEvents: "none",
-      display: "flex", alignItems: "center", gap: 14,
+      padding: "6px 22px", borderRadius: 999,
+      background: "color-mix(in srgb, var(--ink) 82%, transparent)",
+      border: "1px solid var(--line)",
+      backdropFilter: "blur(8px)",
     }}>
       <span style={{
         fontFamily: "var(--display)", fontWeight: 600,
-        fontSize: "clamp(26px, 3vw, 38px)", lineHeight: 1,
-        letterSpacing: "0.12em",
+        fontSize: "clamp(22px, 2.6vw, 32px)", lineHeight: 1,
+        letterSpacing: "0.14em",
         background: "linear-gradient(135deg, #E4A339 0%, #EFC272 55%, #74B9A0 100%)",
         WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
         whiteSpace: "nowrap",

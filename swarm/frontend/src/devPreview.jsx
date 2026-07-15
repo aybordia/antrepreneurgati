@@ -75,10 +75,13 @@ function LiveMock() {
   const active = MOCK_PERSONAS[1];
   return (
     <div className="screen" style={{ background: "var(--ink)" }}>
+      <div style={{ position: "fixed", top: 12, left: "50%", transform: "translateX(-50%)", zIndex: 999, padding: "6px 22px", borderRadius: 999, background: "color-mix(in srgb, var(--ink) 82%, transparent)", border: "1px solid var(--line)" }} title="FOR ASD (preview)">
+        <span style={{ fontFamily: "var(--display)", fontWeight: 600, fontSize: "clamp(22px, 2.6vw, 32px)", letterSpacing: "0.14em", background: "linear-gradient(135deg, #E4A339, #74B9A0)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>FOR ASD</span>
+      </div>
       <div className="noise" />
       <div style={{
         position: "relative", zIndex: 1, height: "100%", display: "flex", flexDirection: "column",
-        alignItems: "center", padding: "28px 20px 108px", maxWidth: 680, margin: "0 auto", gap: 18,
+        alignItems: "center", padding: "76px 20px 108px", maxWidth: 680, margin: "0 auto", gap: 18,
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", alignSelf: "stretch" }}>
           <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--dim)", letterSpacing: "0.16em" }}>LIVE SESSION</span>

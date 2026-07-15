@@ -356,6 +356,7 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
     let resPersona = null;
     let resVoiceId = null;
     let resVoiceSettings = null;
+    let resQuestionType = null;
 
     try {
       const token = await getIdToken();
@@ -368,7 +369,9 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
         if (chunk.error) { console.error("voice-turn error:", chunk.error); return; }
         if (chunk.chunk) { fullLine += chunk.chunk; setDisplayLine(fullLine); }
         if (chunk.persona) { resPersona = chunk.persona; resVoiceId = chunk.voiceId; resVoiceSettings = chunk.voiceSettings; setCurrentPersona(chunk.persona); }
-        if (chunk.question) setCurrentQuestion(chunk.question);
+        // Keep only the TYPE from the plan (for the template category). The
+        // question TEXT shown must be what the persona ACTUALLY asks, set below.
+        if (chunk.question) resQuestionType = chunk.question.type;
         if (chunk.done) {
           if (chunk.sessionAdvancing) {
             questionIndexRef.current += 1;
@@ -391,6 +394,9 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
       const aiTurn = { speaker: resPersona || "Panel", text: fullLine, timestamp: Date.now() };
       historyRef.current = [...historyRef.current, aiTurn];
       setHistory([...historyRef.current]);
+
+      // The card + template must reflect what was ACTUALLY asked, not the plan
+      setCurrentQuestion({ text: fullLine.trim(), type: resQuestionType || "behavioral" });
 
       const audio = await speakText({
         text: fullLine,
@@ -637,12 +643,12 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
       <div style={{
         position: "relative", zIndex: 1,
         height: "100%", display: "flex", flexDirection: "column",
-        alignItems: "center", padding: "28px 20px 108px",
+        alignItems: "center", padding: "76px 20px 108px",
         maxWidth: 680, margin: "0 auto", width: "100%", gap: 18,
       }}>
 
-        {/* Status line */}
-        <div style={{ display: "flex", alignItems: "center", gap: 14, alignSelf: "stretch", justifyContent: "space-between" }}>
+        {/* Status line — camera note wraps below so it never sits under the banner */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14, alignSelf: "stretch", justifyContent: "space-between", flexWrap: "wrap" }}>
           <span style={{ fontFamily: "var(--mono)", fontSize: 15, color: isConvo ? "var(--calm)" : "var(--dim)", letterSpacing: "0.16em" }}>
             {isConvo ? "OPEN CONVERSATION · NO EVALUATION" : "LIVE SESSION"}
           </span>
@@ -682,7 +688,7 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
         <AnimatePresence mode="wait">
           {showQuestionCard && currentQuestion?.text && !sessionComplete && (
             <motion.div
-              key={`q-${currentQuestion.index}`}
+              key={currentQuestion.text.slice(0, 24)}
               initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.35 }}
               style={{
@@ -712,21 +718,6 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
               <div style={{ fontFamily: "var(--ui)", fontWeight: 400, fontSize: 20, lineHeight: 1.6, color: "var(--text)" }}>
                 {currentQuestion.text}
               </div>
-              {supportLevel === "guided" && currentQuestion.parts?.length > 0 && (
-                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 5 }}>
-                  <div style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--calm)", letterSpacing: "0.12em" }}>
-                    A FULL ANSWER USUALLY INCLUDES
-                  </div>
-                  {currentQuestion.parts.map((part, i) => (
-                    <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-                      <span aria-hidden style={{ color: "var(--calm)", fontSize: 17, lineHeight: 1.6 }}>·</span>
-                      <span style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 18, color: "var(--text-2)", lineHeight: 1.6 }}>
-                        {part}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
               {supportLevel === "guided" && (
                 <div style={{ marginTop: 8, fontFamily: "var(--mono)", fontSize: 15, color: "var(--dim)", opacity: 0.8 }}>
                   Unsure what they mean? Asking them to clarify is always OK.
