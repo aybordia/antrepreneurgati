@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { streamFetch } from "../lib/api";
+import { streamFetch, postJSON } from "../lib/api";
 import { speakText, stopAllAudio } from "../hooks/useVoiceOutput";
 import { useElevenLabsSTT } from "../hooks/useElevenLabsSTT";
 import { useMultimodalTracking } from "../tracking/useMultimodalTracking";
@@ -157,8 +157,40 @@ const ANSWER_TEMPLATES = {
   },
 };
 
-function HintPopup({ question, onClose }) {
+function HintPopup({ question, situation, getIdToken, onClose }) {
   const template = ANSWER_TEMPLATES[question?.type] || ANSWER_TEMPLATES.behavioral;
+  // Live, question-specific example. Falls back to the static template shape.
+  const [loading, setLoading] = useState(true);
+  const [example, setExample] = useState("");
+  const [liveSteps, setLiveSteps] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true); setExample(""); setLiveSteps(null);
+    (async () => {
+      try {
+        const token = await getIdToken?.();
+        const res = await postJSON("/api/example-answer", {
+          question: { text: question?.text, type: question?.type },
+          situation,
+        }, token);
+        if (cancelled) return;
+        if (res?.example) setExample(res.example);
+        if (Array.isArray(res?.steps) && res.steps.length) {
+          setLiveSteps(res.steps.map(s => [s.label, s.hint]));
+        }
+      } catch (e) {
+        if (!cancelled) console.error("[hint] example fetch failed, using template:", e);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  // Re-fetch whenever the current question changes (by text)
+  }, [question?.text, question?.type, situation, getIdToken]);
+
+  const steps = liveSteps || template.steps;
+
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -174,29 +206,56 @@ function HintPopup({ question, onClose }) {
         transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
         onClick={e => e.stopPropagation()}
         className="card"
-        role="dialog" aria-label="Answer hint"
+        role="dialog" aria-label="Answer help for this question"
         style={{
-          background: "var(--surface)", maxWidth: 560, width: "100%",
-          maxHeight: "80vh", overflowY: "auto",
+          background: "var(--surface)", maxWidth: 580, width: "100%",
+          maxHeight: "82vh", overflowY: "auto",
           padding: "28px 30px", display: "flex", flexDirection: "column", gap: 16,
           borderTop: "2px solid var(--honey)",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-          <span style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: 24 }}>{template.title}</span>
+          <span style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: 24 }}>How to answer this</span>
           <button className="btn btn-ghost" onClick={onClose} style={{ height: 40, fontSize: 15, padding: "0 16px" }}>
             Close
           </button>
         </div>
 
         {question?.text && (
-          <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 17, color: "var(--dim)", lineHeight: 1.6 }}>
-            For: "{question.text}"
+          <p style={{ fontFamily: "var(--ui)", fontWeight: 400, fontSize: 18, color: "var(--text)", lineHeight: 1.6 }}>
+            "{question.text}"
           </p>
         )}
 
+        {/* Worked example for THIS exact question */}
+        <div style={{
+          padding: "16px 18px", borderRadius: 12,
+          background: "var(--calm-soft)", border: "1px solid rgba(116,185,160,0.25)",
+        }}>
+          <div style={{ fontFamily: "var(--mono)", fontSize: 13, color: "var(--calm)", letterSpacing: "0.1em", marginBottom: 8 }}>
+            AN EXAMPLE ANSWER
+          </div>
+          {loading ? (
+            <span style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 17, color: "var(--dim)", fontStyle: "italic" }}>
+              Writing an example for this question…
+            </span>
+          ) : example ? (
+            <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 18, color: "var(--text)", lineHeight: 1.7 }}>
+              {example}
+            </p>
+          ) : (
+            <span style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 17, color: "var(--dim)" }}>
+              Use the steps below to build your own answer.
+            </span>
+          )}
+        </div>
+
+        {/* Step structure for this question */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {template.steps.map(([label, text], i) => (
+          <div style={{ fontFamily: "var(--mono)", fontSize: 13, color: "var(--honey)", letterSpacing: "0.1em" }}>
+            WHAT A FULL ANSWER INCLUDES
+          </div>
+          {steps.map(([label, text], i) => (
             <div key={i} style={{
               display: "flex", gap: 14, alignItems: "flex-start",
               padding: "12px 16px", borderRadius: 10,
@@ -215,21 +274,8 @@ function HintPopup({ question, onClose }) {
           ))}
         </div>
 
-        {question?.parts?.length > 0 && (
-          <div>
-            <div style={{ fontFamily: "var(--mono)", fontSize: 13, color: "var(--calm)", letterSpacing: "0.1em", marginBottom: 6 }}>
-              THIS QUESTION SPECIFICALLY ASKS FOR
-            </div>
-            {question.parts.map((p, i) => (
-              <div key={i} style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 17, color: "var(--text-2)", lineHeight: 1.7 }}>
-                · {p}
-              </div>
-            ))}
-          </div>
-        )}
-
         <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 15, color: "var(--dim)", lineHeight: 1.6 }}>
-          This is a shape to lean on, not a script. Your own words are the right words.
+          This is a shape to copy, not a script. Swap in your own real details.
         </p>
       </motion.div>
     </motion.div>
@@ -846,7 +892,7 @@ export default function VoiceSession({ sessionData, situation, onEndSession, get
       {/* Answer-template popup — user-initiated, never automatic */}
       <AnimatePresence>
         {showHint && (
-          <HintPopup question={currentQuestion} onClose={() => setShowHint(false)} />
+          <HintPopup question={currentQuestion} situation={situation} getIdToken={getIdToken} onClose={() => setShowHint(false)} />
         )}
       </AnimatePresence>
 

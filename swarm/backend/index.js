@@ -5,6 +5,7 @@ dotenv.config();
 
 import startSession from "./routes/startSession.js";
 import voiceTurn from "./routes/voiceTurn.js";
+import exampleAnswer from "./routes/exampleAnswer.js";
 import debrief from "./routes/debrief.js";
 import querySession from "./routes/querySession.js";
 import askSwarm from "./routes/askSwarm.js";
@@ -42,6 +43,7 @@ app.get("/health", (_, res) => res.json({ status: "ok", time: new Date().toISOSt
 app.post("/api/parse-intent", verifyToken, parseIntentRoute);
 app.post("/api/start-session", verifyToken, startSession);
 app.post("/api/voice-turn", verifyToken, voiceTurn);
+app.post("/api/example-answer", verifyToken, exampleAnswer);
 app.post("/api/debrief", verifyToken, debrief);
 app.post("/api/query-session", verifyToken, querySession);
 app.post("/api/ask-swarm", verifyToken, askSwarm);
