@@ -198,16 +198,15 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
               <textarea
                 id="situation-input"
                 value={situation}
-                onChange={e => { if (!isListening && !isProcessing) setSituation(e.target.value); }}
+                readOnly
                 placeholder={
                   isListening   ? "Listening. Speak whenever you're ready…" :
                   isProcessing  ? "Writing down what you said…" :
-                  isConvo       ? "e.g. small talk practice, or chatting about my week" :
-                  "e.g. Stanford medical interview in 2 days with 4 professors"
+                  isConvo       ? "Tap “Speak” below and say what you'd like to talk about — out loud, like you would to a person." :
+                  "Tap “Speak” below and describe your interview out loud — e.g. Stanford medical interview in 2 days with 4 professors."
                 }
                 rows={4}
-                aria-label="Describe your interview"
-                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && canLaunch) { e.preventDefault(); handleLaunch(); } }}
+                aria-label={isConvo ? "What you'd like to talk about, spoken aloud" : "Describe your interview, spoken aloud"}
                 style={{
                   width: "100%",
                   background: "var(--surface)",
@@ -231,11 +230,11 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                 style={{
                   position: "absolute", right: 14, bottom: 18,
                   height: 44, borderRadius: 999, padding: "0 18px",
-                  border: `1px solid ${isListening ? "rgba(116,185,160,0.55)" : "var(--line)"}`,
+                  border: `1px solid ${isListening ? "rgba(116,185,160,0.55)" : "rgba(228,163,57,0.45)"}`,
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                   fontSize: 15.5, fontFamily: "var(--ui)", fontWeight: 500, cursor: "pointer",
-                  background: isListening ? "var(--calm-soft)" : "var(--raised)",
-                  color: isListening ? "var(--calm)" : "var(--dim)",
+                  background: isListening ? "var(--calm-soft)" : "var(--honey-soft)",
+                  color: isListening ? "var(--calm)" : "var(--honey)",
                   animation: isListening ? "micRing 1.2s ease-out infinite" : "none",
                   transition: "all 0.25s",
                 }}
@@ -244,7 +243,7 @@ export default function SituationInput({ onLaunch, onBack, initialSituation = ""
                   ? <><CircleNotch size={18} weight="bold" style={{ animation: "rotateSlow 1s linear infinite" }} /> Writing it down</>
                   : isListening
                   ? <><Stop size={17} weight="fill" /> Stop listening</>
-                  : <><Microphone size={18} weight="regular" /> Speak instead</>}
+                  : <><Microphone size={18} weight="regular" /> Tap to speak</>}
               </button>
 
               <AnimatePresence>
