@@ -9,10 +9,13 @@ import Debrief from "./components/Debrief";
 import AskSwarm from "./components/AskSwarm";
 import Dashboard from "./components/Dashboard";
 import SignIn from "./components/SignIn";
+import ProfileSetup from "./components/ProfileSetup";
 import { stopAllAudio } from "./hooks/useVoiceOutput";
+import { getJSON } from "./lib/api";
 
 const SCREENS = {
   DASHBOARD:       "DASHBOARD",
+  PROFILE:         "PROFILE",
   MODE_SELECT:     "MODE_SELECT",
   PEER:            "PEER",
   SITUATION_INPUT: "SITUATION_INPUT",
@@ -112,6 +115,8 @@ export default function App() {
   const [timedMode, setTimedMode] = useState(false);
   const [googleReady, setGoogleReady] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem(THEME_KEY) || "dark");
+  const [profileSet, setProfileSet] = useState(null);   // null = unknown, false = never set, true = set/dismissed
+  const [pendingMode, setPendingMode] = useState(null); // mode to resume after first-time profile setup
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -160,14 +165,58 @@ export default function App() {
 
   const getIdToken = useCallback(async () => token, [token]);
 
+  // Learn whether this user has set their communication profile yet, so we can
+  // prompt for it once before their first session.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { profile } = await getJSON("/api/profile", token);
+        if (!cancelled) setProfileSet(!!profile?.set);
+      } catch {
+        if (!cancelled) setProfileSet(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user, token]);
+
   const handleNewSession = () => { stopAllAudio(); setScreen(SCREENS.MODE_SELECT); };
+
+  const proceedToMode = (selected) => {
+    setMode(selected);
+    setTone("neutral"); // never default a new session into the harshest setting
+    setScreen(SCREENS.SITUATION_INPUT);
+  };
 
   const handleModeSelect = (selected) => {
     stopAllAudio();
     if (selected === "peer") { setScreen(SCREENS.PEER); return; }
-    setMode(selected);
-    setTone("neutral"); // never default a new session into the harshest setting
-    setScreen(SCREENS.SITUATION_INPUT);
+    // First-ever interview/conversation: set up the personal profile first.
+    if (profileSet === false) {
+      setPendingMode(selected);
+      setScreen(SCREENS.PROFILE);
+      return;
+    }
+    proceedToMode(selected);
+  };
+
+  const openProfile = () => { stopAllAudio(); setPendingMode(null); setScreen(SCREENS.PROFILE); };
+
+  const handleProfileDone = () => {
+    setProfileSet(true);
+    const resume = pendingMode;
+    setPendingMode(null);
+    if (resume) proceedToMode(resume);
+    else setScreen(SCREENS.DASHBOARD);
+  };
+
+  const handleProfileSkip = () => {
+    setProfileSet(true); // dismissed for now; server profile stays unset until they fill it
+    const resume = pendingMode;
+    setPendingMode(null);
+    if (resume) proceedToMode(resume);
+    else setScreen(SCREENS.DASHBOARD);
   };
 
   const handleLaunch = (sit, opts = {}) => {
@@ -251,6 +300,20 @@ export default function App() {
           <span style={{ color: "var(--muted)", fontFamily: "var(--mono)", fontSize: "16px", letterSpacing: "0.03em" }}>
             {user.name || user.email}
           </span>
+          <button onClick={openProfile}
+            style={{
+              padding: "6px 14px", borderRadius: "8px",
+              border: "1px solid rgba(255,255,255,0.1)",
+              background: "rgba(255,255,255,0.04)",
+              color: "var(--muted)", cursor: "pointer",
+              fontFamily: "var(--mono)", fontSize: "16px",
+              transition: "all 0.18s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; e.currentTarget.style.color = "var(--text)"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = "var(--muted)"; }}
+          >
+            Profile
+          </button>
           <button onClick={handleSignOut}
             style={{
               padding: "6px 14px", borderRadius: "8px",
@@ -274,6 +337,15 @@ export default function App() {
         <AnimatePresence mode="wait">
           {screen === SCREENS.DASHBOARD && (
             <Dashboard key="dashboard" user={user} onNewSession={handleNewSession} getIdToken={getIdToken} />
+          )}
+          {screen === SCREENS.PROFILE && (
+            <ProfileSetup
+              key="profile"
+              getIdToken={getIdToken}
+              isFirstTime={pendingMode !== null}
+              onDone={handleProfileDone}
+              onBack={handleProfileSkip}
+            />
           )}
           {screen === SCREENS.MODE_SELECT && (
             <ModeSelect key="mode" onSelect={handleModeSelect} onBack={handleBackToDashboard} />

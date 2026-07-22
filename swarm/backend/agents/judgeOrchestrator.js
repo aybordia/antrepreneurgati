@@ -44,14 +44,18 @@ export async function runJudgeOrchestrator({ transcript, sessionContext, history
     return safeReturn(null, "Let's continue. Tell me more about your situation.", "Recovery");
   }
 
-  const { personas = [], sessionPlan, situation = "", mode = "interview", tone = "neutral", supportLevel = "guided" } = parsed;
+  const { personas = [], sessionPlan, situation = "", mode = "interview", tone = "neutral", supportLevel = "guided", asdProfileHint = "" } = parsed;
   if (!personas.length) {
     return safeReturn(null, "Walk me through your situation in your own words.", "Recovery");
   }
 
+  // Self-set profile directives, appended to every prompt so the interviewer
+  // adapts to THIS person (not a generic ASD template).
+  const profileBlock = asdProfileHint ? `\n${asdProfileHint}` : "";
+
   // ── Conversation mode: casual, follow-the-user's-lead, non-evaluative ──────
   if (mode === "conversation") {
-    return runConversationTurn({ transcript, personas, situation, history });
+    return runConversationTurn({ transcript, personas, situation, history, profileBlock });
   }
 
   const TONE_LINES = {
@@ -94,7 +98,7 @@ export async function runJudgeOrchestrator({ transcript, sessionContext, history
 ${toneLine}
 ${supportRule}
 Situation: "${clip(situation, 120)}"
-${CONDUCT_RULES}
+${CONDUCT_RULES}${profileBlock}
 Introduce yourself briefly (name + role)${supportLevel === "guided" ? ", tell them they can ask you to clarify or repeat any question at any time," : ""} then ask this planned opening question in your own natural words: "${firstQ?.text || "What brought you here today?"}"
 Return ONLY: {"line":"..."}`,
         userPrompt: situation,
@@ -131,7 +135,7 @@ Return ONLY: {"line":"..."}`,
 ${toneLine}
 ${supportRule}
 Situation: "${clip(situation, 120)}"
-${CONDUCT_RULES}
+${CONDUCT_RULES}${profileBlock}
 Task: ${task}
 Return ONLY: {"line":"...","intent":"..."}`;
 
@@ -159,7 +163,7 @@ Return ONLY: {"line":"...","intent":"..."}`;
 // Casual practice: one friendly fictional persona, follows the user's lead,
 // never evaluates. Same conduct rules — literal language, no comments on
 // pauses or delivery. No planned questions, no session-complete gate.
-async function runConversationTurn({ transcript, personas, situation, history }) {
+async function runConversationTurn({ transcript, personas, situation, history, profileBlock = "" }) {
   const p = personas[0];
 
   const CONVO_RULES = `Conversation rules (always apply):
@@ -176,7 +180,7 @@ async function runConversationTurn({ transcript, personas, situation, history })
       const raw = await callLLM({
         systemPrompt: `You are ${p.name} (a fictional conversation-practice partner). Style: ${p.style}
 The user wants casual conversation practice. Their words: "${clip(situation, 120)}"
-${CONVO_RULES}
+${CONVO_RULES}${profileBlock}
 Say a friendly hello, mention your first name, and open the conversation gently around what they said they'd like to talk about.
 Return ONLY: {"line":"..."}`,
         userPrompt: situation,
@@ -194,7 +198,7 @@ Return ONLY: {"line":"..."}`,
   try {
     const raw = await callLLM({
       systemPrompt: `You are ${p.name} (a fictional conversation-practice partner). Style: ${p.style}
-${CONVO_RULES}
+${CONVO_RULES}${profileBlock}
 Return ONLY: {"line":"..."}`,
       userPrompt: `${recentHistory}\nUser: "${transcript}"`,
       maxTokens: 110,

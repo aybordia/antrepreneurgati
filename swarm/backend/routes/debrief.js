@@ -4,6 +4,7 @@
 // Signal categories render only if the user opted in (user_selected_categories).
 import { callLLM, parseJSON } from "../lib/llm.js";
 import { summarizeSignals } from "../lib/signalSummary.js";
+import { getAsdProfile, buildAsdProfileHint } from "../lib/prefsStore.js";
 
 const IMPRESSIONS_PROMPT = `You write post-interview impressions from FICTIONAL simulated interviewers for a private practice debrief. The candidate is autistic; this tool exists specifically for autistic (ASD) candidates, and every impression must be written with that in mind.
 Return ONLY valid JSON: {"impressions":[{"persona":"<name>","impression":"..."}]}
@@ -89,6 +90,12 @@ export default async function handler(req, res) {
   const mode = sessionData?.mode || "interview";
   const userTurns = fullTranscript.filter(t => t.speaker === "You" || t.speaker === "User");
 
+  // Personalize the feedback to this user's self-set profile: name their
+  // specific strengths, target their stated goal, coach with strategies that
+  // match their traits. Empty string when they haven't set a profile.
+  const asdHint = buildAsdProfileHint(req.user?.sub ? getAsdProfile(req.user.sub) : null, "debrief");
+  const profileBlock = asdHint ? `\n\n${asdHint}` : "";
+
   const transcriptText = fullTranscript
     .map(t => `${t.speaker}: ${t.text}`)
     .join("\n");
@@ -100,7 +107,7 @@ export default async function handler(req, res) {
       try {
         const raw = await callLLM({
           systemPrompt: `You write a short, warm recap of a casual conversation-practice session for an autistic user (this tool is built specifically for ASD). Literal, direct, friendly language: no idioms, no metaphors. 2-3 sentences: what you chatted about and one genuine, specific note about the conversation. Never a score, grade, or evaluation. Never mention pauses, pacing, or speech patterns. Never suggest acting more 'normal'. Return ONLY: {"recap":"..."}`,
-          userPrompt: `Transcript:\n${transcriptText.slice(0, 4000)}`,
+          userPrompt: `Transcript:\n${transcriptText.slice(0, 4000)}${profileBlock}`,
           maxTokens: 160,
         });
         const parsed = parseJSON(raw);
@@ -135,7 +142,7 @@ ${personaList}
 Transcript:
 ${transcriptText.slice(0, 6000)}
 
-Write one impression per panel member. JSON now.`,
+Write one impression per panel member. JSON now.${profileBlock}`,
         maxTokens: 900,
       });
       const parsed = parseJSON(raw);
@@ -172,7 +179,7 @@ Planned questions (types noted): ${(sessionData?.sessionPlan?.questions || []).m
 Transcript:
 ${transcriptText.slice(0, 5500)}
 
-JSON now.`,
+JSON now.${profileBlock}`,
           maxTokens: 1000,
         });
         const parsed = parseJSON(raw);

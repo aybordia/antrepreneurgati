@@ -13,6 +13,7 @@ import { listSessions, saveSessionRoute, getSessionRoute } from "./routes/sessio
 import feedback from "./routes/feedback.js";
 import parseIntentRoute from "./routes/parseIntent.js";
 import { peerJoin, peerStatus, peerCancel, peerEnd, peerReport, peerBlock } from "./routes/peer.js";
+import { getProfileRoute, saveProfileRoute } from "./routes/profile.js";
 import { verifyToken } from "./googleAuth.js";
 
 const app = express();
@@ -51,6 +52,8 @@ app.get("/api/sessions", verifyToken, listSessions);
 app.post("/api/sessions/save", verifyToken, saveSessionRoute);
 app.get("/api/sessions/:id", verifyToken, getSessionRoute);
 app.post("/api/feedback", verifyToken, feedback);
+app.get("/api/profile", verifyToken, getProfileRoute);
+app.post("/api/profile", verifyToken, saveProfileRoute);
 app.post("/api/peer/queue", verifyToken, peerJoin);
 app.get("/api/peer/status", verifyToken, peerStatus);
 app.post("/api/peer/cancel", verifyToken, peerCancel);

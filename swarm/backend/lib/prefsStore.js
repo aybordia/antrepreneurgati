@@ -23,6 +23,27 @@ function prefsFile(userId) {
   return path.join(PREFS_DIR, `${safe}.json`);
 }
 
+// The self-set profile of the autistic user themselves. This is the heart of
+// personalization: every field is optional, self-identified, and framed as a
+// communication difference to accommodate — never a deficit to fix. It is
+// injected into the live interviewer, the conversation partner, and the debrief
+// so the whole experience adapts to THIS person, not to a generic "ASD user".
+const DEFAULT_ASD_PROFILE = () => ({
+  set: false,               // has the user completed it at least once?
+  literal: false,           // takes language literally; idioms/hypotheticals are hard
+  processingTime: false,    // needs extra time to think before answering
+  openEndedHard: false,     // broad openers ("tell me about yourself") are hard to start
+  detailStyle: "",          // "" | "detailed" (gives lots of detail) | "brief" (gives short answers)
+  shutdown: false,          // may go quiet / blank under stress
+  needsBreaks: false,       // may need a short break
+  wantWritten: false,       // wants every question shown in writing
+  wantTopicWarning: false,  // wants a heads-up before the topic changes
+  strengths: "",            // free text: knowledge areas, precision, honesty…
+  goal: "",                 // free text: what they want to practise
+  notes: "",                // anything else they want the panel to know
+  updatedAt: 0,
+});
+
 const DEFAULT_PREFS = () => ({
   interview: {
     tone: "balanced",          // "direct" | "warm" | "balanced"
@@ -36,6 +57,7 @@ const DEFAULT_PREFS = () => ({
     positivePatterns: [],
     negativePatterns: [],
   },
+  asdProfile: DEFAULT_ASD_PROFILE(),
   ratingHistory: [],
   sessionCount: 0,
   updatedAt: 0,
@@ -119,6 +141,106 @@ export function buildInterviewStyleHint(prefs) {
     lines.push(`- User disliked: ${interview.negativePatterns.slice(-2).join("; ")}`);
   lines.push("IMPORTANT: Apply these preferences to question framing and persona behavior, but never deviate from the research and web data found — use it as the content, preferences only affect style.");
   return lines.join("\n");
+}
+
+// ── ASD profile (self-set, the core of personalization) ─────────────────────
+
+export function getAsdProfile(userId) {
+  const prefs = getPrefs(userId);
+  // Merge over defaults so profiles saved before a field existed still load
+  return { ...DEFAULT_ASD_PROFILE(), ...(prefs.asdProfile || {}) };
+}
+
+export function saveAsdProfile(userId, incoming = {}) {
+  const prefs = getPrefs(userId);
+  const clean = (s, max) => (typeof s === "string" ? s.trim().slice(0, max) : "");
+  const bool = (v) => v === true;
+  const detail = ["detailed", "brief"].includes(incoming.detailStyle) ? incoming.detailStyle : "";
+  prefs.asdProfile = {
+    set: true,
+    literal: bool(incoming.literal),
+    processingTime: bool(incoming.processingTime),
+    openEndedHard: bool(incoming.openEndedHard),
+    detailStyle: detail,
+    shutdown: bool(incoming.shutdown),
+    needsBreaks: bool(incoming.needsBreaks),
+    wantWritten: bool(incoming.wantWritten),
+    wantTopicWarning: bool(incoming.wantTopicWarning),
+    strengths: clean(incoming.strengths, 400),
+    goal: clean(incoming.goal, 400),
+    notes: clean(incoming.notes, 600),
+    updatedAt: Date.now(),
+  };
+  savePrefs(userId, prefs);
+  return prefs.asdProfile;
+}
+
+/**
+ * Turn the self-set profile into concrete behavioral directives for an agent.
+ * context: "interview" | "conversation" | "debrief".
+ * Returns "" when the user hasn't set a profile, so callers can drop it cleanly.
+ */
+export function buildAsdProfileHint(profile, context = "interview") {
+  if (!profile || !profile.set) return "";
+  const forDebrief = context === "debrief";
+  const forConvo = context === "conversation";
+  const who = forConvo ? "this conversation partner" : "this person";
+  const lines = [];
+
+  if (profile.literal) {
+    lines.push(forDebrief
+      ? `They interpret language literally. If any of your feedback could be read literally in a way you didn't mean, reword it. No idioms or metaphors.`
+      : `They interpret language literally. Ask concrete, literal questions. If anything you say is abstract or hypothetical, say plainly there is no trick and they can ask what you mean.`);
+  }
+  if (profile.processingTime && !forDebrief) {
+    lines.push(`They need time to think. After you ask something, do not fill the silence, rephrase, or rush them. A pause means they are thinking — wait.`);
+  }
+  if (profile.openEndedHard) {
+    lines.push(forDebrief
+      ? `Broad, open questions are hard for them to start. If you suggest anything to practise, give a concrete opening they can reuse (e.g. a first sentence), not just "be more open".`
+      : `Broad openers are hard for them to start. Prefer specific, concrete questions. If you must open broadly, immediately offer a concrete place to start (e.g. "you could begin with what you studied").`);
+  }
+  if (profile.detailStyle === "detailed") {
+    lines.push(forDebrief
+      ? `They tend to give a lot of detail. Treat thoroughness as the strength it is. If a shorter answer would land better, frame it as "lead with your single strongest point", never as "you talked too much".`
+      : `They tend to give a lot of detail — that is a strength (thoroughness, real knowledge). Never cut them off. If an answer is very long, gently invite the single most important part without implying they did anything wrong.`);
+  }
+  if (profile.detailStyle === "brief") {
+    lines.push(forDebrief
+      ? `They tend to give short answers. Encourage adding one concrete example, framed as an invitation, never as a criticism.`
+      : `They tend to give short answers. Ask one concrete, specific follow-up to invite more. Never pressure or imply the short answer was wrong.`);
+  }
+  if (profile.shutdown && !forDebrief) {
+    lines.push(`If they go quiet, blank, or say they are stuck, ease off immediately: reassure them warmly, offer to move on or come back to it later, and never push.`);
+  }
+  if (profile.needsBreaks && !forDebrief) {
+    lines.push(`If they ask for a break or a moment, welcome it warmly and without any fuss.`);
+  }
+  if (profile.wantWritten && !forDebrief) {
+    lines.push(`They want every question available in writing. Phrase each question as one clean sentence so the on-screen text reads clearly on its own.`);
+  }
+  if (profile.wantTopicWarning && !forConvo && !forDebrief) {
+    lines.push(`Announce topic changes before you make them ("Now I'd like to move to a different area…") so nothing is a surprise.`);
+  }
+  if (profile.strengths) {
+    lines.push(forDebrief
+      ? `Name these strengths plainly wherever they show up in the transcript: ${profile.strengths}.`
+      : `Where it fits naturally, give them room to show these strengths: ${profile.strengths}.`);
+  }
+  if (profile.goal) {
+    lines.push(forDebrief
+      ? `Their goal for this session was: "${profile.goal}". Make the single highest-leverage focus point speak directly to that goal.`
+      : `Their goal for this session is: "${profile.goal}". Where you naturally can, give them chances to practise exactly that.`);
+  }
+  if (profile.notes) {
+    lines.push(`They also asked you to keep in mind: ${profile.notes}`);
+  }
+
+  if (!lines.length) return "";
+  const header = forDebrief
+    ? `This candidate's own profile (they set this themselves — honor it):`
+    : `About ${who} (they set this profile themselves — honor every point):`;
+  return `${header}\n- ${lines.join("\n- ")}`;
 }
 
 export function buildDebriefStyleHint(prefs) {

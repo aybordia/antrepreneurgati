@@ -1,6 +1,6 @@
 import { runResearcher } from "../agents/researcher.js";
 import { runArchitect } from "../agents/architect.js";
-import { getPrefs, buildInterviewStyleHint } from "../lib/prefsStore.js";
+import { getPrefs, buildInterviewStyleHint, getAsdProfile, buildAsdProfileHint } from "../lib/prefsStore.js";
 
 export default async function handler(req, res) {
   res.setHeader("Content-Type", "text/event-stream");
@@ -30,6 +30,12 @@ export default async function handler(req, res) {
   const styleHint = buildInterviewStyleHint(userPrefs);
   if (styleHint) console.log(`[startSession] injecting style prefs for user=${userId} (${userPrefs.sessionCount} sessions)`);
 
+  // The user's self-set ASD communication profile — the core personalization.
+  // Baked into the session context so the live interviewer adapts to THIS person.
+  const asdProfile = userId ? getAsdProfile(userId) : null;
+  const asdProfileHint = buildAsdProfileHint(asdProfile, mode === "conversation" ? "conversation" : "interview");
+  if (asdProfileHint) console.log(`[startSession] injecting ASD profile for user=${userId}`);
+
   // Keepalive: send a heartbeat every 8s so Render's proxy never kills
   // the SSE connection during rate-limit waits between agent LLM calls
   const keepalive = setInterval(() => writeChunk({ heartbeat: true }), 8000);
@@ -37,7 +43,7 @@ export default async function handler(req, res) {
   try {
     // Conversation mode: no research, no agent theater — one calm setup step
     if (mode === "conversation") {
-      await runArchitect({ situation, intent, mode, tone, supportLevel, researcherOutput: null, styleHint: null, researchContext: {} }, writeChunk);
+      await runArchitect({ situation, intent, mode, tone, supportLevel, researcherOutput: null, styleHint: null, asdProfileHint, researchContext: {} }, writeChunk);
       return;
     }
 
@@ -71,7 +77,7 @@ export default async function handler(req, res) {
     writeChunk({ agent: "VoiceDesigner", done: true });
 
     await sleep(300);
-    await runArchitect({ situation, intent, mode, tone, supportLevel, researcherOutput, styleHint, researchContext }, writeChunk);
+    await runArchitect({ situation, intent, mode, tone, supportLevel, researcherOutput, styleHint, asdProfileHint, researchContext }, writeChunk);
 
   } catch (err) {
     console.error("startSession error:", err);

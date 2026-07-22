@@ -58,7 +58,7 @@ function callLLMForParts(questions, intent) {
   });
 }
 
-export async function runArchitect({ situation, intent = null, mode = "interview", tone = "neutral", supportLevel = "guided", researcherOutput, styleHint, researchContext }, writeChunk) {
+export async function runArchitect({ situation, intent = null, mode = "interview", tone = "neutral", supportLevel = "guided", researcherOutput, styleHint, asdProfileHint = "", researchContext }, writeChunk) {
   // Derive structured intent server-side if the client didn't send one
   if (!intent && mode !== "conversation") {
     writeChunk({ agent: "Architect", chunk: "Understanding your request…", thinking: true });
@@ -111,6 +111,7 @@ export async function runArchitect({ situation, intent = null, mode = "interview
     mode,
     tone: mode === "conversation" ? null : tone,
     supportLevel: mode === "conversation" ? null : supportLevel,
+    asdProfileHint,   // self-set profile directives, applied by the live interviewer / partner
     sessionSummary: mode === "conversation"
       ? `Casual conversation practice: ${situation}`
       : intent?.institution
