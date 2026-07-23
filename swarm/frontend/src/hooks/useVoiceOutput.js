@@ -55,7 +55,12 @@ function speakWithBrowserTTS(text) {
   });
 }
 
-export async function speakText({ text, voiceId, stability = 0.42, similarityBoost = 0.82 }) {
+// The single biggest lever on realism. "eleven_multilingual_v2" is ElevenLabs'
+// most natural, expressive model. If the live interview ever feels laggy, swap
+// this for "eleven_turbo_v2_5" — nearly as natural, much lower latency.
+const TTS_MODEL = "eleven_multilingual_v2";
+
+export async function speakText({ text, voiceId, stability = 0.4, similarityBoost = 0.85, style = 0.45, useSpeakerBoost = true }) {
   stopAllAudio();
 
   if (!ELEVENLABS_API_KEY || !voiceId) {
@@ -76,8 +81,13 @@ export async function speakText({ text, voiceId, stability = 0.42, similarityBoo
       },
       body: JSON.stringify({
         text,
-        model_id: "eleven_turbo_v2",
-        voice_settings: { stability, similarity_boost: similarityBoost },
+        model_id: TTS_MODEL,
+        voice_settings: {
+          stability,                       // moderate → expressive, not flat
+          similarity_boost: similarityBoost,
+          style,                           // adds natural intonation/emotion (0 = monotone)
+          use_speaker_boost: useSpeakerBoost, // fuller, more present, less synthetic
+        },
       }),
     });
 
