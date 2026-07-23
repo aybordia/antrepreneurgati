@@ -24,15 +24,8 @@ Rules for every impression:
 // one judgment, so the user knows exactly WHAT to work on and what's already strong.
 const OBSERVATIONS_PROMPT = `You analyze a mock-interview transcript across specific communication dimensions for a private debrief. The candidate is autistic — this tool exists specifically for autistic (ASD) candidates. Differences are not deficits; only functional communication gaps matter. All feedback uses literal, direct, concrete language: no idioms, no metaphors, no vague hedging.
 Return ONLY valid JSON, fields in this exact order:
-{"scores":{"relevance":0,"completeness":0,"specificity":0,"organization":0,"clarification":0},"focus":"...","self_advocacy":["...","..."],"observations":[{"dimension":"...","observation":"...","suggestion":"..."}]}
-
-Scoring rules (numbers 0-100, about the ANSWERS only, never the person):
-- relevance: did answers address what was asked?
-- completeness: did answers include the situation, their role, action, and outcome?
-- specificity: were claims backed by concrete, specific examples?
-- organization: did answers have a clear beginning, middle, and end?
-- clarification: did they ask when a question was genuinely ambiguous? (Asking = high score. One question was deliberately ambiguous.)
-- Score the content of the transcript honestly; these are per-dimension so the user can see exactly WHY. Never factor in pauses, pacing, voice, or anything nonverbal.
+{"focus":"...","self_advocacy":["...","..."],"observations":[{"dimension":"...","observation":"...","suggestion":"..."}]}
+This debrief is NEVER scored or graded: no numbers, no ratings, no percentages, no pass/fail, anywhere. Only qualitative observations that name what was strong and what to try next.
 
 Dimensions to cover (skip any with nothing meaningful to say; 3-5 total):
 - "Answer relevance" — did answers address what was asked?
@@ -166,7 +159,6 @@ Write one impression per panel member. JSON now.${profileBlock}`,
   let communicationObservations = [];
   let focus = null;
   let selfAdvocacy = [];
-  let scores = null;
   if (userTurns.length > 0) {
     for (let attempt = 0; attempt < 2 && !communicationObservations.length; attempt++) {
       try {
@@ -192,14 +184,6 @@ JSON now.${profileBlock}`,
         if (Array.isArray(parsed?.self_advocacy)) {
           selfAdvocacy = parsed.self_advocacy.filter(s => typeof s === "string").slice(0, 3);
         }
-        if (parsed?.scores && typeof parsed.scores === "object") {
-          const clean = {};
-          for (const [k, v] of Object.entries(parsed.scores)) {
-            const n = Number(v);
-            if (Number.isFinite(n)) clean[k] = Math.max(0, Math.min(100, Math.round(n)));
-          }
-          if (Object.keys(clean).length) scores = clean;
-        }
       } catch (e) {
         console.error(`[debrief] observations attempt ${attempt + 1} failed:`, e.message);
       }
@@ -216,19 +200,11 @@ JSON now.${profileBlock}`,
   // ── Conversation facts (neutral, descriptive — not graded) ─────────────────
   const questionsAsked = fullTranscript.filter(t => t.speaker !== "You" && t.speaker !== "User").length;
 
-  // Overall score = mean of the dimension scores (each dimension stays visible
-  // so the user always knows WHY — the number is about the answers, not the person)
-  const clarityScore = scores
-    ? Math.round(Object.values(scores).reduce((a, b) => a + b, 0) / Object.values(scores).length)
-    : null;
-
   res.json({
     mode: "interview",
     transcript: transcriptText,
     persona_impressions: impressions,
     communication_observations: communicationObservations,
-    scores,
-    clarityScore,
     focus,
     self_advocacy: selfAdvocacy,
     signal_summary: signalSummary,
