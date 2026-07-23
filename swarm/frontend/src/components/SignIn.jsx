@@ -1,42 +1,55 @@
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 
-/* Minimal line icons (stroked, on-brand) — no emoji */
-const ICONS = {
-  voice: "M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3",
-  research: "M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-3.5-3.5",
-  debrief: "M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5",
-};
-
-function LineIcon({ path, color }) {
+/* ── Floating aurora blobs ── */
+function AuroraBlob({ style }) {
   return (
-    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d={path} />
-    </svg>
+    <div style={{
+      position: "absolute", borderRadius: "50%",
+      filter: "blur(90px)", pointerEvents: "none",
+      ...style,
+    }} />
   );
 }
 
-function Feature({ iconPath, title, desc, color, delay }) {
+/* ── Feature row item ── */
+function Feature({ icon, title, desc, color, delay }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       style={{
-        display: "flex", alignItems: "flex-start", gap: 14, padding: "15px 17px",
-        background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14,
+        display: "flex", alignItems: "flex-start", gap: "14px",
+        padding: "14px 16px",
+        background: "rgba(255,255,255,0.022)",
+        border: "1px solid rgba(255,255,255,0.055)",
+        borderRadius: "14px",
+        backdropFilter: "blur(12px)",
       }}
     >
       <div style={{
-        width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-        background: `color-mix(in srgb, ${color} 12%, transparent)`,
-        border: `1px solid color-mix(in srgb, ${color} 28%, transparent)`,
+        width: 34, height: 34, borderRadius: "10px", flexShrink: 0,
+        background: `${color}18`,
+        border: `1px solid ${color}30`,
         display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: "21px",
       }}>
-        <LineIcon path={iconPath} color={color} />
+        {icon}
       </div>
       <div>
-        <div style={{ fontFamily: "var(--ui)", fontWeight: 500, fontSize: 18, color: "var(--text)", marginBottom: 3 }}>{title}</div>
-        <div style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 16, color: "var(--dim)", lineHeight: 1.55 }}>{desc}</div>
+        <div style={{
+          fontFamily: "var(--ui)", fontWeight: 500, fontSize: "18px",
+          color: "var(--text)", marginBottom: "3px", letterSpacing: "0.01em",
+        }}>
+          {title}
+        </div>
+        <div style={{
+          fontFamily: "var(--ui)", fontWeight: 300, fontSize: "17px",
+          color: "var(--muted)", lineHeight: 1.55,
+        }}>
+          {desc}
+        </div>
       </div>
     </motion.div>
   );
@@ -66,121 +79,268 @@ export default function SignIn({ googleReady, onCredential }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      transition={{ duration: 1.0, ease: [0.16, 1, 0.3, 1] }}
-      style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "center", background: "var(--ink)", overflowY: "auto", overflowX: "hidden" }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+      style={{
+        position: "absolute", inset: 0,
+        display: "flex", justifyContent: "center",
+        background: "var(--ink)",
+        overflowY: "auto", overflowX: "hidden",
+      }}
     >
-      {/* One calm honey pool — quiet, on-brand */}
-      <div style={{
-        position: "absolute", width: "60vw", height: "60vw", top: "-22%", left: "-15%",
-        borderRadius: "50%", filter: "blur(100px)", pointerEvents: "none",
-        background: "radial-gradient(circle, color-mix(in srgb, var(--honey) 9%, transparent) 0%, transparent 70%)",
+      {/* Ambient pools — new palette, calm */}
+      <AuroraBlob style={{
+        width: "70vw", height: "70vw", top: "-25%", left: "-20%",
+        background: "radial-gradient(circle, rgba(228,163,57,0.08) 0%, transparent 70%)",
+        animation: "auroraMove 20s ease-in-out infinite",
       }} />
+      <AuroraBlob style={{
+        width: "55vw", height: "55vw", bottom: "-18%", right: "-15%",
+        background: "radial-gradient(circle, rgba(116,185,160,0.07) 0%, transparent 70%)",
+        animation: "auroraMove 26s ease-in-out infinite reverse",
+      }} />
+
+      {/* Grid lines */}
       <div style={{
-        position: "absolute", width: "48vw", height: "48vw", bottom: "-16%", right: "-12%",
-        borderRadius: "50%", filter: "blur(100px)", pointerEvents: "none",
-        background: "radial-gradient(circle, color-mix(in srgb, var(--calm) 8%, transparent) 0%, transparent 70%)",
+        position: "fixed", inset: 0, pointerEvents: "none",
+        backgroundImage:
+          "linear-gradient(rgba(255,255,255,0.016) 1px, transparent 1px), " +
+          "linear-gradient(90deg, rgba(255,255,255,0.016) 1px, transparent 1px)",
+        backgroundSize: "60px 60px",
+        maskImage: "radial-gradient(ellipse 90% 90% at 50% 50%, black 20%, transparent 100%)",
       }} />
       <div className="noise" />
 
+      {/* ── Main content — margin auto keeps it centered but scrollable when
+             it grows taller than the viewport ── */}
       <div style={{
-        position: "relative", zIndex: 10, width: "100%", maxWidth: 520,
-        padding: "48px 28px 64px", margin: "auto",
+        position: "relative", zIndex: 10,
+        width: "100%", maxWidth: "520px",
+        padding: "48px 28px 64px",
+        margin: "auto",
         display: "flex", flexDirection: "column", alignItems: "center",
       }}>
 
-        {/* Logo + wordmark */}
+        {/* Logo mark + wordmark */}
         <motion.div
-          initial={{ opacity: 0, y: -18 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.12, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, marginBottom: 34 }}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            display: "flex", flexDirection: "column", alignItems: "center",
+            gap: "14px", marginBottom: "36px",
+          }}
         >
-          <img src="/logo.png" alt="Swarm AI logo" width={104} height={104} style={{ display: "block" }} />
-          <span style={{ fontFamily: "var(--mono)", fontSize: 15, letterSpacing: "0.45em", color: "var(--dim)", textTransform: "uppercase" }}>
-            Swarm AI
-          </span>
+          <img src="/logo.png" alt="Swarm AI logo" width={110} height={110} style={{ display: "block" }} />
+          <div style={{
+            display: "flex", alignItems: "center", gap: "10px",
+          }}>
+            <div style={{
+              width: 1, height: 16,
+              background: "linear-gradient(to bottom, transparent, rgba(255,255,255,0.2), transparent)",
+            }} />
+            <span style={{
+              fontFamily: "var(--mono)", fontSize: "16px",
+              letterSpacing: "0.45em", color: "var(--muted)",
+              textTransform: "uppercase",
+            }}>
+              Swarm AI
+            </span>
+            <div style={{
+              width: 1, height: 16,
+              background: "linear-gradient(to bottom, transparent, rgba(255,255,255,0.2), transparent)",
+            }} />
+          </div>
         </motion.div>
 
         {/* Headline */}
         <motion.h1
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.26, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-          style={{ fontFamily: "var(--display)", fontSize: "clamp(46px, 7vw, 70px)", fontWeight: 400, lineHeight: 1.08, color: "var(--text)", textAlign: "center", marginBottom: 18 }}
+          initial={{ opacity: 0, y: 22 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.28, duration: 0.95, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            fontFamily: "var(--display)",
+            fontSize: "clamp(46px, 7vw, 72px)",
+            fontWeight: 300,
+            lineHeight: 1.08,
+            color: "var(--text)",
+            textAlign: "center",
+            marginBottom: "16px",
+          }}
         >
           Interview practice
           <br />
-          <span style={{
-            background: "linear-gradient(120deg, var(--honey) 0%, var(--calm) 100%)",
-            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+          <em style={{
+            fontStyle: "italic",
+            background: "linear-gradient(135deg, #E4A339 0%, #EFC272 55%, #74B9A0 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
           }}>
-            built for you.
-          </span>
+            built for ASD.
+          </em>
         </motion.h1>
 
         {/* Sub */}
         <motion.p
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4, duration: 0.7 }}
-          style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 19, color: "var(--dim)", lineHeight: 1.7, textAlign: "center", marginBottom: 34, maxWidth: 400 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.42, duration: 0.7 }}
+          style={{
+            fontFamily: "var(--ui)", fontWeight: 300,
+            fontSize: "20px", color: "var(--muted)",
+            lineHeight: 1.75, textAlign: "center",
+            marginBottom: "36px", maxWidth: "360px",
+          }}
         >
-          Made for autistic people. Clear, literal questions. Your pace, no timers, no judgment of how you speak or move. A private, non-scored debrief afterward.
+          Made specifically for autistic people. Fictional AI interviewers, clear literal questions, your pace, no judgment of how you speak or move. Private ASD-informed debrief afterward.
         </motion.p>
 
-        {/* Features */}
-        <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
-          <Feature iconPath={ICONS.voice} title="Live voice interviews" desc="Speak naturally. The panel adapts to what you actually say." color="var(--honey)" delay={0.5} />
-          <Feature iconPath={ICONS.research} title="Questions tuned to you" desc="Built around your exact role, program, and how you communicate." color="var(--calm)" delay={0.58} />
-          <Feature iconPath={ICONS.debrief} title="A private, non-scored debrief" desc="Written impressions and your full transcript. Observations, never grades." color="var(--honey)" delay={0.66} />
+        {/* Feature highlights */}
+        <div style={{
+          width: "100%", display: "flex", flexDirection: "column", gap: "8px",
+          marginBottom: "28px",
+        }}>
+          <Feature
+            icon="🎙"
+            title="Live voice interviews"
+            desc="Speak naturally. The panel adapts in real time based on your answers."
+            color="#E4A339"
+            delay={0.52}
+          />
+          <Feature
+            icon="🔬"
+            title="Deep-researched questions"
+            desc="Five agents spend time on your exact company, role, and résumé before you even start."
+            color="#8FB6E8"
+            delay={0.60}
+          />
+          <Feature
+            icon="📋"
+            title="Private, non-scored debrief"
+            desc="Every session ends with your panel's written impressions and your full transcript. Observations, never grades."
+            color="#74B9A0"
+            delay={0.68}
+          />
         </div>
 
         {/* Sign-in card */}
         <motion.div
-          initial={{ opacity: 0, y: 22, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ delay: 0.7, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="card"
-          style={{ width: "100%", borderRadius: 22, padding: "30px 32px 26px", display: "flex", flexDirection: "column", alignItems: "center", gap: 20, background: "var(--surface)" }}
+          initial={{ opacity: 0, y: 24, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ delay: 0.72, duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            width: "100%",
+            background: "rgba(255,255,255,0.028)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "24px",
+            padding: "32px 32px 28px",
+            backdropFilter: "blur(40px) saturate(160%)",
+            boxShadow:
+              "0 0 0 1px rgba(123,108,255,0.08), " +
+              "0 32px 80px rgba(0,0,0,0.5), " +
+              "0 1px 0 rgba(255,255,255,0.06) inset",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: "20px",
+          }}
         >
+          {/* Card headline */}
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontFamily: "var(--display)", fontSize: 26, fontWeight: 500, marginBottom: 7, color: "var(--text)" }}>
-              Start when you're ready.
+            <div style={{
+              fontFamily: "var(--display)", fontSize: "27px",
+              fontWeight: 300, letterSpacing: "0.01em",
+              marginBottom: "7px", color: "var(--text)",
+            }}>
+              Ready to be challenged?
             </div>
-            <div style={{ fontFamily: "var(--ui)", fontSize: 17, color: "var(--dim)", lineHeight: 1.6 }}>
-              Sign in with Google to begin.<br />
-              <span style={{ opacity: 0.75 }}>Private — Google only confirms it's you.</span>
+            <div style={{
+              fontFamily: "var(--ui)", fontSize: "18px",
+              color: "var(--muted)", lineHeight: 1.65,
+            }}>
+              Sign in with Google to start your first session.
+              <br />
+              <span style={{ opacity: 0.65 }}>Your data stays private. Google is only used to verify you.</span>
             </div>
           </div>
 
-          <div style={{ width: "100%", height: 1, background: "var(--line)" }} />
+          {/* Divider */}
+          <div style={{
+            width: "100%", height: "1px",
+            background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent)",
+          }} />
 
+          {/* Google button */}
           <div ref={btnRef} style={{ width: "100%" }} />
+
           {!googleReady && (
-            <div style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--dim)", letterSpacing: "0.06em" }}>Loading…</div>
+            <div style={{
+              fontFamily: "var(--mono)", fontSize: "16px",
+              color: "var(--muted)", opacity: 0.4,
+              letterSpacing: "0.06em",
+            }}>
+              Loading…
+            </div>
           )}
 
-          <div style={{ fontFamily: "var(--mono)", fontSize: 14, color: "var(--dim)", letterSpacing: "0.08em" }}>
-            Private · Free to start
+          {/* Trust badges */}
+          <div style={{
+            display: "flex", gap: "20px", alignItems: "center",
+            justifyContent: "center",
+          }}>
+            {[
+              { icon: "🔒", label: "Private" },
+              { icon: "⚡", label: "Instant setup" },
+              { icon: "✦", label: "No credit card" },
+            ].map(({ icon, label }) => (
+              <div key={label} style={{
+                display: "flex", alignItems: "center", gap: "5px",
+              }}>
+                <span style={{ fontSize: "16px", opacity: 0.55 }}>{icon}</span>
+                <span style={{
+                  fontFamily: "var(--mono)", fontSize: "15px",
+                  color: "var(--muted)", opacity: 0.45,
+                  letterSpacing: "0.06em",
+                }}>
+                  {label}
+                </span>
+              </div>
+            ))}
           </div>
 
-          <div style={{ width: "100%", height: 1, background: "var(--line)" }} />
-
+          {/* Community waitlist CTA */}
+          <div style={{
+            width: "100%", height: "1px",
+            background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)",
+          }} />
           <a
-            href={TYPEFORM_URL} target="_blank" rel="noopener noreferrer"
+            href={TYPEFORM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
             style={{
-              display: "flex", alignItems: "center", gap: 12, width: "100%",
-              padding: "12px 16px", borderRadius: 12,
-              border: "1px solid color-mix(in srgb, var(--honey) 25%, transparent)",
-              background: "var(--honey-soft)", textDecoration: "none", transition: "border-color 0.2s",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+              width: "100%", padding: "11px 18px", borderRadius: "12px",
+              border: "1px solid rgba(228,163,57,0.25)",
+              background: "rgba(123,108,255,0.07)",
+              textDecoration: "none",
+              transition: "all 0.2s",
             }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "color-mix(in srgb, var(--honey) 55%, transparent)"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = "color-mix(in srgb, var(--honey) 25%, transparent)"; }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(123,108,255,0.13)"; e.currentTarget.style.borderColor = "rgba(123,108,255,0.4)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(123,108,255,0.07)"; e.currentTarget.style.borderColor = "rgba(228,163,57,0.25)"; }}
           >
+            <span style={{ fontSize: "18px" }}>✦</span>
             <div style={{ textAlign: "left" }}>
-              <div style={{ fontFamily: "var(--mono)", fontSize: 15, color: "var(--honey)", letterSpacing: "0.06em" }}>JOIN OUR COMMUNITY</div>
-              <div style={{ fontFamily: "var(--ui)", fontSize: 15, color: "var(--dim)", marginTop: 1 }}>Stay in the loop as we build</div>
+              <div style={{ fontFamily: "var(--mono)", fontSize: "16px", color: "#a09aff", letterSpacing: "0.06em" }}>
+                JOIN OUR COMMUNITY
+              </div>
+              <div style={{ fontFamily: "var(--ui)", fontSize: "16px", color: "var(--muted)", opacity: 0.6, marginTop: "1px" }}>
+                Stay in the loop as we build
+              </div>
             </div>
-            <span aria-hidden style={{ marginLeft: "auto", fontFamily: "var(--mono)", fontSize: 16, color: "var(--honey)" }}>→</span>
+            <span style={{ marginLeft: "auto", fontFamily: "var(--mono)", fontSize: "16px", color: "rgba(160,154,255,0.5)" }}>→</span>
           </a>
         </motion.div>
 
+        {/* Bottom spacer */}
         <div style={{ height: 40 }} />
       </div>
     </motion.div>

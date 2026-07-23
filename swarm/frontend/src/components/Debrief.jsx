@@ -40,6 +40,66 @@ const fadeUp = (delay = 0) => ({
   transition: { duration: 0.55, delay, ease: [0.16, 1, 0.3, 1] },
 });
 
+const SCORE_DIMENSIONS = {
+  relevance: "Relevance",
+  completeness: "Completeness",
+  specificity: "Concrete examples",
+  organization: "Organization",
+  clarification: "Clarification",
+};
+
+/* Overall ring + per-dimension bars: the number always comes with its "why" */
+function ScorePanel({ scores, overall }) {
+  if (!scores || overall == null) return null;
+  const r = 52;
+  const circ = 2 * Math.PI * r;
+  return (
+    <div className="card" style={{ padding: "26px 28px", display: "flex", gap: 30, flexWrap: "wrap", alignItems: "center", borderTop: "2px solid var(--honey)" }}>
+      <div style={{ position: "relative", width: 130, height: 130, flexShrink: 0 }}>
+        <svg width="130" height="130" style={{ transform: "rotate(-90deg)" }} aria-hidden>
+          <circle cx="65" cy="65" r={r} fill="none" stroke="var(--line)" strokeWidth="6" />
+          <motion.circle cx="65" cy="65" r={r} fill="none"
+            stroke="var(--honey)" strokeWidth="6" strokeLinecap="round"
+            strokeDasharray={circ}
+            initial={{ strokeDashoffset: circ }}
+            animate={{ strokeDashoffset: circ * (1 - overall / 100) }}
+            transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+          />
+        </svg>
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ fontFamily: "var(--display)", fontWeight: 500, fontSize: 44, lineHeight: 1, color: "var(--honey)" }}>{overall}</span>
+          <span style={{ fontFamily: "var(--mono)", fontSize: 16, color: "var(--dim)", letterSpacing: "0.08em", marginTop: 4 }}>OVERALL</span>
+        </div>
+      </div>
+      <div style={{ flex: 1, minWidth: 260, display: "flex", flexDirection: "column", gap: 12 }}>
+        {Object.entries(SCORE_DIMENSIONS).map(([key, label]) => (
+          scores[key] != null && (
+            <div key={key} style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <span style={{ fontFamily: "var(--ui)", fontWeight: 400, fontSize: 20, color: "var(--text-2)", width: 180, flexShrink: 0 }}>
+                {label}
+              </span>
+              <div style={{ flex: 1, height: 8, borderRadius: 4, background: "var(--line)", overflow: "hidden" }}>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${scores[key]}%` }}
+                  transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.35 }}
+                  style={{ height: "100%", borderRadius: 4, background: "var(--calm)" }}
+                />
+              </div>
+              <span style={{ fontFamily: "var(--mono)", fontSize: 19, color: "var(--calm)", width: 38, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                {scores[key]}
+              </span>
+            </div>
+          )
+        ))}
+        <p style={{ fontFamily: "var(--ui)", fontWeight: 300, fontSize: 17, color: "var(--dim)", lineHeight: 1.6, marginTop: 4 }}>
+          About your answers, never you.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwarm, getIdToken }) {
   const [debrief, setDebrief] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -234,6 +294,13 @@ export default function Debrief({ sessionResult, situation, onRunAgain, onAskSwa
             The results server is running an older version, so this is a simplified debrief.
             Redeploy the backend to get per-interviewer impressions and tracking observations.
           </div>
+        )}
+
+        {/* Answer-content scores — overall + the per-dimension "why" */}
+        {debrief?.scores && debrief?.clarityScore != null && (
+          <motion.div {...fadeUp(0.1)}>
+            <ScorePanel scores={debrief.scores} overall={debrief.clarityScore} />
+          </motion.div>
         )}
 
         {/* Voice — two lines, that's it */}
