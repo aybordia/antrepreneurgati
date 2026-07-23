@@ -155,8 +155,15 @@ Return ONLY: {"line":"...","intent":"..."}`;
   if (!isFollowUp && question?.text) {
     return safeReturn(p, question.text, "Planned question (fallback)", { sessionAdvancing: advancing, question: questionMeta });
   }
-  const words = trimmed.split(/\s+/).slice(0, 5).join(" ");
-  return safeReturn(p, words ? `You mentioned "${words}" — can you say more about that?` : "Can you tell me more?", "Last resort");
+  // Last-resort follow-up: a natural, neutral prompt. NEVER echo the candidate's
+  // raw words back — that parrots filler ("Uh, uh…") and reads like a broken bot.
+  const FALLBACK_FOLLOWUPS = [
+    "Thank you. Could you tell me a bit more about that?",
+    "Got it. Can you walk me through that in a little more detail?",
+    "Thanks. Could you give me a specific example of what you mean?",
+    "That's helpful. What happened next?",
+  ];
+  return safeReturn(p, FALLBACK_FOLLOWUPS[userTurns % FALLBACK_FOLLOWUPS.length], "Follow-up (fallback)");
 }
 
 // ── Conversation mode ─────────────────────────────────────────────────────────
